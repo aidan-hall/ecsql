@@ -1,0 +1,76 @@
+#+title: ECSQL
+#+author: Aidan Hall
+#+todo: TODO DOING(!) DONE(@)
+* Introduction
+This is the source code for ECSQL.
+* Tasks
+:PROPERTIES:
+:COLUMNS:  %ITEM %PRIORITY %TODO
+:END:
+`Since we must rely on some piece of software for project management,
+we will use the most reliable one (in terms of longevity): Emacs.
+** Design
+*** TODO Basic ECS Architecture [0/3]
+**** TODO Automatically generated Entity IDs
+**** TODO Component Store
+**** TODO System Scheduler
+*** TODO ECSQL Language Specification [0/11]
+- [ ] Create and delete entities
+- [ ] Add and remove Components
+- [ ] Display and edit Component data
+- [ ] Entity/Component selection with Queries, based on the Entity relationships in the ECS design.
+- [ ] Start and stop systems
+- [ ] List running systems
+- [ ] Component data transformation, via calls to Systems and functions
+- [ ] System composition, and definition of new systems based on these compositions
+- [ ] FFI to Systems written in host language
+- [ ] Deferred event queue
+- [ ] BNF grammar
+** Implementation
+*** TODO Lisp [1/10]
+**** DONE Lexer
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-01-11 Thu 18:11] \\
+  - Decided against active UTF-8 support, but it would probably work.
+  - Treat ~@~ as a stand-alone Token. The parser can easily "look ahead"
+    when it gets a ~,~ to see if it should be a normal or splicing
+    unquote.
+CLOCK: [2024-01-11 Thu 18:04]--[2024-01-11 Thu 18:11] =>  0:07
+CLOCK: [2024-01-11 Thu 14:50]--[2024-01-11 Thu 18:04] =>  3:14
+- State "DOING"      from "TODO"       [2024-01-11 Thu 14:49]
+:END:
+- [X] Token type
+- [ ] +UTF-8+
+This either needs to operate on a string buffer in memory, or a
+~FILE*~.  There are platform-dependent ways to access a string buffer
+as a ~FILE*~, and many platform-independent operators for ~FILE*~'s,
+so we will use ~FILE*~.
+**** DOING Lisp Object Physical Representation
+:LOGBOOK:
+CLOCK: [2024-01-11 Thu 18:19]--[2024-01-11 Thu 18:22] =>  0:03
+- State "DOING"      from "TODO"       [2024-01-11 Thu 18:18]
+:END:
+- For this, consider 64-bit integer boxing.
+- Notable: There are 4 unused bits in Mertens' Entity representation,
+  and we can probably shave off a few bits from the generation, so
+  this could fit inside the box!
+**** TODO Memory Allocation
+**** TODO Pure C Parser
+- [ ] List structure
+- [ ] Literals
+- [ ] ~'~, ~`~, ~,~, ~,@~.
+**** TODO [#C] Parser with Macros
+***** TODO [#B] Backquote
+- This feature is essential for the ergonomics of a macro system.
+- If not implemented "properly" as a reader macro, it would be easy
+  enough to hard-code it into a pure C reader.
+***** TODO [#C] Read Macros
+**** TODO Type System
+- Embed ECS types into this, including archetypes as first-class
+  composite types.
+**** TODO Code Generation
+**** TODO Garbage Collection
+- Copying GC until it is measured to be a critical bottleneck.
+**** TODO [#C] Optimisations
+- Just turn on the feature in LLVM.
+**** TODO REPL
