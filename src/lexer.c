@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-Token get_token(s8 stream[1]) {
+Token get_token(s8 stream[static 1]) {
   /* if (stream->len == 0) { */
   /*   return (Token){{0}, TOK_ERROR}; */
   /* } */

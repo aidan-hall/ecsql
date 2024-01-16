@@ -25,6 +25,6 @@ typedef struct {
 } Token;
 
 /* Consumes 1 token from the stream. */
-Token get_token(s8 stream[1]);
+Token get_token(s8 stream[static 1]);
 
 #endif
