@@ -1,4 +1,3 @@
-
 CC	= clang
 SRC	:= $(wildcard src/*.c)
 SRC	+= $(wildcard deps/*/*.c)
