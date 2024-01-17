@@ -59,6 +59,7 @@ Options:
 | Native speed | Complex C++ API, incomplete C API |
 | Intrinsics   | A large, heavy dependency         |
 | Familiarity  | Not for the C API                 |
+| Phi nodes    |                                   |
 **** Own bytecode
 | Advantages         | Disadvantages               |
 |--------------------+-----------------------------|
@@ -68,11 +69,13 @@ Options:
 | Advantages                    | Disadvantages         |
 |-------------------------------+-----------------------|
 | Ganoooo!1!                    | Unfamiliar            |
-| Very simple(?)                |                       |
+| Very simple(?)                | No Phi nodes          |
 | Similar to LLVM               | Limited documentation |
 | C is primary API              |                       |
 | Primarily intended for JIT(?) |                       |
-
+The lack of Phi nodes is notable because they fuse the results of
+branches /in an expression/.  We may be able to hack them on top of
+the conditional and switch instructions.
 *** TODO Compiler Architecture
 1. Reader (lex + parse): Output is already Lisp data!
 2. Lisp → Stack Machine:
