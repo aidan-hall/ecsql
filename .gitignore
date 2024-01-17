@@ -2,3 +2,4 @@
 /ecsql
 **/*.o
 /.ccls-cache/
+/compile_commands.json
