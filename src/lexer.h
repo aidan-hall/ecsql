@@ -3,20 +3,24 @@
 
 #include "common.h"
 
-#define COMMENT_CHAR ';'
+#define LEX_COMMENT_CHAR u8';'
+#define LEX_COMMENT_END u8'\n'
+
+/* Characters that should each be treated as an individual lexeme. */
+#define LEXEME_CHARS u8"',`@"
+
+/* Non-space characters that terminate a symbol. */
+#define LEX_SYMBOL_TERMINATORS (LEXEME_CHARS u8"\"()")
 
 typedef enum : u8 {
   TOK_ERROR = '!',
   /* Indicates that all tokens have been read from the stream. */
   TOK_END = '$',
   TOK_SYMBOL = 'L',
-  TOK_BACKQUOTE = '`',
-  TOK_COMMA = ',',
+  TOK_STRING = '\"',
   TOK_LPAR = '(',
   TOK_RPAR = ')',
-  TOK_QUOTE = '\'',
-  TOK_STRING = '\"',
-  TOK_SPLICE = '@',
+  TOK_LEX_CHAR = '\'',
 } TokenType;
 
 typedef struct {

@@ -3,7 +3,6 @@
 /* Credit: https://nullprogram.com/blog/2023/09/27/ */
 
 #include "common.h"
-#include <stdlib.h>
 
 typedef struct {
   char *begin;
@@ -14,7 +13,7 @@ typedef struct {
 __attribute((malloc, alloc_size(2, 4), alloc_align(3)))
 #endif
 void *
-allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count);
+arena_allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count);
 
 Arena new_arena(ptrdiff_t capacity);
 

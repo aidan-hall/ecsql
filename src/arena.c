@@ -1,10 +1,11 @@
 #include "arena.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* Credit: https://nullprogram.com/blog/2023/09/27/ */
 
-void *allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count) {
+void *arena_allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count) {
   /* How far forward to move so allocation is aligned. */
   ptrdiff_t padding = -(uintptr_t)a->begin & (align - 1);
   ptrdiff_t available = a->end - a->begin - padding;
@@ -21,6 +22,6 @@ void *allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count) {
 Arena new_arena(ptrdiff_t capacity) {
   Arena a = {0};
   a.begin = malloc(capacity);
-  a.end = a.begin ? a.begin + capacity : 0;
+  a.end = a.begin ? a.begin + capacity : nullptr;
   return a;
 }
