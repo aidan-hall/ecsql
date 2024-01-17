@@ -4,7 +4,7 @@ SRC	+= $(wildcard deps/*/*.c)
 
 CFLAGS	+= -std=gnu2x
 
-LDLIBS = -lgcc
+LDLIBS = -lgccjit
 
 OBJ := $(SRC:.c=.o)
 

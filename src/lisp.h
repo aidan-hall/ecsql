@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include <stddef.h>
-#include <gcc/jit/libgccjit.h>
 typedef u64 Object;
 
 #define OBJ_MASK (0xffffffffffffffe0)
@@ -18,7 +17,7 @@ enum ObjectTag : Object {
   OBJ_INT_TAG,
   OBJ_FLOAT_TAG,
   OBJ_CLOSURE_TAG,
-  OBJ_PRIMITIVE_TAG,
+  OBJ_PRIMITIVE_TAG
 };
 /* Filter out just the type tag of an object */
 #define OBJ_TYPE(OBJ) (OBJ & OBJ_MASK)
