@@ -1,13 +1,15 @@
-CC	= clang
+CC	= gcc
 SRC	:= $(wildcard src/*.c)
 SRC	+= $(wildcard deps/*/*.c)
 
-CFLAGS	+= -std=c2x
+CFLAGS	+= -std=gnu2x
+
+LDLIBS = -lgcc
 
 OBJ := $(SRC:.c=.o)
 
 
 ecsql: $(OBJ)
-	$(CC) -o $@ $(OBJ)
+	$(CC) -o $@ $(OBJ) $(LDLIBS)
 clean:
-	$(RM) -v $(OBJ)
+	$(RM) -v $(OBJ) ecsql
