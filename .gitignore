@@ -1,3 +1,4 @@
 /build/
 /ecsql
 **/*.o
+/.ccls-cache/
