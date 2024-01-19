@@ -16,38 +16,6 @@ static Object lisp_cdr(LispEnv *lisp, Object pair) {
   return *lisp_cell_at(lisp, OBJ_UNBOX_INDEX(pair) + LISP_CDR_INDEX);
 }
 
-void lisp_print(LispEnv *lisp, Object object, FILE *stream, int depth) {
-  for (int i = 0; i < depth; i++) {
-    fputc(' ', stream);
-  }
-  switch (OBJ_TYPE(object)) {
-  case OBJ_FLOAT_TAG: {
-    u32 val_bits = (u32)OBJ_UNBOX(object);
-    float val = *(float *)&val_bits;
-    fprintf(stream, "float: %f\n", val);
-  } break;
-  case OBJ_INT_TAG:
-    fprintf(stream, "int: %ld\n", OBJ_UNBOX(object));
-    break;
-  case OBJ_STRING_TAG:
-    fprintf(stream, "string: (%x) '%s'\n", object,
-            (char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(object)));
-    break;
-  case OBJ_SYMBOL_TAG:
-    fprintf(stream, "symbol: (%x) '%s'\n", object,
-            (char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(object)));
-    break;
-  case OBJ_PAIR_TAG:
-    fprintf(stream, "cons: %x\n", object);
-    lisp_print(lisp, LISP_CAR(lisp, object), stream, depth + 1);
-    lisp_print(lisp, LISP_CDR(lisp, object), stream, depth + 1);
-    break;
-  default:
-    fprintf(stream, "other type: %x.\n", OBJ_TYPE(object));
-    break;
-  }
-}
-
 int main(int argc, char *argv[]) {
   /* if (argc <= 1) */
   /*   return 1; */
@@ -62,6 +30,8 @@ int main(int argc, char *argv[]) {
   /*   printf("'\n"); */
   /* } */
   LispEnv lisp = new_lisp_environment();
+  Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
+  lisp_print(&lisp, l, stdout, 0);
   Object first;
   do {
     first = lisp_read(&lisp, stdin);

@@ -3,6 +3,9 @@
 #include "lexer.h"
 #include "lisp.h"
 
+#include <errno.h>
+#include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 /* #include <readline/readline.h> */
 /* #include <readline/history.h> */
@@ -14,7 +17,24 @@
 /* s8 buffer; */
 
 static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream);
+static Object lisp_list_recurse(LispEnv *lisp, va_list args) {
+  Object arg = va_arg(args, Object);
+  if (OBJ_TYPE(arg) == OBJ_NIL_TAG) {
+    return arg;
+  } else {
+    return lisp_cons(lisp, arg, lisp_list_recurse(lisp, args));
+  }
+}
 
+Object lisp_list(LispEnv *lisp, ...) {
+  va_list args;
+  va_start(args);
+  Object res = lisp_list_recurse(lisp, args);
+  va_end(args);
+  return res;
+}
+
+static Object read_with_lex_char(LispEnv *lisp, Token tok, FILE *stream) {}
 static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
   Object tmp;
   switch (tok.t) {
@@ -23,15 +43,20 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
   case TOK_SYMBOL: {
     /* Symbol tokens get interpreted as an integer, or a float, if possible. */
     u8 *endptr;
+    errno = 0;
     i64 int_value = strtoll((char *)tok.lexeme.data, (char **)&endptr, 0);
-    if (*endptr == '\0') {
+    /* Only store as a 32-bit integer if its magnitude is small enough. */
+    if (*endptr == '\0' && errno == 0 && int_value <= INT32_MAX &&
+        int_value >= INT32_MIN) {
+      fputs("Encoding as i32\n", stderr);
       return OBJ_BOX(int_value, INT);
     }
     float float_value = strtof((char *)tok.lexeme.data, (char **)&endptr);
     if (*endptr == '\0') {
       return OBJ_BOX(*(u64 *)&float_value, FLOAT);
     }
-    /* Symbol could not be parsed as an integer or float, so it really is a symbol. */
+    /* Symbol could not be parsed as an integer or float, so it really is a
+     * symbol. */
     return lisp_intern(lisp, tok.lexeme);
   }
   case TOK_ERROR:
@@ -50,12 +75,6 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     return lisp_read_list_tail(lisp, stream);
     break;
   }
-
-  return OBJ_UNDEFINED_TAG;
-  /* default: */
-  /*   wrong("Supplied token was not handled."); */
-  /*   return OBJ_UNDEFINED_TAG; */
-  /* } */
 }
 
 static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
@@ -99,5 +118,4 @@ Object lisp_read(LispEnv *lisp, FILE *stream) {
   Token tok = get_token(stream);
 
   return read_with_token(lisp, tok, stream);
-  
 }

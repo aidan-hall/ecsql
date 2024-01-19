@@ -26,8 +26,9 @@ LispEnv new_lisp_environment() {
 
   static_assert(sizeof(void *) == sizeof(Object), "Can't use clibs/hash.");
   lisp.symbols = kh_init(sym_name);
-  /* lisp.functions = hash_new(); */
-  /* lisp.globals = hash_new(); */
+#define REGISTER_KEYSYM(K) lisp.keysyms.K = lisp_intern(&lisp, s8(#K));
+  LISP_KEYSYMS(REGISTER_KEYSYM);
+#undef REGISTER_KEYSYM
   return lisp;
 }
 
@@ -70,10 +71,11 @@ Object lisp_intern(LispEnv *lisp, s8 string) {
       string = lisp_string_to_s8(lisp, symbol);
       symbol = OBJ_REINTERPRET(symbol, SYMBOL);
     }
-    
+
     /* Add 'name' to the symbol table, "interning" it. */
     int absent;
-    interned_key = kh_put(sym_name, lisp->symbols, (char *)string.data, &absent);
+    interned_key =
+        kh_put(sym_name, lisp->symbols, (char *)string.data, &absent);
     if (absent < 0) {
       wrong("Failed to intern a symbol: couldn't add it to the symbol table.");
     }
@@ -92,4 +94,37 @@ Object lisp_cons(LispEnv *lisp, Object car, Object cdr) {
 
   /* The 2 allows implicit conversion to an array type, if we implement one. */
   return OBJ_BOX_INDEX(location, 2, PAIR);
+}
+
+void lisp_print(LispEnv *lisp, Object object, FILE *stream, int depth) {
+  for (int i = 0; i < depth; i++) {
+    fputc(' ', stream);
+  }
+  switch (OBJ_TYPE(object)) {
+  case OBJ_FLOAT_TAG: {
+    u32 val_bits = (u32)OBJ_UNBOX(object);
+    float val = *(float *)&val_bits;
+    fprintf(stream, "float: %f\n", val);
+  } break;
+  case OBJ_INT_TAG: {
+    i32 val_bits = (i32)OBJ_UNBOX(object);
+    fprintf(stream, "i32: %d (%x), %x\n", val_bits, OBJ_UNBOX(object));
+  } break;
+  case OBJ_STRING_TAG:
+    fprintf(stream, "string: (%x) '%s'\n", object,
+            (char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(object)));
+    break;
+  case OBJ_SYMBOL_TAG:
+    fprintf(stream, "symbol: (%x) '%s'\n", object,
+            (char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(object)));
+    break;
+  case OBJ_PAIR_TAG:
+    fprintf(stream, "cons: %x\n", object);
+    lisp_print(lisp, LISP_CAR(lisp, object), stream, depth + 1);
+    lisp_print(lisp, LISP_CDR(lisp, object), stream, depth + 1);
+    break;
+  default:
+    fprintf(stream, "other type: %x.\n", OBJ_TYPE(object));
+    break;
+  }
 }
