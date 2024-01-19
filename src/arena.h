@@ -17,6 +17,6 @@ arena_allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count);
 
 Arena new_arena(ptrdiff_t capacity);
 
-#define new(a, t, n) (t *)alloc(a, sizeof(t), _Alignof(t), n)
+#define ALLOC(a, t, n) (t *)arena_allocate(a, sizeof(t), _Alignof(t), n)
 
 #endif

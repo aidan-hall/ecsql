@@ -1,98 +1,114 @@
 #include "lexer.h"
+#include "lisp.h"
 #include "arena.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
-/* Consume and return the 1-character token at the given index in 'stream'. */
-static inline Token one_char_token(s8 stream[static 1], size index,
+/* Make and return a 1-character token. */
+static inline Token one_char_token(char value,
                                    TokenType type) {
   /* Move stream past the consumed character, and include it in the returned
    * Token. */
-  stream->data += index + 1;
-  stream->len -= index + 1;
-  return (Token){{&stream->data[-1], 1}, type};
+  return (Token){.lex_char = value, .t = type};
 }
 
-/* Returns a pointer to first non-whitespace, non-comment character in 'stream',
- * or nullptr if one was not found. */
-u8 *skip_whitespace_and_comments(s8 stream[static 1]) {
-  u8 *point = stream->data;
-  const u8 *stream_end = stream->data + stream->len;
+/* /\* Read the portion of stream [start,end) into a malloc'd string. *\/ */
+/* static inline Token multi_character_token(FILE* stream, size start, size len, TokenType type) { */
+/*   /\* Includes NULL terminating byte. *\/ */
+/*   char *buffer = calloc(len + 1, sizeof(char)); */
+/*   fseek(stream, start, SEEK_SET); */
+/*   fread(buffer, sizeof(char), len, stream); */
+/*   return (Token){.lexeme = {buffer, len}, .t = type}; */
+/* } */
 
-  while (point < stream_end) {
-    /* Skip the comment. */
-    if (*point == LEX_COMMENT_CHAR) {
-      point = memchr(point, LEX_COMMENT_END, stream_end - point);
-
-      if (point == nullptr) {
-        /* fputs("end of stream in comment\n", stderr); */
-        return nullptr;
+/* Moves read head to first non-whitespace, non-comment character in 'stream',
+ * or to EOF if one is not found. */
+static void skip_whitespace_and_comments(FILE *stream) {
+  while (!feof(stream)) {
+    /* Skip a comment. */
+    char c = fgetc(stream);
+    if (c == LEX_COMMENT_CHAR) {
+      while (!feof(stream) && c != LEX_COMMENT_END) {
+	c = fgetc(stream);
       }
 
-      /* Move past the newline character. */
-      point += 1;
-    } else if (isspace(*point)) {
-      point++;
-    } else {
+      if (feof(stream)) {
+        fputs("end of stream in comment\n", stderr);
+        return;
+      }
+
+    } else if (!isspace(c)) {
+      /* The character read wasn't whitespace or a comment: put it back in there. */
+      ungetc(c, stream);
       /* Done */
-      return point;
+      return;
     }
   }
 
   /* fputs("end of stream in whitespace\n", stderr); */
-  return nullptr;
+  return;
 }
 
-Token get_token(s8 stream[static 1]) {
-  u8 *point = skip_whitespace_and_comments(stream);
+/* This is the longest length of string my Lisp can handle so it is enough. */
+char buffer[LISP_MAX_STRING_LENGTH+1];
+size buffer_index;
 
-  if (point == nullptr) {
+Token get_token(FILE *stream) {
+  skip_whitespace_and_comments(stream);
+
+  if (feof(stream)) {
     /* End of stream reached. */
-    return (Token){{0}, TOK_END};
+    return (Token){.t = TOK_END};
   }
 
-  size index = point - stream->data;
+  char c = fgetc(stream);
+  /* fputs("Up to char:", stderr); */
+  /* fputc(c, stderr); */
 
   Token res;
-  switch (*point) {
+  switch (c) {
   case TOK_LPAR:
   case TOK_RPAR:
-    return one_char_token(stream, index, *point);
+    /* Parens */
+    return one_char_token(c, c);
   case '"':
     /* String */
-    point++;
-    index++;
-    /* Move point forwards while keeping index at the start of the string data.
-     * TODO: Properly handle escape characters in strings. */
-    point = memchr(point, '"', stream->len - index);
-    if (point == nullptr) {
+    buffer[0] = c = fgetc(stream);
+    buffer_index = 1;
+    while (!feof(stream) && c != '"')
+      buffer[buffer_index++] = c = fgetc(stream);
+    if (feof(stream)) {
       fputs("end of stream while reading string\n", stderr);
-      return (Token){{0}, TOK_ERROR};
+      return (Token){.t = TOK_ERROR};
     }
-
-    /* Update index so &(point+1)[index] is the start of the string */
-    res = (Token){{&stream->data[index], point - &stream->data[index]},
-                  TOK_STRING};
-    stream->len = stream->data + stream->len - point - 1;
-    stream->data = point + 1;
+    /* The last character read was the closing '"'. */
+    buffer[buffer_index - 1] = '\0';
+    res = (Token){.lexeme = {buffer, buffer_index - 1}, .t = TOK_STRING};
+    
     return res;
 
   default:
     /* Single-character tokens */
-    if (strchr(LEXEME_CHARS, *point)) {
-      return one_char_token(stream, index, TOK_LEX_CHAR);
+    if (strchr(LEXEME_CHARS, c)) {
+      return one_char_token(c, TOK_LEX_CHAR);
     }
 
     /* Symbol */
-    while (!strchr(LEX_SYMBOL_TERMINATORS, *point) && !isspace(*point) &&
-           point < stream->data + stream->len) {
-      point++;
+    buffer[0] = c;
+    buffer_index = 1;
+    while (!strchr(LEX_SYMBOL_TERMINATORS, c) && !isspace(c) &&
+           !feof(stream)) {
+      buffer[buffer_index++] = c = fgetc(stream);
     }
-    res = (Token){{&stream->data[index], point - &stream->data[index]},
-                  TOK_SYMBOL};
-    stream->len = stream->data + stream->len - point;
-    stream->data = point;
+    /* The last character might be something we need. */
+    ungetc(c, stream);
+    buffer[buffer_index - 1] = '\0';
+    
+    res = (Token){.lexeme = {buffer, buffer_index - 1}, .t = TOK_SYMBOL};
+    if (strcmp(buffer, ".") == 0) {
+      return (Token){.lex_char = '.', .t = TOK_POINT};
+    }
     return res;
   }
 }
