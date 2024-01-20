@@ -20,6 +20,6 @@ ecsql: $(OBJ) $(DFILES)
 	$(CC) -o $@ $(OBJ) $(LDLIBS)
 
 clean:
-	$(RM) -v $(OBJ) $(DFILES) $(wildcard src/*.d.*) $(wildcard a-*.d) ecsql
+	$(RM) -v $(OBJ) $(DFILES) $(wildcard src/*.d.*) $(wildcard src/*.d) $(wildcard a-*.d) ecsql
 
 include $(DFILES)
