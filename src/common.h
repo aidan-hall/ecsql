@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <uchar.h>
+#include <stdio.h>
 
 typedef uint8_t u8;
 typedef int8_t i8;
@@ -28,4 +29,9 @@ typedef struct {
 #define s8(s)                                                                  \
   (s8) { (u8 *)s, lengthof(s) }
 
+static inline void print_s8(FILE *stream, s8 s) {
+  for (size i = 0; i < s.len; ++i) {
+    fputc(s.data[i], stream);
+  }
+}
 #endif
