@@ -11,7 +11,7 @@ void *arena_allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count)
   ptrdiff_t available = a->end - a->begin - padding;
   if (available < 0 || count > available / size) {
     fputs("ARENA OVERFLOW!\n", stderr);
-    abort(); // one possible out-of-memory policy
+    exit(1); // one possible out-of-memory policy
   }
   void *p = a->begin + padding;
   a->begin += padding + count * size;
