@@ -3,7 +3,7 @@ SRC	:= $(wildcard src/*.c)
 SRC	+= $(wildcard deps/*/*.c)
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
-CFLAGS	+= -g $(CPPFLAGS)
+CFLAGS	+= -g $(CPPFLAGS) -Wall
 
 LDLIBS = -lgccjit -lreadline
 
