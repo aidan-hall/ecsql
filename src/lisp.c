@@ -1,4 +1,5 @@
 #include "lisp.h"
+#include "reader.h"
 #include <libgccjit.h>
 
 void wrong(const char *message) {
@@ -18,6 +19,51 @@ static inline s8 lisp_string_to_s8(LispEnv *lisp, Object string) {
               lisp_string_length(string)};
 }
 
+static inline u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
+  LISP_ASSERT_TYPE(string, STRING);
+  s8 string_s8 = lisp_string_to_s8(lisp, string);
+  if (string_s8.data[string_s8.len] != '\0') {
+    string = lisp_store_string(lisp, string_s8);
+    return (u8 *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(string));
+  } else {
+    return string_s8.data;
+  }
+}
+
+Object lisp_question_mark(LispEnv *lisp, FILE *stream) {
+  return OBJ_BOX(fgetc(stream), CHAR);
+}
+
+/* Build a list of the form (quoter object) */
+static inline Object lisp_quotify(LispEnv *lisp, Object quoter, Object object) {
+  return lisp_cons(lisp, quoter, lisp_cons(lisp, object, OBJ_NIL_TAG));
+}
+
+/* Some built-in reader macros. */
+static Object lisp_quote(LispEnv *lisp, FILE *stream) {
+  return lisp_quotify(lisp, lisp->keysyms.quote, lisp_read(lisp, stream));
+}
+
+static Object lisp_quasiquote(LispEnv *lisp, FILE *stream) {
+  lisp->quasiquote_level++;
+  Object res =
+      lisp_quotify(lisp, lisp->keysyms.quasiquote, lisp_read(lisp, stream));
+  lisp->quasiquote_level--;
+  return res;
+}
+
+static Object lisp_unquote(LispEnv *lisp, FILE *stream) {
+  if (lisp->quasiquote_level <= 0) {
+    wrong("Attempted to unquote outside a quasiquote.");
+    return OBJ_UNDEFINED_TAG;
+  }
+  lisp->quasiquote_level--;
+  Object res =
+      lisp_quotify(lisp, lisp->keysyms.unquote, lisp_read(lisp, stream));
+  lisp->quasiquote_level++;
+  return res;
+}
+
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
   /* A Gigabyte of RAM should do the trick. */
@@ -26,6 +72,11 @@ LispEnv new_lisp_environment() {
 
   static_assert(sizeof(void *) == sizeof(Object), "Can't use clibs/hash.");
   lisp.symbols = kh_init(sym_name);
+  lisp.reader_macros['\''] = lisp_quote;
+  lisp.reader_macros['`'] = lisp_quasiquote;
+  lisp.reader_macros[','] = lisp_unquote;
+  lisp.reader_macros['?'] = lisp_question_mark;
+
 #define REGISTER_KEYSYM(K) lisp.keysyms.K = lisp_intern(&lisp, s8(#K));
   LISP_KEYSYMS(REGISTER_KEYSYM);
 #undef REGISTER_KEYSYM

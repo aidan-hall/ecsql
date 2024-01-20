@@ -34,9 +34,7 @@ Object lisp_list(LispEnv *lisp, ...) {
   return res;
 }
 
-static Object read_with_lex_char(LispEnv *lisp, Token tok, FILE *stream) {}
 static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
-  Object tmp;
   switch (tok.t) {
   case TOK_STRING:
     return lisp_store_string(lisp, tok.lexeme);
@@ -48,7 +46,6 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     /* Only store as a 32-bit integer if its magnitude is small enough. */
     if (*endptr == '\0' && errno == 0 && int_value <= INT32_MAX &&
         int_value >= INT32_MIN) {
-      fputs("Encoding as i32\n", stderr);
       return OBJ_BOX(int_value, INT);
     }
     float float_value = strtof((char *)tok.lexeme.data, (char **)&endptr);
@@ -66,6 +63,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     return OBJ_UNDEFINED_TAG;
   default:
     wrong("Unexpected token.");
+    break;
   case TOK_RPAR:
     wrong("Unexpected closing parenthesis.");
     break;
@@ -74,18 +72,29 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     /* return lisp_cons(lisp, tmp, lisp_read_list_tail(lisp, stream)); */
     return lisp_read_list_tail(lisp, stream);
     break;
+  case TOK_LEX_CHAR: {
+    ReaderMacro macro = lisp->reader_macros[(usize) tok.lex_char];
+    if (macro == nullptr) {
+      wrong("Nonexistent reader macro!");
+      return OBJ_UNDEFINED_TAG;
+    } else {
+      return macro(lisp, stream);
+    }
   }
+  }
+
+  return OBJ_UNDEFINED_TAG;
 }
 
 static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
-  Token tok = get_token(stream);
+  Token tok = get_token(lisp, stream);
   Object tmp;
   switch (tok.t) {
   case TOK_RPAR:
     return OBJ_NIL_TAG;
   case TOK_POINT:
-    tmp = read_with_token(lisp, get_token(stream), stream);
-    tok = get_token(stream);
+    tmp = read_with_token(lisp, get_token(lisp, stream), stream);
+    tok = get_token(lisp, stream);
     if (tok.t != TOK_RPAR) {
       wrong("More than one object follows . in list.");
     }
@@ -115,7 +124,7 @@ Object lisp_read(LispEnv *lisp, FILE *stream) {
   /* if (line == nullptr) */
   /*   return OBJ_UNDEFINED_TAG; */
 
-  Token tok = get_token(stream);
+  Token tok = get_token(lisp, stream);
 
   return read_with_token(lisp, tok, stream);
 }

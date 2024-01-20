@@ -54,7 +54,7 @@ static void skip_whitespace_and_comments(FILE *stream) {
 char buffer[LISP_MAX_STRING_LENGTH+1];
 size buffer_index;
 
-Token get_token(FILE *stream) {
+Token get_token(LispEnv *lisp, FILE *stream) {
   skip_whitespace_and_comments(stream);
 
   if (feof(stream)) {
@@ -84,28 +84,30 @@ Token get_token(FILE *stream) {
     }
     /* The last character read was the closing '"'. */
     buffer[buffer_index - 1] = '\0';
-    res = (Token){.lexeme = {buffer, buffer_index - 1}, .t = TOK_STRING};
+    res = (Token){.lexeme = {(u8*) buffer, buffer_index - 1}, .t = TOK_STRING};
     
     return res;
 
   default:
-    /* Single-character tokens */
-    if (strchr(LEXEME_CHARS, c)) {
+    /* Reader macros: represented by individual ASCII characters. */
+    if (0 <= c && c < 128) {
+      if (lisp->reader_macros[(size) c] != nullptr) {
       return one_char_token(c, TOK_LEX_CHAR);
+      }
     }
 
     /* Symbol */
     buffer[0] = c;
     buffer_index = 1;
     while (!strchr(LEX_SYMBOL_TERMINATORS, c) && !isspace(c) &&
-           !feof(stream)) {
+           !feof(stream) && lisp->reader_macros[(size) c] == nullptr) {
       buffer[buffer_index++] = c = fgetc(stream);
     }
     /* The last character might be something we need. */
     ungetc(c, stream);
     buffer[buffer_index - 1] = '\0';
     
-    res = (Token){.lexeme = {buffer, buffer_index - 1}, .t = TOK_SYMBOL};
+    res = (Token){.lexeme = {(u8*)buffer, buffer_index - 1}, .t = TOK_SYMBOL};
     if (strcmp(buffer, ".") == 0) {
       return (Token){.lex_char = '.', .t = TOK_POINT};
     }

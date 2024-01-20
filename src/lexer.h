@@ -2,16 +2,17 @@
 #define LEXER_H
 
 #include "common.h"
+#include "lisp.h"
 #include <stdio.h>
 
-#define LEX_COMMENT_CHAR u8';'
-#define LEX_COMMENT_END u8'\n'
+#define LEX_COMMENT_CHAR ';'
+#define LEX_COMMENT_END '\n'
 
 /* Characters that should each be treated as an individual lexeme. */
-#define LEXEME_CHARS u8"',`@"
+/* #define LEXEME_CHARS u8"',`@" */
 
 /* Non-space characters that terminate a symbol. */
-#define LEX_SYMBOL_TERMINATORS (LEXEME_CHARS u8"\"()")
+#define LEX_SYMBOL_TERMINATORS "\"()"
 
 typedef enum : u8 {
   TOK_ERROR = '!',
@@ -36,6 +37,6 @@ typedef struct {
 } Token;
 
 /* Consumes 1 token from the stream. */
-Token get_token(FILE *stream);
+Token get_token(LispEnv *lisp, FILE *stream);
 
 #endif
