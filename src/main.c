@@ -31,11 +31,14 @@ int main(int argc, char *argv[]) {
   /* } */
   LispEnv lisp = new_lisp_environment();
   Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
-  lisp_print(&lisp, l, stdout, 0);
+  lisp_print(&lisp, l, stdout);
+  fputc('\n', stdout);
   Object first;
   do {
-    first = lisp_read(&lisp, stdin);
-    lisp_print(&lisp, first, stdout, 0);
-  } while (first != OBJ_UNDEFINED_TAG);
+    fputs(LISP_PROMPT, stdout);
+    first = lisp_eval(&lisp, lisp_read(&lisp, stdin));
+    lisp_print(&lisp, first, stdout);
+    fputc('\n', stdout);
+  } while (first != OBJ_UNDEFINED_TAG && !feof(stdin));
   return 0;
 }
