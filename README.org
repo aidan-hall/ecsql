@@ -54,6 +54,8 @@ Inspired by Flecs, it would be convenient to represent the entire
 state of a game as list structure, especially for (de-)serialisation.
 *** TODO Lisp Compiler Target
 Options:
+**** Naive Interpreter
+Potentially useful for testing and bootstrapping purposes.
 **** LLVM IR
 | Advantages   | Disadvantages                     |
 |--------------+-----------------------------------|
@@ -246,9 +248,25 @@ The bare essential built-in types are:
 - [ ] Fixed-length vectors(?)
 - [ ] Struct    
 
-**** TODO Scope and Namespaces
+**** TODO Scope, Namespaces etc.
 - Lexical
-- Lisp-1
+- Lisp-1?
+  - Lisp-1 is more conceptually elegant, but Lisp-2 may be easier/more
+    efficient to compile.
+- There's a question of how to implement scopes.  If they aren't
+  needed at run-time, it may be acceptable to use a naive alist
+  structure.
+- Conceptually pure approach: Only implement local/lexical binding
+  through lambda parameter lists, though this requires either Lisp-1
+  or the "special case" first-position ~lambda~ of Common Lisp.
+- Variable-length argument lists are a similar consideration: An
+  actual Lisp list in the "AST" can easily be converted to a
+  variable-length argument pack in libgccjit.  On the other hand, in
+  real Lisps, variable argument lists are treated as actual lists by
+  the callee too, so the obvious solution /may/ be sufficient.
+  - Solution: Put /all/ the arguments into a list, and for
+    variable-length argument lists, make the "rest" parameter the
+    ~cdr~ past a certain point.
 **** TODO Memory Allocation
 - Copying GC.
 - Allocate in increments of 64-bit cells?
