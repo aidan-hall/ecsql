@@ -9,12 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static Object lisp_car(LispEnv *lisp, Object pair) {
-  return *lisp_cell_at(lisp, OBJ_UNBOX_INDEX(pair) + LISP_CAR_INDEX);
-}
-static Object lisp_cdr(LispEnv *lisp, Object pair) {
-  return *lisp_cell_at(lisp, OBJ_UNBOX_INDEX(pair) + LISP_CDR_INDEX);
-}
 
 int main(int argc, char *argv[]) {
   /* if (argc <= 1) */
