@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 /* #include <readline/readline.h> */
 /* #include <readline/history.h> */
@@ -127,4 +128,11 @@ Object lisp_read(LispEnv *lisp, FILE *stream) {
   Token tok = get_token(lisp, stream);
 
   return read_with_token(lisp, tok, stream);
+}
+
+Object lisp_read_from_string(LispEnv *lisp, s8 str) {
+  FILE *stream = fmemopen(str.data, str.len, "r");
+  Object result = lisp_read(lisp, stream);
+  fclose(stream);
+  return result;
 }
