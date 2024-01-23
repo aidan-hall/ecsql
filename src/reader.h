@@ -8,5 +8,7 @@
 Object lisp_read(LispEnv *lisp, FILE *stream);
 Object lisp_read_from_string(LispEnv *lisp, s8 str);
 
+#define OBJS(LISP, S) (lisp_read_from_string(LISP, s8(S)))
+
 #define LISP_PROMPT "* "
 #endif
