@@ -204,5 +204,6 @@ Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
 Object lisp_evaluate(LispEnv *lisp, Object expression, Object context);
 Object lisp_eval(LispEnv *lisp, Object expression);
 Object lisp_apply(LispEnv *lisp, Object function, Object arguments);
+Object lisp_type_of(LispEnv *lisp, Object obj);
 
 #endif

@@ -281,19 +281,19 @@ static Object prim_print(LispEnv *lisp, Object args) {
   return OBJ_NIL_TAG;
 }
 
-static Object lisp_add_primitive(LispEnv *lisp, s8 spec, PrimitiveFunction fn,
+static Object prim_type_of(LispEnv *lisp, Object args) {
+  return lisp_type_of(lisp, LISP_CAR(lisp, args));
+}
+
+static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params, PrimitiveFunction fn,
                                  khash_t(primitives) * primitives) {
-  FILE *spec_stream = fmemopen(spec.data, spec.len, "r");
-  Object name_sym = lisp_read(lisp, spec_stream);
   Object prim_obj = OBJ_REINTERPRET_RAWTAG(name_sym, OBJ_PRIMITIVE_TAG);
 
   InterpreterPrimitive prim;
   prim.fn = fn;
 
   /* The input argument type list may be stack-allocated. */
-  prim.argument_types = lisp_read(lisp, spec_stream);
-
-  fclose(spec_stream);
+  prim.argument_types = params;
 
   u32 fn_iter = kh_get(primitives, primitives, prim_obj);
   if (fn_iter != kh_end(primitives)) {
@@ -353,32 +353,35 @@ LispEnv new_lisp_environment() {
                      lisp_store_stream_handle(&lisp, stdout));
   lisp_define_global(&lisp, lisp.keysyms.stderr,
                      lisp_store_stream_handle(&lisp, stderr));
-
-  lisp_add_primitive(&lisp, s8("+2f (f32 f32)"), prim_add2f,
+#define OBJSX(S) OBJS(&lisp, S)
+  lisp_add_primitive(&lisp, OBJSX("+2f"), OBJSX("(f32 f32)"), prim_add2f,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("* t"), prim_mul, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("quit ()"), lisp_quit, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("fopen (string string)"), lisp_open_file,
+  lisp_add_primitive(&lisp, OBJSX("*"), OBJSX("t"), prim_mul, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, OBJSX("quit"), OBJSX("()"), lisp_quit, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, OBJSX("fopen"), OBJSX("(string string)"), lisp_open_file,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("fclose (file)"), lisp_close_stream,
+  lisp_add_primitive(&lisp, OBJSX("fclose"), OBJSX("(file)"), lisp_close_stream,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("getc (file)"), lisp_getc_stream,
+  lisp_add_primitive(&lisp, OBJSX("getc"), OBJSX("(file)"), lisp_getc_stream,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("read-stream (file)"), prim_read,
+  lisp_add_primitive(&lisp, OBJSX("read-stream"), OBJSX("(file)"), prim_read,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("car (pair)"), lisp_car,
+  lisp_add_primitive(&lisp, OBJSX("car"), OBJSX("(pair)"), lisp_car,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("cdr (pair)"), lisp_cdr,
+  lisp_add_primitive(&lisp, OBJSX("cdr"), OBJSX("(pair)"), lisp_cdr,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("cons ()"), prim_cons, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("list t"), prim_list, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("eq (t t)"), prim_eq, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("eql (t t)"), prim_eql,
+  lisp_add_primitive(&lisp, OBJSX("cons"), OBJSX("(t t)"), prim_cons, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, OBJSX("list"), OBJSX("t"), prim_list, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, OBJSX("eq"), OBJSX("(t t)"), prim_eq, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, OBJSX("eql"), OBJSX("(t t)"), prim_eql,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("assert (t)"), prim_assert,
+  lisp_add_primitive(&lisp, OBJSX("assert"), OBJSX("(t)"), prim_assert,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("print (t)"), prim_print,
+  lisp_add_primitive(&lisp, OBJSX("print"), OBJSX("(t)"), prim_print,
                      lisp.primitive_functions);
+  lisp_add_primitive(&lisp, OBJSX("type-of"), OBJSX("(t)"), prim_type_of,
+		     lisp.primitive_functions);
+#undef OBJSX
   return lisp;
 }
 
@@ -470,7 +473,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
   /* for (int i = 0; i < depth; i++) { */
   /*   fputc(' ', stream); */
   /* } */
-  switch (OBJ_TYPE(object)) {
+  switch ((enum ObjectTag) OBJ_TYPE(object)) {
   case OBJ_FLOAT_TAG:
     fprintf(stream, "%f", lisp_unbox_float(object));
     break;
@@ -497,8 +500,14 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     lisp_print_list(lisp, object, stream);
     break;
   case OBJ_FILE_PTR_TAG:
-    fprintf(stream, "#<stream:%lx>", OBJ_UNBOX(object));
+    fprintf(stream, "#(stream . %ld)", OBJ_UNBOX(object));
     break;
+  case OBJ_UNDEFINED_TAG:
+    fprintf(stream, "#undefined");
+  case OBJ_PRIMITIVE_TAG:
+    fprintf(stream, "(function ");
+    lisp_print(lisp, OBJ_REINTERPRET(object, SYMBOL), stream);
+    fputs(")", stream);
   default:
     fprintf(stream, "other type: %lx\n", OBJ_TYPE(object));
     wrong("unprintable string");
@@ -576,7 +585,7 @@ Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
   return lisp_cons(lisp, lisp_bind_recur(lisp, parameters, arguments), context);
 }
 
-static inline Object lisp_type_of(LispEnv *lisp, Object obj) {
+Object lisp_type_of(LispEnv *lisp, Object obj) {
   /* This explicit cast triggers a warning if we miss a case here. */
   switch ((enum ObjectTag)OBJ_TYPE(obj)) {
   case OBJ_NIL_TAG:
