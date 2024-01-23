@@ -29,6 +29,7 @@ typedef struct {
   F(quasiquote)                                                                \
   F(unquote)                                                                   \
   F(splice)                                                                    \
+  F(function)                                                           \
   F(stdin)                                                                     \
   F(stdout)                                                                    \
   F(stderr)                                                                    \

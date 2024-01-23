@@ -491,14 +491,14 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     lisp_print_list(lisp, object, stream);
     break;
   case OBJ_FILE_PTR_TAG:
-    fprintf(stream, "#(stream . %ld)", OBJ_UNBOX(object));
+    fprintf(stream, "#(stream %ld)", OBJ_UNBOX(object));
     break;
   case OBJ_UNDEFINED_TAG:
     fprintf(stream, "#undefined");
+    break;
   case OBJ_PRIMITIVE_TAG:
-    fprintf(stream, "(function ");
-    lisp_print(lisp, OBJ_REINTERPRET(object, SYMBOL), stream);
-    fputs(")", stream);
+    lisp_print(lisp, lisp_list(lisp, lisp->keysyms.function, OBJ_REINTERPRET(object, SYMBOL), OBJ_NIL_TAG), stream);
+    break;
   default:
     fprintf(stream, "other type: %lx\n", OBJ_TYPE(object));
     wrong("unprintable string");
@@ -762,6 +762,11 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
       return LISP_CAR(lisp, tmp);
+    
+    } else if (EQ(tmp, lisp->keysyms.function)) {
+      tmp = LISP_CDR(lisp, expression);
+      LISP_ASSERT_TYPE(tmp, PAIR);
+      return lisp_lookup_function(lisp, LISP_CAR(lisp, tmp), context);
 
     } else if (EQ(tmp, lisp->keysyms.quasiquote)) {
       return lisp_evaluate_quasiquoted(
