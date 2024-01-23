@@ -38,16 +38,25 @@ typedef struct {
   F(progn)                                                                     \
   F(define)                                                                    \
   F(setq)                                                                      \
-  F(lambda)
+  F(lambda)                                                             \
+  F(file)                                                               \
+  F(string)                                                             \
+  F(pair)                                                               \
+  F(i32)                                                                \
+  F(f32)                                                                \
+  F(undefined)                                                          \
+  F(symbol)                                                             \
+  F(primitive)                                                          \
+  F(closure)                                                            \
+  F(character)
 
 struct LispEnv;
 typedef Object (*ReaderMacro)(struct LispEnv *lisp, FILE *stream);
+typedef Object (*PrimitiveFunction)(struct LispEnv *lisp, Object arguments);
 typedef struct {
-  Object (*function)(struct LispEnv *lisp, Object arguments);
-  int n_arguments; /* -1 if variadic */
-  /* null if type-generic, array[n_arguments] for fixed args */
-  Object *argument_types;
-  Object context;
+  PrimitiveFunction fn;
+  /* t if type-generic/variadic, list for fixed args */
+  Object argument_types;
 } InterpreterPrimitive;
 KHASH_MAP_INIT_INT64(primitives, InterpreterPrimitive);
 

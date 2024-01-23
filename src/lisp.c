@@ -281,11 +281,19 @@ static Object prim_print(LispEnv *lisp, Object args) {
   return OBJ_NIL_TAG;
 }
 
-static Object lisp_add_primitive(LispEnv *lisp, s8 name,
-                                 InterpreterPrimitive fn,
+static Object lisp_add_primitive(LispEnv *lisp, s8 spec, PrimitiveFunction fn,
                                  khash_t(primitives) * primitives) {
-  Object name_sym = lisp_intern(lisp, name);
+  FILE *spec_stream = fmemopen(spec.data, spec.len, "r");
+  Object name_sym = lisp_read(lisp, spec_stream);
   Object prim_obj = OBJ_REINTERPRET_RAWTAG(name_sym, OBJ_PRIMITIVE_TAG);
+
+  InterpreterPrimitive prim;
+  prim.fn = fn;
+
+  /* The input argument type list may be stack-allocated. */
+  prim.argument_types = lisp_read(lisp, spec_stream);
+
+  fclose(spec_stream);
 
   u32 fn_iter = kh_get(primitives, primitives, prim_obj);
   if (fn_iter != kh_end(primitives)) {
@@ -299,14 +307,7 @@ static Object lisp_add_primitive(LispEnv *lisp, s8 name,
     return OBJ_UNDEFINED_TAG;
   }
 
-  /* The input argument type list may be stack-allocated. */
-  if (fn.argument_types != nullptr) {
-    Object *arg_list = calloc(fn.n_arguments, sizeof(Object));
-    memcpy(arg_list, fn.argument_types, fn.n_arguments * sizeof(Object));
-    fn.argument_types = arg_list;
-  }
-
-  kh_value(primitives, fn_iter) = fn;
+  kh_value(primitives, fn_iter) = prim;
 
   Object sym_iter =
       lisp_add_to_namespace(lisp, lisp->functions, name_sym, prim_obj);
@@ -353,57 +354,30 @@ LispEnv new_lisp_environment() {
   lisp_define_global(&lisp, lisp.keysyms.stderr,
                      lisp_store_stream_handle(&lisp, stderr));
 
-  lisp_add_primitive(
-      &lisp, s8("+2f"),
-      (InterpreterPrimitive){prim_add2f, 2,
-                             (Object[]){OBJ_FLOAT_TAG, OBJ_FLOAT_TAG}},
-      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("*"),
-                     (InterpreterPrimitive){prim_mul, -1, nullptr},
+  lisp_add_primitive(&lisp, s8("+2f (f32 f32)"), prim_add2f,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("quit"),
-                     (InterpreterPrimitive){lisp_quit, 0, nullptr},
+  lisp_add_primitive(&lisp, s8("* t"), prim_mul, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, s8("quit ()"), lisp_quit, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, s8("fopen (string string)"), lisp_open_file,
                      lisp.primitive_functions);
-  lisp_add_primitive(
-      &lisp, s8("fopen"),
-      (InterpreterPrimitive){lisp_open_file, 2,
-                             (Object[]){OBJ_STRING_TAG, OBJ_STRING_TAG}},
-      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("fclose"),
-                     (InterpreterPrimitive){lisp_close_stream, 1,
-                                            (Object[]){OBJ_FILE_PTR_TAG}},
+  lisp_add_primitive(&lisp, s8("fclose (file)"), lisp_close_stream,
                      lisp.primitive_functions);
-  lisp_add_primitive(
-      &lisp, s8("getc"),
-      (InterpreterPrimitive){lisp_getc_stream, 1, (Object[]){OBJ_FILE_PTR_TAG}},
-      lisp.primitive_functions);
-  lisp_add_primitive(
-      &lisp, s8("read-stream"),
-      (InterpreterPrimitive){prim_read, 1, (Object[]){OBJ_FILE_PTR_TAG}},
-      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("car"),
-                     (InterpreterPrimitive){lisp_car, 1, nullptr},
+  lisp_add_primitive(&lisp, s8("getc (file)"), lisp_getc_stream,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("cdr"),
-                     (InterpreterPrimitive){lisp_cdr, 1, nullptr},
+  lisp_add_primitive(&lisp, s8("read-stream (file)"), prim_read,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("cons"),
-                     (InterpreterPrimitive){prim_cons, 2, nullptr},
+  lisp_add_primitive(&lisp, s8("car (pair)"), lisp_car,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("list"),
-                     (InterpreterPrimitive){prim_list, -1, nullptr},
+  lisp_add_primitive(&lisp, s8("cdr (pair)"), lisp_cdr,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("eq"),
-                     (InterpreterPrimitive){prim_eq, 2, nullptr},
+  lisp_add_primitive(&lisp, s8("cons ()"), prim_cons, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, s8("list t"), prim_list, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, s8("eq (t t)"), prim_eq, lisp.primitive_functions);
+  lisp_add_primitive(&lisp, s8("eql (t t)"), prim_eql,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("eql"),
-                     (InterpreterPrimitive){prim_eql, 2, nullptr},
+  lisp_add_primitive(&lisp, s8("assert (t)"), prim_assert,
                      lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("assert"),
-                     (InterpreterPrimitive){prim_assert, 1, nullptr},
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, s8("print"),
-                     (InterpreterPrimitive){prim_print, 1, nullptr},
+  lisp_add_primitive(&lisp, s8("print (t)"), prim_print,
                      lisp.primitive_functions);
   return lisp;
 }
@@ -602,33 +576,65 @@ Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
   return lisp_cons(lisp, lisp_bind_recur(lisp, parameters, arguments), context);
 }
 
-static Object lisp_check_argument_types(LispEnv *lisp,
-                                        InterpreterPrimitive prim,
-                                        Object arguments) {
-  if (prim.n_arguments >= 0) { /* < 0 means variadic */
-    if (prim.argument_types != nullptr) {
-      Object rem_args = arguments;
-      for (int i = 0; i < prim.n_arguments;
-           ++i, rem_args = LISP_CDR(lisp, rem_args)) {
-        if (OBJ_TYPE(rem_args) == OBJ_NIL_TAG) {
-          wrong("Too few arguments to primitive.");
-          return OBJ_UNDEFINED_TAG;
-        } else if (prim.argument_types[i] !=
-                   OBJ_TYPE(LISP_CAR(lisp, rem_args))) {
-          wrong("Wrong type of argument to primitive.");
-          return OBJ_UNDEFINED_TAG;
-        }
-      }
-      if (OBJ_TYPE(rem_args) != OBJ_NIL_TAG) {
-        wrong("Too many arguments to primitive.");
-        return OBJ_UNDEFINED_TAG;
-      }
-    } else if (lisp_length(lisp, arguments) != prim.n_arguments) {
-      wrong("Wrong number of arguments to primitive.");
-      return OBJ_UNDEFINED_TAG;
-    }
+static inline Object lisp_type_of(LispEnv *lisp, Object obj) {
+  /* This explicit cast triggers a warning if we miss a case here. */
+  switch ((enum ObjectTag)OBJ_TYPE(obj)) {
+  case OBJ_NIL_TAG:
+    return lisp->keysyms.nil;
+  case OBJ_INT_TAG:
+    return lisp->keysyms.i32;
+  case OBJ_STRING_TAG:
+    return lisp->keysyms.string;
+  case OBJ_FLOAT_TAG:
+    return lisp->keysyms.f32;
+  case OBJ_CHAR_TAG:
+    return lisp->keysyms.character;
+  case OBJ_UNDEFINED_TAG:
+    return lisp->keysyms.undefined;
+  case OBJ_SYMBOL_TAG:
+    return lisp->keysyms.symbol;
+  case OBJ_FILE_PTR_TAG:
+    return lisp->keysyms.file;
+  case OBJ_PRIMITIVE_TAG:
+    return lisp->keysyms.primitive;
+  case OBJ_CLOSURE_TAG:
+    return lisp->keysyms.closure;
+  case OBJ_PAIR_TAG:
+    return lisp->keysyms.pair;
   }
-  return lisp->keysyms.t;
+  wrong("Invalid type tag of object.");
+  return OBJ_UNDEFINED_TAG;
+}
+
+static inline bool lisp_type_spec_matches(LispEnv *lisp, Object value,
+                                          Object spec) {
+  if (EQ(spec, lisp->keysyms.t)) {
+    /* Variadic argument list accepts anything. */
+    return true;
+  }
+
+  while (OBJ_TYPE(value) == OBJ_PAIR_TAG && OBJ_TYPE(spec) == OBJ_PAIR_TAG) {
+    if (!lisp_type_spec_matches(lisp, LISP_CAR(lisp, value),
+                                LISP_CAR(lisp, spec)))
+      return false;
+    value = LISP_CDR(lisp, value);
+    spec = LISP_CDR(lisp, spec);
+  }
+
+  /* Handle end of list. */
+  if (OBJ_TYPE(value) == OBJ_NIL_TAG && OBJ_TYPE(spec) == OBJ_NIL_TAG)
+    return true;
+
+  return EQ(lisp_type_of(lisp, value), spec);
+}
+
+static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
+                                      Object arguments) {
+  bool res = lisp_type_spec_matches(lisp, arguments, prim.argument_types);
+  if (!res) {
+    wrong("Invalid arguments to primitive function.");
+  }
+  return res;
 }
 
 Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
@@ -638,10 +644,10 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
     InterpreterPrimitive prim =
         kh_value(lisp->primitive_functions,
                  kh_get(primitives, lisp->primitive_functions, function));
-    if (lisp_false(lisp_check_argument_types(lisp, prim, arguments))) {
+    if (!lisp_check_argument_types(lisp, prim, arguments)) {
       return OBJ_UNDEFINED_TAG;
     }
-    return prim.function(lisp, arguments);
+    return prim.fn(lisp, arguments);
   }
   default:
     wrong("Unsupported type of function.");
