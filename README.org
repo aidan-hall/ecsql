@@ -99,7 +99,7 @@ the conditional and switch instructions.
      expression nesting level).
 3. Evaluator: libgccjit or simple interpreter.
 ** Implementation
-*** TODO Lisp [2/10]
+*** TODO Lisp [5/14]
 **** DONE Lexer
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-01-11 Thu 18:11] \\
@@ -241,14 +241,21 @@ Strings and symbols should probably be handled differently to keep
 things efficient.
 
 The bare essential built-in types are:
-- [ ] Integer
-- [ ] Double
-- [ ] String
-- [ ] Lisp machinery types (e.g. closure, symbol, cons cell)
+- [X] Integer
+- [X] Double
+- [X] String
+- [X] Symbol
+- [X] Pair
+- [ ] Primitive function
+- [ ] Closure (lambda)
+- [ ] Compiled Closure(?)
 - [ ] Fixed-length vectors(?)
 - [ ] Struct    
 
-**** TODO Scope, Namespaces etc.
+**** DOING Scope, Namespaces etc.
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:31]
+:END:
 - Lexical
 - Lisp-1?
   - Lisp-1 is more conceptually elegant, but Lisp-2 may be easier/more
@@ -267,31 +274,80 @@ The bare essential built-in types are:
   - Solution: Put /all/ the arguments into a list, and for
     variable-length argument lists, make the "rest" parameter the
     ~cdr~ past a certain point.
-**** TODO Memory Allocation
-- Copying GC.
+**** DONE Memory Allocation
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-01-22 Mon 10:31] \\
+  Garbage collection is actually quite low-priority, so we can defer it
+  until we know we have time for it.
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:31]
+:END:
 - Allocate in increments of 64-bit cells?
 - The /directly referenced/ values of global variables can be placed
   in a "static" data store, though this is a small optimisation.
-**** TODO Pure C Parser
-- [ ] List structure
-- [ ] Literals
-- [ ] ~'~, ~`~, ~,~, ~,@~.
-**** TODO [#C] Parser with Macros
+**** TODO Copying GC
+**** DONE Pure C Parser
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-01-22 Mon 10:35] \\
+  Actually implemented reader macro support with function pointers.  It
+  should be possible to write new ones as compiled functions.
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:34]
+:END:
+- [X] List structure
+- [X] Literals
+- [X] ~'~, ~`~, ~,~, ~?~
+- [ ] ~,@~: Requires more context, and quite niche
+**** DONE [#C] Parser with Macros
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-01-22 Mon 10:37] \\
+  See [[*Pure C Parser]].
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:37]
+:END:
 Macros are a productivity multiplier that may prove necessary in order
 to complete the project on time.
-***** TODO [#B] Backquote
+**** TODO [#B] Splicing Unquote
 - This feature is essential for the ergonomics of a macro system.
 - If not implemented "properly" as a reader macro, it would be easy
   enough to hard-code it into a pure C reader.
-***** TODO [#C] Read Macros
+***** DONE [#C] Read Macros
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-01-22 Mon 10:38] \\
+  See [[*Pure C Parser]].
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:38]
+:END:
 **** TODO Code Generation
 **** TODO [#C] Optimisations
-- Just turn on the feature in LLVM?
-**** TODO REPL
+- Just turn on the feature in the code generator.
+**** DOING REPL
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:32]
+:END:
 Basically necessary to the way Lisp should function, including macros.
-**** TODO Error Handling
-Probably just halt with a message/trace, or whatever is built into
-LLVM?
+- [X] Read
+- [ ] Eval
+- [X] Print: This will need extension every time we add a fundamental
+  type, but 
+- [ ] Loop
+**** DOING Error Handling
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-01-22 Mon 10:59]
+:END:
+Ideally this should be entirely handled by the ~wrong~ function.
+Options:
+#+attr_org: :radio t
+- [ ] Invalid type/error object (de facto approach)
+- [ ] setjmp/longjump
+**** TODO [#C] LValues
+- ~(setf place value)~: ~place~ must be an lvalue.
+- In C/libgccjit, lvalues are a subkind of rvalues (normal values).
+- Issues:
+  - Can't have references to globals, outside Lisp memory.
+  - Potential efficiency cost, especially for struct accessors.
+**** TODO Struct Types
+- Use libgccjit's structs for reflection etc.
+Requirements:
+- [ ] Getters
+- [ ] *Setters*: Do we attempt "generalised variables"?
+- [ ] Field types: All fundamental types, and
 *** TODO ECS [0/4]
 **** TODO Component Store
 **** TODO Entity IDs
