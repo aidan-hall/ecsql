@@ -28,17 +28,28 @@ typedef struct {
   F(quote)                                                                     \
   F(quasiquote)                                                                \
   F(unquote)                                                                   \
-  F(splice)                                                             \
-  F(stdin)                                                              \
-  F(stdout)                                                             \
-  F(stderr)                                                             \
-  F(or)                                                                 \
-  F(cond)                                                               \
-  F(and)
+  F(splice)                                                                    \
+  F(stdin)                                                                     \
+  F(stdout)                                                                    \
+  F(stderr)                                                                    \
+  F(or)                                                                        \
+  F(cond)                                                                      \
+  F(and)                                                                       \
+  F(progn)                                                                     \
+  F(define)                                                                    \
+  F(setq)                                                                      \
+  F(lambda)
 
 struct LispEnv;
 typedef Object (*ReaderMacro)(struct LispEnv *lisp, FILE *stream);
-typedef Object (*InterpreterPrimitive)(struct LispEnv *lisp, Object arguments);
+typedef struct {
+  Object (*function)(struct LispEnv *lisp, Object arguments);
+  int n_arguments; /* -1 if variadic */
+  /* null if type-generic, array[n_arguments] for fixed args */
+  Object *argument_types;
+  Object context;
+} InterpreterPrimitive;
+KHASH_MAP_INIT_INT64(primitives, InterpreterPrimitive);
 
 #define LISP_MAX_OPEN_STREAMS (16)
 
@@ -52,21 +63,22 @@ typedef struct LispEnv {
   khash_t(sym_name) * symbols;
   /* Object(symbol) → gcc_jit_function* */
   /* hash_t *functions; */
-  InterpreterPrimitive primitives[64];
-  u8 n_primitives;
-  /* Object(symbol) → gcc_jit_lvalue* of global variables. */
+  khash_t(primitives) * primitive_functions;
+  /* Object(symbol) → gcc_jit_lvalue* of global variables(?). */
   SymbolTable *globals;
   SymbolTable *functions;
   int quasiquote_level;
   FILE *open_streams[LISP_MAX_OPEN_STREAMS];
-  /* Each reader macro is installed to an ASCII character. */
+  /* Each reader macro is installed to an ASCII character index in here. */
   ReaderMacro reader_macros[128];
   struct {
 #define DECL_KEYSYM(K) Object K;
     LISP_KEYSYMS(DECL_KEYSYM)
 #undef DECL_KEYSYM
-    /* The Lisp symbols we want for these are also C keywords so they need special treatment. */
-      Object if_k;              /* if */
+    /* The Lisp symbols we want for these are also C keywords so they need
+     * special treatment. */
+    Object if_k;    /* if */
+    Object while_k; /* while */
   } keysyms;
 } LispEnv;
 
@@ -100,7 +112,7 @@ static inline Object *lisp_cell_at(LispEnv *lisp, size index) {
 
 /* 5-bit object type tag: allows up to 32 built-in types */
 enum ObjectTag : Object {
-/* Atomic objects (evaluate to themselves) */
+  /* Atomic objects (evaluate to themselves) */
   OBJ_NIL_TAG = 0,
   OBJ_STRING_TAG,
   OBJ_CHAR_TAG,
@@ -111,6 +123,7 @@ enum ObjectTag : Object {
   OBJ_UNDEFINED_TAG,
   OBJ_SYMBOL_TAG,
   OBJ_PAIR_TAG,
+  OBJ_GLOBAL_VAR_TAG,
   OBJ_PRIMITIVE_TAG,
   OBJ_CLOSURE_TAG
 };
@@ -121,8 +134,9 @@ enum ObjectTag : Object {
 /* static inline Object OBJ_BOX(u64 value, u64 tag) { */
 /*   return (Object)((value << OBJ_TAG_LENGTH) | OBJ_TAG_NAME(tag)); */
 /* } */
-#define OBJ_BOX(VALUE, TAG)                                                    \
-  ((Object)(((VALUE) << (OBJ_TAG_LENGTH)) | OBJ_TAG_NAME(TAG)))
+#define OBJ_BOX_RAWTAG(VALUE, RAWTAG)                                          \
+  ((Object)(((VALUE) << (OBJ_TAG_LENGTH)) | (RAWTAG)))
+#define OBJ_BOX(VALUE, TAG) OBJ_BOX_RAWTAG(VALUE, OBJ_TAG_NAME(TAG))
 /* static inline Object OBJ_BOX_INDEX(u64 index, u16 metadata, u64 tag) { */
 /*   return OBJ_BOX((index << LISP_INDEX_METADATA_LENGTH) | metadata, tag); */
 /* } */
@@ -132,11 +146,19 @@ enum ObjectTag : Object {
 #define OBJ_UNBOX_INDEX(BOX) (BOX >> LISP_INDEX_OFFSET)
 #define OBJ_UNBOX_METADATA(BOX)                                                \
   ((BOX & LISP_INDEX_METADATA_MASK) >> OBJ_TAG_LENGTH)
-#define OBJ_REINTERPRET(OBJ, NEWTAG) ((OBJ & OBJ_MASK) | OBJ_TAG_NAME(NEWTAG))
+#define OBJ_REINTERPRET_RAWTAG(OBJ, NEWTAG) ((OBJ & OBJ_MASK) | (NEWTAG))
+#define OBJ_REINTERPRET(OBJ, NEWTAG)                                           \
+  OBJ_REINTERPRET_RAWTAG(OBJ, OBJ_TAG_NAME(NEWTAG))
 
 static inline float lisp_unbox_float(Object box) {
-  u32 val_bits = (u32)OBJ_UNBOX(box);
-  return *(float *)&val_bits;
+  if (OBJ_TYPE(box) == OBJ_FLOAT_TAG) {
+    u32 val_bits = (u32)OBJ_UNBOX(box);
+    return *(float *)&val_bits;
+  } else if (OBJ_TYPE(box) == OBJ_INT_TAG) {
+    return (float)(i32)OBJ_UNBOX(box);
+  } else {
+    return OBJ_UNDEFINED_TAG;
+  }
 }
 
 void wrong(const char *message);
@@ -156,9 +178,21 @@ void wrong(const char *message);
 #define LISP_CDR(LISP, PAIR)                                                   \
   (*lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
 
+static inline bool lisp_true(Object value) {
+  static_assert(!OBJ_NIL_TAG, "Lisp and C have the same truthy semantics.");
+  return value;
+}
+
+static inline bool lisp_false(Object value) { return !lisp_true(value); }
+
+static inline Object lisp_bool(LispEnv *lisp, bool value) {
+  return value ? lisp->keysyms.t : OBJ_NIL_TAG;
+}
+
 Object lisp_cons(LispEnv *lisp, Object car, Object cdr);
 void lisp_print(LispEnv *lisp, Object object, FILE *stream);
-Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments, Object context);
+Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
+                 Object context);
 Object lisp_evaluate(LispEnv *lisp, Object expression, Object context);
 Object lisp_eval(LispEnv *lisp, Object expression);
 Object lisp_apply(LispEnv *lisp, Object function, Object arguments);
