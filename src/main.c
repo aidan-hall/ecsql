@@ -28,9 +28,15 @@ int main(int argc, char *argv[]) {
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);
   Object first;
+  Object eof = OBJ_BOX(EOF, CHAR);
   do {
     fputs(LISP_PROMPT, stdout);
-    first = lisp_eval(&lisp, lisp_read(&lisp, stdin));
+    first = lisp_read(&lisp, stdin);
+    if (EQ(first, eof)) {
+      puts("End of file reached. Goodbye.");
+      return 0;
+    }
+    first = lisp_eval(&lisp, first);
     lisp_print(&lisp, first, stdout);
     fputc('\n', stdout);
   } while (first != OBJ_UNDEFINED_TAG && !feof(stdin));

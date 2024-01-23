@@ -61,7 +61,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     wrong("Lexical error.");
     break;
   case TOK_END:
-    return OBJ_UNDEFINED_TAG;
+    return OBJ_BOX(EOF, CHAR);
   default:
     wrong("Unexpected token.");
     break;
