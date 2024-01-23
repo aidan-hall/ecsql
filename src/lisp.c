@@ -354,33 +354,24 @@ LispEnv new_lisp_environment() {
   lisp_define_global(&lisp, lisp.keysyms.stderr,
                      lisp_store_stream_handle(&lisp, stderr));
 #define OBJSX(S) OBJS(&lisp, S)
-  lisp_add_primitive(&lisp, OBJSX("+2f"), OBJSX("(f32 f32)"), prim_add2f,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("*"), OBJSX("t"), prim_mul, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("quit"), OBJSX("()"), lisp_quit, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("fopen"), OBJSX("(string string)"), lisp_open_file,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("fclose"), OBJSX("(file)"), lisp_close_stream,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("getc"), OBJSX("(file)"), lisp_getc_stream,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("read-stream"), OBJSX("(file)"), prim_read,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("car"), OBJSX("(pair)"), lisp_car,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("cdr"), OBJSX("(pair)"), lisp_cdr,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("cons"), OBJSX("(t t)"), prim_cons, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("list"), OBJSX("t"), prim_list, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("eq"), OBJSX("(t t)"), prim_eq, lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("eql"), OBJSX("(t t)"), prim_eql,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("assert"), OBJSX("(t)"), prim_assert,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("print"), OBJSX("(t)"), prim_print,
-                     lisp.primitive_functions);
-  lisp_add_primitive(&lisp, OBJSX("type-of"), OBJSX("(t)"), prim_type_of,
-		     lisp.primitive_functions);
+#define DEFPRIMFUN(NAME, SPEC, FUN) lisp_add_primitive(&lisp, OBJSX(NAME), OBJSX(SPEC), FUN, lisp.primitive_functions)
+  DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
+  DEFPRIMFUN("*", "t", prim_mul);
+  DEFPRIMFUN("quit", "()", lisp_quit);
+  DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
+  DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
+  DEFPRIMFUN("getc", "(file)", lisp_getc_stream);
+  DEFPRIMFUN("read-stream", "(file)", prim_read);
+  DEFPRIMFUN("car", "(pair)", lisp_car);
+  DEFPRIMFUN("cdr", "(pair)", lisp_cdr);
+  DEFPRIMFUN("cons", "(t t)", prim_cons);
+  DEFPRIMFUN("list", "t", prim_list);
+  DEFPRIMFUN("eq", "(t t)", prim_eq);
+  DEFPRIMFUN("eql", "(t t)", prim_eql);
+  DEFPRIMFUN("assert", "(t)", prim_assert);
+  DEFPRIMFUN("print", "(t)", prim_print);
+  DEFPRIMFUN("type-of", "(t)", prim_type_of);
+#undef DEFPRIMFUN
 #undef OBJSX
   return lisp;
 }
