@@ -280,7 +280,8 @@ static Object prim_type_of(LispEnv *lisp, Object args) {
   return lisp_type_of(lisp, LISP_CAR(lisp, args));
 }
 
-static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params, PrimitiveFunction fn,
+static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
+                                 PrimitiveFunction fn,
                                  khash_t(primitives) * primitives) {
   Object prim_obj = OBJ_REINTERPRET_RAWTAG(name_sym, OBJ_PRIMITIVE_TAG);
 
@@ -349,7 +350,9 @@ LispEnv new_lisp_environment() {
   lisp_define_global(&lisp, lisp.keysyms.stderr,
                      lisp_store_stream_handle(&lisp, stderr));
 #define OBJSX(S) OBJS(&lisp, S)
-#define DEFPRIMFUN(NAME, SPEC, FUN) lisp_add_primitive(&lisp, OBJSX(NAME), OBJSX(SPEC), FUN, lisp.primitive_functions)
+#define DEFPRIMFUN(NAME, SPEC, FUN)                                            \
+  lisp_add_primitive(&lisp, OBJSX(NAME), OBJSX(SPEC), FUN,                     \
+                     lisp.primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
   DEFPRIMFUN("*", "t", prim_mul);
   DEFPRIMFUN("quit", "()", lisp_quit);
@@ -459,7 +462,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
   /* for (int i = 0; i < depth; i++) { */
   /*   fputc(' ', stream); */
   /* } */
-  switch ((enum ObjectTag) OBJ_TYPE(object)) {
+  switch ((enum ObjectTag)OBJ_TYPE(object)) {
   case OBJ_FLOAT_TAG:
     fprintf(stream, "%f", lisp_unbox_float(object));
     break;
@@ -492,7 +495,10 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     fprintf(stream, "#undefined");
     break;
   case OBJ_PRIMITIVE_TAG:
-    lisp_print(lisp, lisp_list(lisp, lisp->keysyms.function, OBJ_REINTERPRET(object, SYMBOL), OBJ_NIL_TAG), stream);
+    lisp_print(lisp,
+               lisp_list(lisp, lisp->keysyms.function,
+                         OBJ_REINTERPRET(object, SYMBOL), OBJ_NIL_TAG),
+               stream);
     break;
   default:
     fprintf(stream, "other type: %lx\n", OBJ_TYPE(object));
@@ -757,7 +763,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
       return LISP_CAR(lisp, tmp);
-    
+
     } else if (EQ(tmp, lisp->keysyms.function)) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
