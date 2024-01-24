@@ -503,9 +503,11 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
                          OBJ_REINTERPRET(object, SYMBOL), OBJ_NIL_TAG),
                stream);
     break;
-  default:
-    fprintf(stream, "other type: %lx\n", OBJ_TYPE(object));
-    wrong("unprintable string");
+  case OBJ_CLOSURE_TAG:
+    lisp_print(lisp,
+               lisp_list(lisp, lisp->keysyms.lambda,
+                         LISP_CAR(lisp, LISP_CDR(lisp, object)), OBJ_NIL_TAG),
+               stream);
     break;
   }
 }
@@ -522,10 +524,28 @@ static Object lisp_eval_argument_list(LispEnv *lisp, Object arguments,
   }
 }
 
+static Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
+  while (OBJ_TYPE(alist) == OBJ_PAIR_TAG) {
+    Object element = LISP_CAR(lisp, alist);
+    if (OBJ_TYPE(element) == OBJ_PAIR_TAG)
+      if (EQ(LISP_CAR(lisp, element), key))
+        return element;
+    alist = LISP_CDR(lisp, alist);
+  }
+  return OBJ_NIL_TAG;
+}
+
 static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
                                     Object context) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
   /* TODO: Search in the lexical context. */
+  while (OBJ_TYPE(context) == OBJ_PAIR_TAG) {
+    Object element = lisp_assoc(lisp, symbol, LISP_CAR(lisp, context));
+    if (element != OBJ_NIL_TAG) {
+      return LISP_CDR_PLACE(lisp, element);
+    }
+    context = LISP_CDR(lisp, context);
+  }
   khint_t global_key = kh_get(var_syms, lisp->globals, symbol);
   if (global_key == kh_end(lisp->globals)) {
     return nullptr;
@@ -642,6 +662,7 @@ static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
   return res;
 }
 
+Object lisp_evaluate_sequence(LispEnv *lisp, Object sequence, Object context);
 Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
   switch (OBJ_TYPE(function)) {
   case OBJ_PRIMITIVE_TAG: {
@@ -653,6 +674,16 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
       return OBJ_UNDEFINED_TAG;
     }
     return prim.fn(lisp, arguments);
+  }
+  case OBJ_CLOSURE_TAG: {
+    /* (context args body) */
+    /* Lambda forms have an implicit top-level progn. */
+    Object form = LISP_CDR(lisp, function);
+
+    return lisp_evaluate_sequence(lisp, LISP_CDR(lisp, form),
+                                  lisp_bind(lisp, LISP_CAR(lisp, form),
+                                            arguments,
+                                            LISP_CAR(lisp, function)));
   }
   default:
     wrong("Unsupported type of function.");
@@ -748,6 +779,13 @@ Object lisp_evaluate_quasiquoted(LispEnv *lisp, Object expression,
   }
 }
 
+Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
+  if (OBJ_TYPE(body) != OBJ_PAIR_TAG) {
+    wrong("Lambda forms require an argument list and body.");
+  }
+  return OBJ_REINTERPRET(lisp_cons(lisp, context, body), CLOSURE);
+}
+
 Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
   Object tmp;
   Object *tmp_ptr;
@@ -838,6 +876,18 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
           lisp, LISP_CAR(lisp, tmp),
           lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)), context));
 
+    } else if (EQ(tmp, lisp->keysyms.defun)) {
+      Object args = LISP_CDR(lisp, expression);
+      if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
+        wrong("Function definitions require function name, argument list and "
+              "body.");
+        return OBJ_UNDEFINED_TAG;
+      } else if (OBJ_TYPE(LISP_CAR(lisp, args)) != OBJ_SYMBOL_TAG) {
+        wrong("Function name must be a symbol.");
+      }
+      return lisp_add_to_namespace(
+          lisp, lisp->functions, LISP_CAR(lisp, args),
+          lisp_make_closure(lisp, LISP_CDR(lisp, args), context));
     } else if (EQ(tmp, lisp->keysyms.setq)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) != 2) {
@@ -853,7 +903,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       return *tmp_ptr = lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)),
                                       context);
     } else if (EQ(tmp, lisp->keysyms.lambda)) {
-      /* TODO: Create closure */
+      return lisp_make_closure(lisp, LISP_CDR(lisp, expression), context);
     } else {
       tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(

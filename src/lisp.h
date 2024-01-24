@@ -49,7 +49,8 @@ typedef struct {
   F(symbol)                                                             \
   F(primitive)                                                          \
   F(closure)                                                            \
-  F(character)
+  F(character)                                                          \
+  F(defun)
 
 struct LispEnv;
 typedef Object (*ReaderMacro)(struct LispEnv *lisp, FILE *stream);
@@ -182,10 +183,10 @@ void wrong(const char *message);
 
 #define LISP_CAR_INDEX (0)
 #define LISP_CDR_INDEX (1)
-#define LISP_CAR(LISP, PAIR)                                                   \
-  (*lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CAR_INDEX))
-#define LISP_CDR(LISP, PAIR)                                                   \
-  (*lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
+#define LISP_CAR_PLACE(LISP, PAIR) (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CAR_INDEX))
+#define LISP_CDR_PLACE(LISP, PAIR) (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
+#define LISP_CAR(LISP, PAIR) (*LISP_CAR_PLACE(LISP, PAIR))
+#define LISP_CDR(LISP, PAIR) (*LISP_CDR_PLACE(LISP, PAIR))
 
 static inline bool lisp_true(Object value) {
   static_assert(!OBJ_NIL_TAG, "Lisp and C have the same truthy semantics.");
