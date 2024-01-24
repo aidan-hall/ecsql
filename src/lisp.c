@@ -603,10 +603,6 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
 
 static inline bool lisp_type_spec_matches(LispEnv *lisp, Object value,
                                           Object spec) {
-  if (EQ(spec, lisp->keysyms.t)) {
-    /* Variadic argument list accepts anything. */
-    return true;
-  }
 
   while (OBJ_TYPE(value) == OBJ_PAIR_TAG && OBJ_TYPE(spec) == OBJ_PAIR_TAG) {
     if (!lisp_type_spec_matches(lisp, LISP_CAR(lisp, value),
@@ -616,6 +612,10 @@ static inline bool lisp_type_spec_matches(LispEnv *lisp, Object value,
     spec = LISP_CDR(lisp, spec);
   }
 
+  if (EQ(spec, lisp->keysyms.t)) {
+    /* Variadic argument list accepts anything. */
+    return true;
+  }
   /* Handle end of list. */
   if (OBJ_TYPE(value) == OBJ_NIL_TAG && OBJ_TYPE(spec) == OBJ_NIL_TAG)
     return true;
