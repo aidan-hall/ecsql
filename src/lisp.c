@@ -167,11 +167,8 @@ static Object prim_assert(LispEnv *lisp, Object args) {
 
 static Object lisp_open_file(LispEnv *lisp, Object args) {
   Object filename = LISP_CAR(lisp, args);
-  LISP_ASSERT_TYPE(filename, STRING);
   args = LISP_CDR(lisp, args);
-  LISP_ASSERT_TYPE(args, PAIR);
   Object mode = LISP_CAR(lisp, args);
-  LISP_ASSERT_TYPE(mode, STRING);
   char *filename_s = (char *)lisp_string_to_null_terminated(lisp, filename);
   char *mode_s = (char *)lisp_string_to_null_terminated(lisp, mode);
   FILE *stream = fopen(filename_s, mode_s);
@@ -184,7 +181,6 @@ static Object lisp_open_file(LispEnv *lisp, Object args) {
 
 static Object lisp_close_stream(LispEnv *lisp, Object args) {
   args = LISP_CAR(lisp, args);
-  LISP_ASSERT_TYPE(args, FILE_PTR);
   size index = OBJ_UNBOX(args);
   fclose(lisp->open_streams[index]);
   /* Release the slot so we can store another open stream there. */
@@ -194,7 +190,6 @@ static Object lisp_close_stream(LispEnv *lisp, Object args) {
 
 static Object lisp_getc_stream(LispEnv *lisp, Object args) {
   args = LISP_CAR(lisp, args);
-  LISP_ASSERT_TYPE(args, FILE_PTR);
   char c = fgetc(lisp->open_streams[OBJ_UNBOX(args)]);
   return OBJ_BOX(c, CHAR);
 }
