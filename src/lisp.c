@@ -315,6 +315,8 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
   return prim_obj;
 }
 
+static Object prim_funcall(LispEnv *lisp, Object args);
+
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
   /* A Gigabyte of RAM should do the trick. */
@@ -369,6 +371,7 @@ LispEnv new_lisp_environment() {
   DEFPRIMFUN("assert", "(t)", prim_assert);
   DEFPRIMFUN("print", "(t)", prim_print);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
+  DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
 #undef DEFPRIMFUN
 #undef OBJSX
   return lisp;
@@ -530,8 +533,9 @@ static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
   return &kh_value(lisp->globals, global_key);
 }
 
-static Object lisp_lookup_function(LispEnv *lisp, Object symbol,
-                                   Object context) {
+/* We don't support lexical function definitions, so this function takes no
+ * context argument. */
+static Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
   /* TODO: Search in the lexical context. */
   khint_t function_key = kh_get(var_syms, lisp->functions, symbol);
@@ -657,6 +661,16 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
   return OBJ_UNDEFINED_TAG;
 }
 
+static Object prim_funcall(LispEnv *lisp, Object args) {
+  Object function = LISP_CAR(lisp, args);
+  args = LISP_CDR(lisp, args);
+
+  if (OBJ_TYPE(function) == OBJ_SYMBOL_TAG) {
+    function = lisp_lookup_function(lisp, function);
+  }
+  return lisp_apply(lisp, function, args);
+}
+
 Object lisp_or(LispEnv *lisp, Object sequence, Object context) {
   Object statement;
   if (OBJ_TYPE(sequence) == OBJ_NIL_TAG) {
@@ -767,7 +781,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     } else if (EQ(tmp, lisp->keysyms.function)) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
-      return lisp_lookup_function(lisp, LISP_CAR(lisp, tmp), context);
+      return lisp_lookup_function(lisp, LISP_CAR(lisp, tmp));
 
     } else if (EQ(tmp, lisp->keysyms.quasiquote)) {
       return lisp_evaluate_quasiquoted(
@@ -838,8 +852,10 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       }
       return *tmp_ptr = lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)),
                                       context);
+    } else if (EQ(tmp, lisp->keysyms.lambda)) {
+      /* TODO: Create closure */
     } else {
-      tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression), context);
+      tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(
           lisp, tmp,
           lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
