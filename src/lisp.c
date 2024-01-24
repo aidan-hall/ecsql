@@ -904,6 +904,15 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
                                       context);
     } else if (EQ(tmp, lisp->keysyms.lambda)) {
       return lisp_make_closure(lisp, LISP_CDR(lisp, expression), context);
+
+    } else if (OBJ_TYPE(tmp) == OBJ_PAIR_TAG) {
+      if (!EQ(LISP_CAR(lisp, tmp), lisp->keysyms.lambda)) {
+        wrong("Invalid function form.");
+        return OBJ_UNDEFINED_TAG;
+      }
+      return lisp_apply(lisp,
+                        lisp_make_closure(lisp, LISP_CDR(lisp, tmp), context),
+                        LISP_CDR(lisp, expression));
     } else {
       tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(
