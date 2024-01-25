@@ -199,14 +199,18 @@ static Object lisp_getc_stream(LispEnv *lisp, Object args) {
   return OBJ_BOX(c, CHAR);
 }
 
-static size lisp_length(LispEnv *lisp, Object list) {
-  size length = 0;
+static i32 lisp_length(LispEnv *lisp, Object list) {
+  i32 length = 0;
   while (OBJ_TYPE(list) == OBJ_PAIR_TAG) {
     length += 1;
     list = LISP_CDR(lisp, list);
   }
   LISP_ASSERT_TYPE(list, NIL);
   return length;
+}
+
+static Object prim_length(LispEnv *lisp, Object args) {
+  return OBJ_BOX(lisp_length(lisp, LISP_CAR(lisp, args)), INT);
 }
 
 static Object lisp_quit(LispEnv *lisp, Object args) {
@@ -587,6 +591,7 @@ LispEnv new_lisp_environment() {
   DEFPRIMFUN("cdr", "(pair)", lisp_cdr);
   DEFPRIMFUN("cons", "(t t)", prim_cons);
   DEFPRIMFUN("list", "t", prim_list);
+  DEFPRIMFUN("length", "(pair)", prim_length);
   DEFPRIMFUN("eq", "(t t)", prim_eq);
   DEFPRIMFUN("eql", "(t t)", prim_eql);
   DEFPRIMFUN("assert", "(t)", prim_assert);
