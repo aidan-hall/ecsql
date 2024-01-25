@@ -247,7 +247,6 @@ static Object prim_mul(LispEnv *lisp, Object args) {
       product_float *= (float)(i32)OBJ_UNBOX(element);
       break;
     case OBJ_FLOAT_TAG:
-      /* Repurpose product_int to smuggle out the bits of the 32-bit float. */
       product_float *= lisp_unbox_float(element);
       break;
     default:
@@ -257,6 +256,213 @@ static Object prim_mul(LispEnv *lisp, Object args) {
   }
 
   return OBJ_BOX(*(u64 *)&product_float, FLOAT);
+}
+
+static Object prim_sub(LispEnv *lisp, Object args) {
+  i32 difference_int;
+  float difference_float;
+  Object element = OBJ_INT_TAG;
+
+  /* No arguments: 0 */
+  if (OBJ_TYPE(args) != OBJ_PAIR_TAG)
+    return OBJ_BOX(0, INT);
+
+  /* Single argument: compute '- arg' */
+  if (OBJ_TYPE(LISP_CDR(lisp, args)) == OBJ_NIL_TAG) {
+    element = LISP_CAR(lisp, args);
+
+    switch (OBJ_TYPE(element)) {
+    case OBJ_INT_TAG:
+      return OBJ_BOX(-(i32)OBJ_UNBOX(element), INT);
+    case OBJ_FLOAT_TAG:
+      difference_float = -lisp_unbox_float(element);
+      return OBJ_BOX(*(u64 *)&difference_float, FLOAT);
+    default:
+      wrong("Wrong type argument to -");
+      return OBJ_UNDEFINED_TAG;
+    }
+  }
+
+  /* Multiple arguments: treat first as difference. */
+  element = LISP_CAR(lisp, args);
+  args = LISP_CDR(lisp, args);
+
+  if (OBJ_TYPE(element) == OBJ_INT_TAG) {
+    difference_int = (i32)OBJ_UNBOX(element);
+
+    /* Integers */
+    while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
+      element = LISP_CAR(lisp, args);
+      args = LISP_CDR(lisp, args);
+      switch (OBJ_TYPE(element)) {
+      case OBJ_INT_TAG:
+        difference_int -= (i32)OBJ_UNBOX(element);
+        break;
+      case OBJ_FLOAT_TAG:
+        break;
+      default:
+        wrong("Wrong type argument to -");
+        return OBJ_UNDEFINED_TAG;
+      }
+    }
+
+    if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+      return OBJ_BOX(difference_int, INT);
+    }
+
+    difference_float = (float)difference_int;
+
+    if (OBJ_TYPE(element) == OBJ_FLOAT_TAG) {
+      difference_float -= lisp_unbox_float(element);
+    }
+
+  } else {
+    difference_float = lisp_unbox_float(element);
+  }
+
+  while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
+    element = LISP_CAR(lisp, args);
+    args = LISP_CDR(lisp, args);
+    switch (OBJ_TYPE(element)) {
+    case OBJ_INT_TAG:
+      difference_float -= (float)(i32)OBJ_UNBOX(element);
+      break;
+    case OBJ_FLOAT_TAG:
+      difference_float -= lisp_unbox_float(element);
+      break;
+    default:
+      wrong("Wrong type argument to *");
+      return OBJ_UNDEFINED_TAG;
+    }
+  }
+
+  return OBJ_BOX(*(u64 *)&difference_float, FLOAT);
+}
+
+static Object prim_div(LispEnv *lisp, Object args) {
+  i32 numerator_int = 1;
+  float numerator_float;
+  Object element = OBJ_INT_TAG;
+
+  /* Single argument: compute 1 / arg */
+  if (OBJ_TYPE(LISP_CDR(lisp, args)) == OBJ_NIL_TAG) {
+    element = LISP_CAR(lisp, args);
+
+    switch (OBJ_TYPE(element)) {
+    case OBJ_INT_TAG:
+      return OBJ_BOX(1 / (i32)OBJ_UNBOX(element), INT);
+    case OBJ_FLOAT_TAG:
+      numerator_float = 1.0 / lisp_unbox_float(element);
+      return OBJ_BOX(*(u64 *)&numerator_float, FLOAT);
+    default:
+      wrong("Wrong type argument to /");
+      return OBJ_UNDEFINED_TAG;
+    }
+  }
+
+  /* Multiple arguments: treat first as numerator. */
+  element = LISP_CAR(lisp, args);
+  args = LISP_CDR(lisp, args);
+
+  if (OBJ_TYPE(element) == OBJ_INT_TAG) {
+    numerator_int = (i32)OBJ_UNBOX(element);
+
+    /* Integers */
+    while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
+      element = LISP_CAR(lisp, args);
+      args = LISP_CDR(lisp, args);
+      switch (OBJ_TYPE(element)) {
+      case OBJ_INT_TAG:
+        numerator_int /= (i32)OBJ_UNBOX(element);
+        break;
+      case OBJ_FLOAT_TAG:
+        break;
+      default:
+        wrong("Wrong type argument to /");
+        return OBJ_UNDEFINED_TAG;
+      }
+    }
+
+    if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+      return OBJ_BOX(numerator_int, INT);
+    }
+
+    numerator_float = (float)numerator_int;
+
+    if (OBJ_TYPE(element) == OBJ_FLOAT_TAG) {
+      numerator_float /= lisp_unbox_float(element);
+    }
+
+  } else {
+    numerator_float = lisp_unbox_float(element);
+  }
+
+  while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
+    element = LISP_CAR(lisp, args);
+    args = LISP_CDR(lisp, args);
+    switch (OBJ_TYPE(element)) {
+    case OBJ_INT_TAG:
+      numerator_float /= (float)(i32)OBJ_UNBOX(element);
+      break;
+    case OBJ_FLOAT_TAG:
+      numerator_float /= lisp_unbox_float(element);
+      break;
+    default:
+      wrong("Wrong type argument to *");
+      return OBJ_UNDEFINED_TAG;
+    }
+  }
+
+  return OBJ_BOX(*(u64 *)&numerator_float, FLOAT);
+}
+
+static Object prim_add(LispEnv *lisp, Object args) {
+  i32 sum_int = 0;
+  Object element = OBJ_INT_TAG;
+
+  /* Integers */
+  while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
+    element = LISP_CAR(lisp, args);
+    args = LISP_CDR(lisp, args);
+    switch (OBJ_TYPE(element)) {
+    case OBJ_INT_TAG:
+      sum_int += (i32)OBJ_UNBOX(element);
+      break;
+    case OBJ_FLOAT_TAG:
+      break;
+    default:
+      wrong("Wrong type argument to +");
+      return OBJ_UNDEFINED_TAG;
+    }
+  }
+
+  if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+    return OBJ_BOX(sum_int, INT);
+  }
+
+  /* Floats */
+  float sum_float = (float)sum_int;
+  if (OBJ_TYPE(element) == OBJ_FLOAT_TAG) {
+    sum_float += lisp_unbox_float(element);
+  }
+
+  while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
+    element = LISP_CAR(lisp, args);
+    args = LISP_CDR(lisp, args);
+    switch (OBJ_TYPE(element)) {
+    case OBJ_INT_TAG:
+      sum_float += (float)(i32)OBJ_UNBOX(element);
+      break;
+    case OBJ_FLOAT_TAG:
+      sum_float += lisp_unbox_float(element);
+      break;
+    default:
+      wrong("Wrong type argument to *");
+      return OBJ_UNDEFINED_TAG;
+    }
+  }
+
+  return OBJ_BOX(*(u64 *)&sum_float, FLOAT);
 }
 
 static Object prim_add2f(LispEnv *lisp, Object args) {
@@ -357,6 +563,9 @@ LispEnv new_lisp_environment() {
                      lisp.primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
   DEFPRIMFUN("*", "t", prim_mul);
+  DEFPRIMFUN("/", "t", prim_div);
+  DEFPRIMFUN("-", "t", prim_sub);
+  DEFPRIMFUN("+", "t", prim_add);
   DEFPRIMFUN("quit", "()", lisp_quit);
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
