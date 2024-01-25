@@ -1,5 +1,6 @@
 CC	= gcc
-SRC	:= $(wildcard src/*.c)
+SRCDIR = src
+SRC	:= $(wildcard $(SRCDIR)/*.c)
 SRC	+= $(wildcard deps/*/*.c)
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
@@ -11,7 +12,7 @@ OBJ := $(SRC:.c=.o)
 DFILES := $(SRC:.c=.d)
 
 %.d: %.c
-	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,\1.o \1.d : ,g' > $@
+	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,$(SRCDIR)/\1.o $(SRCDIR)/\1.d : ,g' > $@
 
 ecsql: $(OBJ) $(DFILES)
 	$(CC) -o $@ $(OBJ) $(LDLIBS)
