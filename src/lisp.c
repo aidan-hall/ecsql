@@ -916,7 +916,8 @@ static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
                                       Object arguments) {
   bool res = lisp_type_spec_matches(lisp, arguments, prim.argument_types);
   if (!res) {
-    WRONG("Invalid argument(s) to primitive function", prim.id_symbol);
+    WRONG("Invalid argument(s) to primitive function",
+          lisp_cons(lisp, prim.id_symbol, arguments));
   }
   return res;
 }
@@ -945,7 +946,7 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
                                             LISP_CAR(lisp, function)));
   }
   default:
-    WRONG("Unsupported type of function.");
+    WRONG("Unsupported type of function", lisp_type_of(lisp, function));
     break;
   }
   return OBJ_UNDEFINED_TAG;
