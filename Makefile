@@ -11,10 +11,7 @@ OBJ := $(SRC:.c=.o)
 DFILES := $(SRC:.c=.d)
 
 %.d: %.c
-	@set -e; rm -f $@; \
-	$(CC) -MM -MMD $(CPPFLAGS) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,\1.o \1.d : ,g' > $@
 
 ecsql: $(OBJ) $(DFILES)
 	$(CC) -o $@ $(OBJ) $(LDLIBS)
