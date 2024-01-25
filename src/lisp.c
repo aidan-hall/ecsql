@@ -563,6 +563,7 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
 
 static Object prim_funcall(LispEnv *lisp, Object args);
 static Object prim_eval(LispEnv *lisp, Object args);
+static Object prim_macroexpand(LispEnv *lisp, Object args);
 
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
@@ -584,6 +585,7 @@ LispEnv new_lisp_environment() {
   lisp.globals = kh_init(var_syms);
   lisp.functions = kh_init(var_syms);
   lisp.primitive_functions = kh_init(primitives);
+  lisp.macros = kh_init(var_syms);
 
   lisp.reader_macros['\''] = lisp_quote;
   lisp.reader_macros['`'] = lisp_quasiquote;
@@ -636,6 +638,7 @@ LispEnv new_lisp_environment() {
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
   DEFPRIMFUN("eval", "(t)", prim_eval);
+  DEFPRIMFUN("macroexpand-1", "(t)", prim_macroexpand);
 #undef DEFPRIMFUN
 #undef OBJSX
   return lisp;
@@ -1055,8 +1058,50 @@ Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
   return OBJ_REINTERPRET(lisp_cons(lisp, context, body), CLOSURE);
 }
 
+static Object lisp_macroexpand(LispEnv *lisp, Object expression) {
+  if (OBJ_TYPE(expression) != OBJ_PAIR_TAG) {
+    return expression;
+  }
+
+  /* Recursively macroexpand the head. */
+  Object macro;
+  Object original_car = LISP_CAR(lisp, expression);
+  {
+    Object car = original_car;
+    macro = lisp_macroexpand(lisp, car);
+    while (!EQ(macro, car)) {
+      car = macro;
+      macro = lisp_macroexpand(lisp, car);
+    }
+  }
+
+  u32 iter = kh_get(var_syms, lisp->macros, macro);
+  if (iter == kh_end(lisp->macros)) {
+    if (macro == original_car)
+      return expression;
+    else
+      return lisp_cons(lisp, macro, LISP_CDR(lisp, expression));
+  }
+
+  return lisp_apply(lisp, kh_value(lisp->macros, iter),
+                    LISP_CDR(lisp, expression));
+}
+
+static Object prim_macroexpand(LispEnv *lisp, Object args) {
+  return lisp_macroexpand(lisp, LISP_CAR(lisp, args));
+}
+
 Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
-  Object tmp;
+  Object tmp = lisp_macroexpand(lisp, expression);
+  while (!EQ(tmp, expression)) {
+    expression = tmp;
+    tmp = lisp_macroexpand(lisp, expression);
+  }
+
+  /* fprintf(stderr, "Macroexpanded: "); */
+  /* lisp_print(lisp, expression, stderr); */
+  /* fputc('\n', stderr); */
+
   Object *tmp_ptr;
   switch (OBJ_TYPE(expression)) {
   case OBJ_NIL_TAG:
@@ -1145,6 +1190,18 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
           lisp, LISP_CAR(lisp, tmp),
           lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)), context));
 
+    } else if (EQ(tmp, lisp->keysyms.defmacro)) {
+      Object args = LISP_CDR(lisp, expression);
+      if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
+        WRONG("Macro definitions require macro name, argument list and "
+              "body.");
+        return OBJ_UNDEFINED_TAG;
+      } else if (OBJ_TYPE(LISP_CAR(lisp, args)) != OBJ_SYMBOL_TAG) {
+        WRONG("Macro name must be a symbol.");
+      }
+      return lisp_add_to_namespace(
+          lisp, lisp->macros, LISP_CAR(lisp, args),
+          lisp_make_closure(lisp, LISP_CDR(lisp, args), context));
     } else if (EQ(tmp, lisp->keysyms.defun)) {
       Object args = LISP_CDR(lisp, expression);
       if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
@@ -1179,9 +1236,9 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
         WRONG("Invalid function form.");
         return OBJ_UNDEFINED_TAG;
       }
-      return lisp_apply(lisp,
-                        lisp_make_closure(lisp, LISP_CDR(lisp, tmp), context),
-                        lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
+      return lisp_apply(
+          lisp, lisp_make_closure(lisp, LISP_CDR(lisp, tmp), context),
+          lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
     } else {
       tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(

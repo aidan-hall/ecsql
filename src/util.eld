@@ -17,6 +17,20 @@
     (cons (funcall f (car l))
           (mapcar f (cdr l)))))
 
+(defmacro let (binds . body)
+  ((lambda (names values)
+     `((lambda ,names
+         . ,body)
+       . ,values))
+   (mapcar (function car) binds)
+   (mapcar (lambda (bind) (car (cdr bind))) binds)))
+
+(defmacro let* (binds . body)
+  (if binds
+      `(let (,(car binds))
+         (let* ,(cdr binds) . ,body))
+    `(progn ,body)))
+
 (defun equal (a b)
   (if (and (consp a) (consp b))
       (and (equal (car a) (car b))
