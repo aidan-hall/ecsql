@@ -485,6 +485,31 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
   return OBJ_BOX(*(u64 *)&result, FLOAT);
 }
 
+#define LISP_CMP(NAME, OP)                                                     \
+  static Object NAME(LispEnv *lisp, Object args) {                             \
+    Object a = LISP_CAR(lisp, args);                                           \
+    args = LISP_CDR(lisp, args);                                               \
+    Object b = LISP_CAR(lisp, args);                                           \
+    if (OBJ_TYPE(a) == OBJ_INT_TAG && OBJ_TYPE(b) == OBJ_INT_TAG) {            \
+      return lisp_bool(lisp, (i32)OBJ_UNBOX(a) OP(i32) OBJ_UNBOX(b));          \
+    } else if (OBJ_TYPE(a) == OBJ_FLOAT_TAG && OBJ_TYPE(b) == OBJ_INT_TAG) {   \
+      return lisp_bool(lisp, lisp_unbox_float(a) OP(float)(i32) OBJ_UNBOX(b)); \
+    } else if (OBJ_TYPE(a) == OBJ_INT_TAG && OBJ_TYPE(b) == OBJ_FLOAT_TAG) {   \
+      return lisp_bool(lisp, (float)(i32)OBJ_UNBOX(a) OP lisp_unbox_float(b)); \
+    } else if (OBJ_TYPE(a) == OBJ_FLOAT_TAG && OBJ_TYPE(b) == OBJ_FLOAT_TAG) { \
+      return lisp_bool(lisp, lisp_unbox_float(a) OP(float)(i32) OBJ_UNBOX(b)); \
+    } else {                                                                   \
+      WRONG("Invalid types of parameters to " #OP,                             \
+            lisp_cons(lisp, lisp_type_of(lisp, a), lisp_type_of(lisp, b)));    \
+      return OBJ_UNDEFINED_TAG;                                                \
+    }                                                                          \
+  }
+
+LISP_CMP(prim_less, <);
+LISP_CMP(prim_less_equal, <=);
+LISP_CMP(prim_greater, >);
+LISP_CMP(prim_greater_equal, >=);
+
 static Object prim_print(LispEnv *lisp, Object args) {
   lisp_print(lisp, LISP_CAR(lisp, args), stdout);
   fputc('\n', stdout);
@@ -594,6 +619,10 @@ LispEnv new_lisp_environment() {
   DEFPRIMFUN("length", "(pair)", prim_length);
   DEFPRIMFUN("eq", "(t t)", prim_eq);
   DEFPRIMFUN("eql", "(t t)", prim_eql);
+  DEFPRIMFUN("<", "(t t)", prim_less);
+  DEFPRIMFUN("<=", "(t t)", prim_less_equal);
+  DEFPRIMFUN(">", "(t t)", prim_greater);
+  DEFPRIMFUN(">=", "(t t)", prim_greater_equal);
   DEFPRIMFUN("assert", "(t)", prim_assert);
   DEFPRIMFUN("print", "(t)", prim_print);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
