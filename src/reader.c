@@ -58,15 +58,15 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     return lisp_intern(lisp, tok.lexeme);
   }
   case TOK_ERROR:
-    wrong("Lexical error.");
+    WRONG("Lexical error.");
     break;
   case TOK_END:
     return OBJ_BOX(EOF, CHAR);
   default:
-    wrong("Unexpected token.");
+    WRONG("Unexpected token.");
     break;
   case TOK_RPAR:
-    wrong("Unexpected closing parenthesis.");
+    WRONG("Unexpected closing parenthesis.");
     break;
   case TOK_LPAR:
     /* tmp = lisp_read(lisp, stream); */
@@ -76,7 +76,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
   case TOK_LEX_CHAR: {
     ReaderMacro macro = lisp->reader_macros[(usize) tok.lex_char];
     if (macro == nullptr) {
-      wrong("Nonexistent reader macro!");
+      WRONG("Nonexistent reader macro", OBJ_BOX(tok.lex_char, CHAR));
       return OBJ_UNDEFINED_TAG;
     } else {
       return macro(lisp, stream);
@@ -97,11 +97,11 @@ static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
     tmp = read_with_token(lisp, get_token(lisp, stream), stream);
     tok = get_token(lisp, stream);
     if (tok.t != TOK_RPAR) {
-      wrong("More than one object follows . in list.");
+      WRONG("More than one object follows . in list.");
     }
     return tmp;
   case TOK_END:
-    wrong("Unexpected end of stream in list tail.");
+    WRONG("Unexpected end of stream in list tail.");
     return OBJ_UNDEFINED_TAG;
   default:
     tmp = read_with_token(lisp, tok, stream);

@@ -22,7 +22,7 @@ size lisp_allocate_cells(LispEnv *lisp, size cells) {
   Object *start = ALLOC(&lisp->memory.active, Object, cells);
 
   if (start == nullptr) {
-    wrong("allocation failure");
+    WRONG("allocation failure");
   }
 
   return start - (Object *)lisp->memory.space.begin;

@@ -30,6 +30,9 @@ int main(int argc, char *argv[]) {
   Object first;
   Object eof = OBJ_BOX(EOF, CHAR);
   do {
+    if (setjmp(lisp.error_loc) != 0) {
+      fprintf(stderr, "Resuming from top level...\n");
+    }
     fputs(LISP_PROMPT, stdout);
     first = lisp_read(&lisp, stdin);
     if (EQ(first, eof)) {

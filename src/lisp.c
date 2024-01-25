@@ -2,10 +2,14 @@
 #include "reader.h"
 #include <libgccjit.h>
 
-void wrong(const char *message) {
+void wrong(LispEnv *lisp, const char *message, Object arg) {
   fputs(message, stderr);
+  if (OBJ_TYPE(arg) != OBJ_NIL_TAG) {
+    fputs(": ", stderr);
+    lisp_print(lisp, arg, stderr);
+  }
   fputc('\n', stderr);
-  exit(1);
+  longjmp(lisp->error_loc, 1);
 }
 
 static inline size lisp_string_length(Object string) {
@@ -54,7 +58,7 @@ static Object lisp_quasiquote(LispEnv *lisp, FILE *stream) {
 
 static Object lisp_unquote(LispEnv *lisp, FILE *stream) {
   if (lisp->quasiquote_level <= 0) {
-    wrong("Attempted to unquote outside a quasiquote.");
+    WRONG("Attempted to unquote outside a quasiquote.");
     return OBJ_UNDEFINED_TAG;
   }
   lisp->quasiquote_level--;
@@ -71,6 +75,7 @@ static Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
 
   u32 iter = kh_get(var_syms, env, symbol);
   if (iter != kh_end(env)) {
+    WRONG("Attempt to re-define a name in the given namespace", symbol);
     return OBJ_UNDEFINED_TAG;
   }
 
@@ -89,7 +94,7 @@ static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
   /* TODO: Do something better here? We've created an over-general API. */
   symbol = lisp_add_to_namespace(lisp, lisp->globals, symbol, value);
   if (symbol == OBJ_UNDEFINED_TAG) {
-    wrong("Failed to define global variable.");
+    WRONG("Failed to define global variable");
   }
   return value;
 }
@@ -102,7 +107,7 @@ static Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
       return OBJ_BOX(i, FILE_PTR);
     }
   }
-  wrong("The maximum number of streams is already open.");
+  WRONG("The maximum number of streams is already open.");
   return OBJ_UNDEFINED_TAG;
 }
 
@@ -158,7 +163,7 @@ static Object prim_eql(LispEnv *lisp, Object args) {
 
 static Object prim_assert(LispEnv *lisp, Object args) {
   if (lisp_false(LISP_CAR(lisp, args))) {
-    wrong("Assertion failure in lisp!");
+    WRONG("Assertion failure in lisp!");
     return OBJ_NIL_TAG;
   }
 
@@ -224,7 +229,7 @@ static Object prim_mul(LispEnv *lisp, Object args) {
     case OBJ_FLOAT_TAG:
       break;
     default:
-      wrong("Wrong type argument to *");
+      WRONG("Wrong type argument to *");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -250,7 +255,7 @@ static Object prim_mul(LispEnv *lisp, Object args) {
       product_float *= lisp_unbox_float(element);
       break;
     default:
-      wrong("Wrong type argument to *");
+      WRONG("Wrong type argument to *");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -278,7 +283,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
       difference_float = -lisp_unbox_float(element);
       return OBJ_BOX(*(u64 *)&difference_float, FLOAT);
     default:
-      wrong("Wrong type argument to -");
+      WRONG("Wrong type argument to -");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -301,7 +306,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
       case OBJ_FLOAT_TAG:
         break;
       default:
-        wrong("Wrong type argument to -");
+        WRONG("Wrong type argument to -");
         return OBJ_UNDEFINED_TAG;
       }
     }
@@ -331,7 +336,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
       difference_float -= lisp_unbox_float(element);
       break;
     default:
-      wrong("Wrong type argument to *");
+      WRONG("Wrong type argument to *");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -355,7 +360,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
       numerator_float = 1.0 / lisp_unbox_float(element);
       return OBJ_BOX(*(u64 *)&numerator_float, FLOAT);
     default:
-      wrong("Wrong type argument to /");
+      WRONG("Wrong type argument to /");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -378,7 +383,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
       case OBJ_FLOAT_TAG:
         break;
       default:
-        wrong("Wrong type argument to /");
+        WRONG("Wrong type argument to /");
         return OBJ_UNDEFINED_TAG;
       }
     }
@@ -408,7 +413,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
       numerator_float /= lisp_unbox_float(element);
       break;
     default:
-      wrong("Wrong type argument to *");
+      WRONG("Wrong type argument to *");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -431,7 +436,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
     case OBJ_FLOAT_TAG:
       break;
     default:
-      wrong("Wrong type argument to +");
+      WRONG("Wrong type argument to +");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -457,7 +462,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
       sum_float += lisp_unbox_float(element);
       break;
     default:
-      wrong("Wrong type argument to *");
+      WRONG("Wrong type argument to *");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -499,13 +504,13 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
 
   u32 fn_iter = kh_get(primitives, primitives, prim_obj);
   if (fn_iter != kh_end(primitives)) {
-    wrong("Attempt to redefine primitive function.");
+    WRONG("Attempt to redefine primitive function.");
     return OBJ_UNDEFINED_TAG;
   }
   int absent;
   fn_iter = kh_put(primitives, primitives, prim_obj, &absent);
   if (absent < 1) {
-    wrong("Failed to define primitive function.");
+    WRONG("Failed to define primitive function.");
     return OBJ_UNDEFINED_TAG;
   }
 
@@ -514,7 +519,7 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
   Object sym_iter =
       lisp_add_to_namespace(lisp, lisp->functions, name_sym, prim_obj);
   if (sym_iter == OBJ_UNDEFINED_TAG) {
-    wrong("Failed to add a primitive function name.");
+    WRONG("Failed to add a primitive function name.");
     return sym_iter;
   }
 
@@ -525,6 +530,13 @@ static Object prim_funcall(LispEnv *lisp, Object args);
 
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
+
+  if (setjmp(lisp.error_loc) != 0) {
+    fprintf(stderr, "VERY BAD: longjmp called on error_loc before a proper "
+                    "jump location was set.\n");
+    exit(1);
+  }
+
   /* A Gigabyte of RAM should do the trick. */
   lisp.memory = new_lisp_memory(1024 * 1024 * 1024);
   lisp.jit.ctxt = gcc_jit_context_acquire();
@@ -563,7 +575,7 @@ LispEnv new_lisp_environment() {
                      lisp.primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
   DEFPRIMFUN("*", "t", prim_mul);
-  DEFPRIMFUN("/", "t", prim_div);
+  DEFPRIMFUN("/", "(t . t)", prim_div);
   DEFPRIMFUN("-", "t", prim_sub);
   DEFPRIMFUN("+", "t", prim_add);
   DEFPRIMFUN("quit", "()", lisp_quit);
@@ -588,7 +600,7 @@ LispEnv new_lisp_environment() {
 
 Object lisp_store_string(LispEnv *lisp, s8 string) {
   if (string.len > LISP_MAX_STRING_LENGTH) {
-    wrong("Symbol name too long.");
+    WRONG("Symbol name too long.");
   }
 
   /* We will include a NULL terminator byte for security. */
@@ -632,7 +644,7 @@ Object lisp_intern(LispEnv *lisp, s8 string) {
     interned_key =
         kh_put(sym_name, lisp->symbols, (char *)string.data, &absent);
     if (absent < 0) {
-      wrong("Failed to intern a symbol: couldn't add it to the symbol table.");
+      WRONG("Failed to intern a symbol: couldn't add it to the symbol table.");
       return OBJ_UNDEFINED_TAG;
     }
     kh_value(lisp->symbols, interned_key) = symbol;
@@ -782,7 +794,7 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
         OBJ_TYPE(arguments) == OBJ_NIL_TAG) {
       return OBJ_NIL_TAG;
     } else {
-      wrong("Wrong number of arguments.");
+      WRONG("Wrong number of arguments.");
       return OBJ_UNDEFINED_TAG;
     }
   }
@@ -794,7 +806,7 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
                        lisp_bind_recur(lisp, LISP_CDR(lisp, parameters),
                                        LISP_CDR(lisp, arguments)));
     } else {
-      wrong("Too few arguments.");
+      WRONG("Too few arguments.");
     }
   }
 
@@ -836,7 +848,7 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
   case OBJ_PAIR_TAG:
     return lisp->keysyms.pair;
   }
-  wrong("Invalid type tag of object.");
+  WRONG("Invalid type tag of object.");
   return OBJ_UNDEFINED_TAG;
 }
 
@@ -866,7 +878,7 @@ static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
                                       Object arguments) {
   bool res = lisp_type_spec_matches(lisp, arguments, prim.argument_types);
   if (!res) {
-    wrong("Invalid arguments to primitive function.");
+    WRONG("Invalid arguments to primitive function.");
   }
   return res;
 }
@@ -895,7 +907,7 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
                                             LISP_CAR(lisp, function)));
   }
   default:
-    wrong("Unsupported type of function.");
+    WRONG("Unsupported type of function.");
     break;
   }
   return OBJ_UNDEFINED_TAG;
@@ -990,7 +1002,7 @@ Object lisp_evaluate_quasiquoted(LispEnv *lisp, Object expression,
 
 Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
   if (OBJ_TYPE(body) != OBJ_PAIR_TAG) {
-    wrong("Lambda forms require an argument list and body.");
+    WRONG("Lambda forms require an argument list and body.");
   }
   return OBJ_REINTERPRET(lisp_cons(lisp, context, body), CLOSURE);
 }
@@ -1011,7 +1023,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     /* Variable name */
     tmp_ptr = lisp_lookup_variable(lisp, expression, context);
     if (tmp_ptr == nullptr) {
-      wrong("Undefined variable.");
+      WRONG("Undefined variable.");
       break;
     }
     return *tmp_ptr;
@@ -1046,7 +1058,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     } else if (EQ(tmp, lisp->keysyms.if_k)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) < 2) {
-        wrong("Need at least the CONDITION and THEN clauses for an if form.");
+        WRONG("Need at least the CONDITION and THEN clauses for an if form.");
         return OBJ_UNDEFINED_TAG;
       }
 
@@ -1062,7 +1074,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       tmp = LISP_CDR(lisp, expression);
 
       if (lisp_length(lisp, tmp) < 1) {
-        wrong("Need at least the CONDITION clause for a while form.");
+        WRONG("Need at least the CONDITION clause for a while form.");
         return OBJ_UNDEFINED_TAG;
       }
 
@@ -1077,7 +1089,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     } else if (EQ(tmp, lisp->keysyms.define)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) != 2) {
-        wrong("Must have exactly 2 arguments to definition form: NAME and "
+        WRONG("Must have exactly 2 arguments to definition form: NAME and "
               "VALUE.");
         return OBJ_UNDEFINED_TAG;
       }
@@ -1088,11 +1100,11 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     } else if (EQ(tmp, lisp->keysyms.defun)) {
       Object args = LISP_CDR(lisp, expression);
       if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
-        wrong("Function definitions require function name, argument list and "
+        WRONG("Function definitions require function name, argument list and "
               "body.");
         return OBJ_UNDEFINED_TAG;
       } else if (OBJ_TYPE(LISP_CAR(lisp, args)) != OBJ_SYMBOL_TAG) {
-        wrong("Function name must be a symbol.");
+        WRONG("Function name must be a symbol.");
       }
       return lisp_add_to_namespace(
           lisp, lisp->functions, LISP_CAR(lisp, args),
@@ -1100,13 +1112,13 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     } else if (EQ(tmp, lisp->keysyms.setq)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) != 2) {
-        wrong("Currently we only accept 2 arguments for setq: VARIABLE and "
+        WRONG("Currently we only accept 2 arguments for setq: VARIABLE and "
               "VALUE.");
         return OBJ_UNDEFINED_TAG;
       }
       tmp_ptr = lisp_lookup_variable(lisp, LISP_CAR(lisp, tmp), context);
       if (tmp_ptr == nullptr) {
-        wrong("Undefined variable.");
+        WRONG("Undefined variable.");
         return OBJ_UNDEFINED_TAG;
       }
       return *tmp_ptr = lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)),
@@ -1116,7 +1128,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
 
     } else if (OBJ_TYPE(tmp) == OBJ_PAIR_TAG) {
       if (!EQ(LISP_CAR(lisp, tmp), lisp->keysyms.lambda)) {
-        wrong("Invalid function form.");
+        WRONG("Invalid function form.");
         return OBJ_UNDEFINED_TAG;
       }
       return lisp_apply(lisp,
@@ -1130,7 +1142,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     }
   default:
     printf("%lx\n", expression);
-    wrong("Cannot evaluate object: unhandled type.");
+    WRONG("Cannot evaluate object: unhandled type.");
     break;
   }
 

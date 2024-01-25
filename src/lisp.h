@@ -7,6 +7,7 @@
 #include <libgccjit.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <setjmp.h>
 
 typedef u64 Object;
 
@@ -91,6 +92,7 @@ typedef struct LispEnv {
     Object if_k;    /* if */
     Object while_k; /* while */
   } keysyms;
+  jmp_buf error_loc;
 } LispEnv;
 
 Memory new_lisp_memory(size capacity);
@@ -171,11 +173,20 @@ static inline float lisp_unbox_float(Object box) {
   }
 }
 
-void wrong(const char *message);
+void wrong(LispEnv *lisp, const char *message, Object arg);
+#define WRONG2(MESSAGE, ARG)                                            \
+  do {                                                                  \
+    wrong(lisp, MESSAGE, ARG);                                          \
+  } while (0)
+#define WRONG1(MESSAGE) WRONG2(MESSAGE, OBJ_NIL_TAG)
+#define WRONGX(a, b, c, ...) c
+#define WRONG(...) WRONGX(__VA_ARGS__, WRONG2, WRONG1)(__VA_ARGS__)
 #define LISP_ASSERT_TYPE(OBJ, TYPE)                                            \
   do {                                                                         \
     if (OBJ_TYPE(OBJ) != OBJ_##TYPE##_TAG) {                                   \
-      wrong("FATAL: Wrong type of " #OBJ ": expected " #TYPE);                 \
+      WRONG("FATAL: Wrong type of " #OBJ ": expected " #TYPE ", got",   \
+            lisp_type_of(lisp, OBJ));                                  \
+      exit(1); /* Should be unreachable */                              \
     }                                                                          \
   } while (0)
 
