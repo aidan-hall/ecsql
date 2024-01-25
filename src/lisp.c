@@ -855,7 +855,7 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
 
   /* This allows rest parameters: ((lambda (x . xs)) 1 2 3) binds ((x . 1) (xs .
    * (2 3))) */
-  return lisp_cons(lisp, parameters, arguments);
+  return lisp_cons(lisp, lisp_cons(lisp, parameters, arguments), OBJ_NIL_TAG);
 }
 
 /* Create a context (alist) on top of 'context' with 'parameters' bound to
