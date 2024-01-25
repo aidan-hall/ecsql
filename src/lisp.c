@@ -156,6 +156,11 @@ static Object prim_eql(LispEnv *lisp, Object args) {
     }
   } else if (OBJ_TYPE(a) == OBJ_INT_TAG && OBJ_TYPE(b) == OBJ_FLOAT_TAG) {
     return lisp_bool(lisp, (float)(i32)OBJ_UNBOX(a) == lisp_unbox_float(b));
+  } else if (OBJ_TYPE(a) == OBJ_STRING_TAG && OBJ_TYPE(b) == OBJ_STRING_TAG) {
+    s8 as = lisp_string_to_s8(lisp, a);
+    s8 bs = lisp_string_to_s8(lisp, b);
+    size len = as.len < bs.len ? as.len : bs.len;
+    return lisp_bool(lisp, memcmp(as.data, bs.data, len) == 0);
   }
 
   return lisp_bool(lisp, EQ(a, b));
