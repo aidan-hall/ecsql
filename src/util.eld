@@ -16,3 +16,9 @@
       nil
     (cons (funcall f (car l))
           (mapcar f (cdr l)))))
+
+(defun equal (a b)
+  (if (and (consp a) (consp b))
+      (and (equal (car a) (car b))
+           (equal (cdr a) (cdr b)))
+    (eql a b)))
