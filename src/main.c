@@ -9,6 +9,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define LOAD_SRC                                \
+  "(defun load (name)"                          \
+  "  ((lambda (f)"                              \
+  "     ((lambda (form)"                        \
+  "        (while (eq (eq form eof) nil)"       \
+  "          (eval form)"                       \
+  "          (setq form (read-stream f))))"     \
+  "      (read-stream f))"                      \
+  "     (fclose f))"                            \
+  "   (fopen name \"r\"))"                      \
+  "  (print (list \"Loaded: \" name)))"
 
 int main(int argc, char *argv[]) {
   /* if (argc <= 1) */
@@ -24,6 +35,13 @@ int main(int argc, char *argv[]) {
   /*   printf("'\n"); */
   /* } */
   LispEnv lisp = new_lisp_environment();
+  if (setjmp(lisp.error_loc) != 0) {
+    fprintf(stderr, "Error in a file loaded at startup: no good!\n");
+    exit(1);
+  }
+
+  lisp_eval(&lisp, OBJS(&lisp, LOAD_SRC));
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"src/util.eld\")"));
   Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);

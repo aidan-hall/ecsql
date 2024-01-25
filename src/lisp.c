@@ -527,7 +527,8 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
 
   InterpreterPrimitive prim;
   prim.fn = fn;
-
+  /* Just used for error messages. */
+  prim.id_symbol = name_sym;
   /* The input argument type list may be stack-allocated. */
   prim.argument_types = params;
 
@@ -556,6 +557,7 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
 }
 
 static Object prim_funcall(LispEnv *lisp, Object args);
+static Object prim_eval(LispEnv *lisp, Object args);
 
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
@@ -598,6 +600,7 @@ LispEnv new_lisp_environment() {
                      lisp_store_stream_handle(&lisp, stdout));
   lisp_define_global(&lisp, lisp.keysyms.stderr,
                      lisp_store_stream_handle(&lisp, stderr));
+  lisp_define_global(&lisp, lisp.keysyms.eof, OBJ_BOX(EOF, CHAR));
 #define OBJSX(S) OBJS(&lisp, S)
 #define DEFPRIMFUN(NAME, SPEC, FUN)                                            \
   lisp_add_primitive(&lisp, OBJSX(NAME), OBJSX(SPEC), FUN,                     \
@@ -627,6 +630,7 @@ LispEnv new_lisp_environment() {
   DEFPRIMFUN("print", "(t)", prim_print);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
+  DEFPRIMFUN("eval", "(t)", prim_eval);
 #undef DEFPRIMFUN
 #undef OBJSX
   return lisp;
@@ -912,7 +916,7 @@ static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
                                       Object arguments) {
   bool res = lisp_type_spec_matches(lisp, arguments, prim.argument_types);
   if (!res) {
-    WRONG("Invalid arguments to primitive function.");
+    WRONG("Invalid argument(s) to primitive function", prim.id_symbol);
   }
   return res;
 }
@@ -955,6 +959,10 @@ static Object prim_funcall(LispEnv *lisp, Object args) {
     function = lisp_lookup_function(lisp, function);
   }
   return lisp_apply(lisp, function, args);
+}
+
+static Object prim_eval(LispEnv *lisp, Object args) {
+  return lisp_eval(lisp, LISP_CAR(lisp, args));
 }
 
 Object lisp_or(LispEnv *lisp, Object sequence, Object context) {
@@ -1057,7 +1065,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     /* Variable name */
     tmp_ptr = lisp_lookup_variable(lisp, expression, context);
     if (tmp_ptr == nullptr) {
-      WRONG("Undefined variable.");
+      WRONG("Undefined variable", expression);
       break;
     }
     return *tmp_ptr;
@@ -1167,7 +1175,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       }
       return lisp_apply(lisp,
                         lisp_make_closure(lisp, LISP_CDR(lisp, tmp), context),
-                        LISP_CDR(lisp, expression));
+                        lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
     } else {
       tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(

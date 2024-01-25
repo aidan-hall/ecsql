@@ -5,9 +5,9 @@
 #include "common.h"
 #include "khash.h"
 #include <libgccjit.h>
+#include <setjmp.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <setjmp.h>
 
 typedef u64 Object;
 
@@ -30,7 +30,7 @@ typedef struct {
   F(quasiquote)                                                                \
   F(unquote)                                                                   \
   F(splice)                                                                    \
-  F(function)                                                           \
+  F(function)                                                                  \
   F(stdin)                                                                     \
   F(stdout)                                                                    \
   F(stderr)                                                                    \
@@ -40,24 +40,26 @@ typedef struct {
   F(progn)                                                                     \
   F(define)                                                                    \
   F(setq)                                                                      \
-  F(lambda)                                                             \
-  F(file)                                                               \
-  F(string)                                                             \
-  F(pair)                                                               \
-  F(i32)                                                                \
-  F(f32)                                                                \
-  F(undefined)                                                          \
-  F(symbol)                                                             \
-  F(primitive)                                                          \
-  F(closure)                                                            \
-  F(character)                                                          \
-  F(defun)
+  F(lambda)                                                                    \
+  F(file)                                                                      \
+  F(string)                                                                    \
+  F(pair)                                                                      \
+  F(i32)                                                                       \
+  F(f32)                                                                       \
+  F(undefined)                                                                 \
+  F(symbol)                                                                    \
+  F(primitive)                                                                 \
+  F(closure)                                                                   \
+  F(character)                                                                 \
+  F(defun)                                                                     \
+  F(eof)
 
 struct LispEnv;
 typedef Object (*ReaderMacro)(struct LispEnv *lisp, FILE *stream);
 typedef Object (*PrimitiveFunction)(struct LispEnv *lisp, Object arguments);
 typedef struct {
   PrimitiveFunction fn;
+  Object id_symbol;
   /* t if type-generic/variadic, list for fixed args */
   Object argument_types;
 } InterpreterPrimitive;
@@ -174,9 +176,9 @@ static inline float lisp_unbox_float(Object box) {
 }
 
 void wrong(LispEnv *lisp, const char *message, Object arg);
-#define WRONG2(MESSAGE, ARG)                                            \
-  do {                                                                  \
-    wrong(lisp, MESSAGE, ARG);                                          \
+#define WRONG2(MESSAGE, ARG)                                                   \
+  do {                                                                         \
+    wrong(lisp, MESSAGE, ARG);                                                 \
   } while (0)
 #define WRONG1(MESSAGE) WRONG2(MESSAGE, OBJ_NIL_TAG)
 #define WRONGX(a, b, c, ...) c
@@ -184,9 +186,9 @@ void wrong(LispEnv *lisp, const char *message, Object arg);
 #define LISP_ASSERT_TYPE(OBJ, TYPE)                                            \
   do {                                                                         \
     if (OBJ_TYPE(OBJ) != OBJ_##TYPE##_TAG) {                                   \
-      WRONG("FATAL: Wrong type of " #OBJ ": expected " #TYPE ", got",   \
-            lisp_type_of(lisp, OBJ));                                  \
-      exit(1); /* Should be unreachable */                              \
+      WRONG("FATAL: Wrong type of " #OBJ ": expected " #TYPE ", got",          \
+            lisp_type_of(lisp, OBJ));                                          \
+      exit(1); /* Should be unreachable */                                     \
     }                                                                          \
   } while (0)
 
@@ -194,8 +196,10 @@ void wrong(LispEnv *lisp, const char *message, Object arg);
 
 #define LISP_CAR_INDEX (0)
 #define LISP_CDR_INDEX (1)
-#define LISP_CAR_PLACE(LISP, PAIR) (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CAR_INDEX))
-#define LISP_CDR_PLACE(LISP, PAIR) (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
+#define LISP_CAR_PLACE(LISP, PAIR)                                             \
+  (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CAR_INDEX))
+#define LISP_CDR_PLACE(LISP, PAIR)                                             \
+  (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
 #define LISP_CAR(LISP, PAIR) (*LISP_CAR_PLACE(LISP, PAIR))
 #define LISP_CDR(LISP, PAIR) (*LISP_CDR_PLACE(LISP, PAIR))
 
