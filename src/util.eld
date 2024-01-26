@@ -29,7 +29,7 @@
   (if binds
       `(let (,(car binds))
          (let* ,(cdr binds) . ,body))
-    `(progn ,body)))
+    `(progn . ,body)))
 
 (defun equal (a b)
   (if (and (consp a) (consp b))
