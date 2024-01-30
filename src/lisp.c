@@ -1,6 +1,5 @@
 #include "lisp.h"
 #include "reader.h"
-#include <libgccjit.h>
 
 void wrong(LispEnv *lisp, const char *message, Object arg) {
   fputs(message, stderr);
