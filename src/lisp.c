@@ -849,8 +849,7 @@ Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
 }
 
 Object lisp_type_of(LispEnv *lisp, Object obj) {
-  /* This explicit cast triggers a warning if we miss a case here. */
-  switch ((enum ObjectTag)OBJ_TYPE(obj)) {
+  switch (OBJ_TYPE(obj)) {
   case OBJ_NIL_TAG:
     return lisp->keysyms.nil;
   case OBJ_INT_TAG:

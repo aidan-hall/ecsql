@@ -139,7 +139,7 @@ enum ObjectTag {
 
 /* Filter out just the type tag of an object */
 #define OBJ_TAG_NAME(NAME) (OBJ_##NAME##_TAG)
-#define OBJ_TYPE(OBJ) (OBJ & ~OBJ_MASK)
+#define OBJ_TYPE(OBJ) ((enum ObjectTag)(OBJ & ~OBJ_MASK))
 /* static inline Object OBJ_BOX(u64 value, u64 tag) { */
 /*   return (Object)((value << OBJ_TAG_LENGTH) | OBJ_TAG_NAME(tag)); */
 /* } */
