@@ -91,7 +91,7 @@ Token get_token(LispEnv *lisp, FILE *stream) {
   default:
     /* Reader macros: represented by individual ASCII characters. */
     if (0 <= c && c < 128) {
-      if (lisp->reader_macros[(size) c] != nullptr) {
+      if (lisp->reader_macros[(size) c] != NULL) {
       return one_char_token(c, TOK_LEX_CHAR);
       }
     }
@@ -100,7 +100,7 @@ Token get_token(LispEnv *lisp, FILE *stream) {
     buffer[0] = c;
     buffer_index = 1;
     while (!strchr(LEX_SYMBOL_TERMINATORS, c) && !isspace(c) &&
-           !feof(stream) && lisp->reader_macros[(size) c] == nullptr) {
+           !feof(stream) && lisp->reader_macros[(size) c] == NULL) {
       buffer[buffer_index++] = c = fgetc(stream);
     }
     /* The last character might be something we need. */

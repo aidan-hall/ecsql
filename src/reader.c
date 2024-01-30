@@ -29,7 +29,7 @@ static Object lisp_list_recurse(LispEnv *lisp, va_list args) {
 
 Object lisp_list(LispEnv *lisp, ...) {
   va_list args;
-  va_start(args);
+  va_start(args, lisp);
   Object res = lisp_list_recurse(lisp, args);
   va_end(args);
   return res;
@@ -75,7 +75,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     break;
   case TOK_LEX_CHAR: {
     ReaderMacro macro = lisp->reader_macros[(usize) tok.lex_char];
-    if (macro == nullptr) {
+    if (macro == NULL) {
       WRONG("Nonexistent reader macro", OBJ_BOX(tok.lex_char, CHAR));
       return OBJ_UNDEFINED_TAG;
     } else {
@@ -111,20 +111,6 @@ static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
 }
 
 Object lisp_read(LispEnv *lisp, FILE *stream) {
-  /* if (line == nullptr) { */
-  /*   line = readline(""); */
-  /*   if (line == nullptr) { */
-  /*     /\* EOF *\/ */
-  /*     fputs("Reached EOF; exiting...", stderr); */
-  /*     exit(0); */
-  /*   } */
-  /*   buffer = (s8){line, strlen(line)}; */
-  /* } */
-
-  /* /\* Readline reached EOF. *\/ */
-  /* if (line == nullptr) */
-  /*   return OBJ_UNDEFINED_TAG; */
-
   Token tok = get_token(lisp, stream);
 
   return read_with_token(lisp, tok, stream);

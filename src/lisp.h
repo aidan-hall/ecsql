@@ -4,10 +4,11 @@
 #include "arena.h"
 #include "common.h"
 #include "khash.h"
-#include <libgccjit.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
 
 typedef u64 Object;
 
@@ -69,17 +70,10 @@ KHASH_MAP_INIT_INT64(primitives, InterpreterPrimitive);
 #define LISP_MAX_OPEN_STREAMS (16)
 
 typedef struct LispEnv {
-  struct {
-    gcc_jit_context *ctxt;
-    gcc_jit_type *object_type;
-  } jit;
   Memory memory;
   /* char* → Object of strings stored in 'memory'. */
   khash_t(sym_name) * symbols;
-  /* Object(symbol) → gcc_jit_function* */
-  /* hash_t *functions; */
   khash_t(primitives) * primitive_functions;
-  /* Object(symbol) → gcc_jit_lvalue* of global variables(?). */
   SymbolTable *globals;
   SymbolTable *functions;
   SymbolTable *macros;
@@ -128,7 +122,7 @@ static inline Object *lisp_cell_at(LispEnv *lisp, size index) {
 #define LISP_MAX_STRING_LENGTH ((2 << LISP_INDEX_METADATA_LENGTH) - 2)
 
 /* 5-bit object type tag: allows up to 32 built-in types */
-enum ObjectTag : Object {
+enum ObjectTag {
   /* Atomic objects (evaluate to themselves) */
   OBJ_NIL_TAG = 0,
   OBJ_STRING_TAG,

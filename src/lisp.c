@@ -102,7 +102,7 @@ static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
 static Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
   size i;
   for (i = 0; i < LISP_MAX_OPEN_STREAMS; i++) {
-    if (lisp->open_streams[i] == nullptr) {
+    if (lisp->open_streams[i] == NULL) {
       lisp->open_streams[i] = stream;
       return OBJ_BOX(i, FILE_PTR);
     }
@@ -182,7 +182,7 @@ static Object lisp_open_file(LispEnv *lisp, Object args) {
   char *filename_s = (char *)lisp_string_to_null_terminated(lisp, filename);
   char *mode_s = (char *)lisp_string_to_null_terminated(lisp, mode);
   FILE *stream = fopen(filename_s, mode_s);
-  if (stream == nullptr) {
+  if (stream == NULL) {
     return OBJ_NIL_TAG;
   } else {
     return lisp_store_stream_handle(lisp, stream);
@@ -194,7 +194,7 @@ static Object lisp_close_stream(LispEnv *lisp, Object args) {
   size index = OBJ_UNBOX(args);
   fclose(lisp->open_streams[index]);
   /* Release the slot so we can store another open stream there. */
-  lisp->open_streams[index] = nullptr;
+  lisp->open_streams[index] = NULL;
   return OBJ_NIL_TAG;
 }
 
@@ -576,9 +576,6 @@ LispEnv new_lisp_environment() {
 
   /* A Gigabyte of RAM should do the trick. */
   lisp.memory = new_lisp_memory(1024 * 1024 * 1024);
-  lisp.jit.ctxt = gcc_jit_context_acquire();
-  lisp.jit.object_type =
-      gcc_jit_context_get_type(lisp.jit.ctxt, GCC_JIT_TYPE_UINT64_T);
 
   static_assert(sizeof(void *) == sizeof(Object), "Can't use clibs/hash.");
   lisp.symbols = kh_init(sym_name);
@@ -815,7 +812,7 @@ static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
   }
   khint_t global_key = kh_get(var_syms, lisp->globals, symbol);
   if (global_key == kh_end(lisp->globals)) {
-    return nullptr;
+    return NULL;
   }
   return &kh_value(lisp->globals, global_key);
 }
@@ -1115,7 +1112,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
   case OBJ_SYMBOL_TAG:
     /* Variable name */
     tmp_ptr = lisp_lookup_variable(lisp, expression, context);
-    if (tmp_ptr == nullptr) {
+    if (tmp_ptr == NULL) {
       WRONG("Undefined variable", expression);
       break;
     }
@@ -1222,7 +1219,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
         return OBJ_UNDEFINED_TAG;
       }
       tmp_ptr = lisp_lookup_variable(lisp, LISP_CAR(lisp, tmp), context);
-      if (tmp_ptr == nullptr) {
+      if (tmp_ptr == NULL) {
         WRONG("Undefined variable.");
         return OBJ_UNDEFINED_TAG;
       }

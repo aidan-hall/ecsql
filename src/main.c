@@ -1,10 +1,7 @@
 #include "lexer.h"
 #include "lisp.h"
 #include "reader.h"
-#include <libgccjit.h>
 #include <math.h>
-#include <readline/history.h>
-#include <readline/readline.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

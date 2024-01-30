@@ -6,7 +6,7 @@ SRC	+= $(wildcard deps/*/*.c)
 CPPFLAGS := -std=gnu2x $(CVERSION)
 CFLAGS	+= -g $(CPPFLAGS) -Wall
 
-LDLIBS = -lgccjit -lreadline
+LDLIBS =
 
 OBJ := $(SRC:.c=.o)
 DFILES := $(SRC:.c=.d)

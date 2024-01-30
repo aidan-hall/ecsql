@@ -22,6 +22,6 @@ void *arena_allocate(Arena *a, ptrdiff_t size, ptrdiff_t align, ptrdiff_t count)
 Arena new_arena(ptrdiff_t capacity) {
   Arena a = {0};
   a.begin = malloc(capacity);
-  a.end = a.begin ? a.begin + capacity : nullptr;
+  a.end = a.begin ? a.begin + capacity : NULL;
   return a;
 }

@@ -14,7 +14,7 @@
 /* Non-space characters that terminate a symbol. */
 #define LEX_SYMBOL_TERMINATORS "\"()"
 
-typedef enum : u8 {
+typedef enum {
   TOK_ERROR = '!',
   /* Indicates that all tokens have been read from the stream. */
   TOK_END = '$',
