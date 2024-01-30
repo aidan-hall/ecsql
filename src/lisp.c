@@ -33,7 +33,7 @@ static inline u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
   }
 }
 
-Object lisp_question_mark(LispEnv *lisp, FILE *stream) {
+Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
   return OBJ_BOX(fgetc(stream), CHAR);
 }
 
@@ -43,29 +43,13 @@ static inline Object lisp_quotify(LispEnv *lisp, Object quoter, Object object) {
 }
 
 /* Some built-in reader macros. */
-static Object lisp_quote(LispEnv *lisp, FILE *stream) {
-  return lisp_quotify(lisp, lisp->keysyms.quote, lisp_read(lisp, stream));
-}
-
-static Object lisp_quasiquote(LispEnv *lisp, FILE *stream) {
-  lisp->quasiquote_level++;
-  Object res =
-      lisp_quotify(lisp, lisp->keysyms.quasiquote, lisp_read(lisp, stream));
-  lisp->quasiquote_level--;
-  return res;
-}
-
-static Object lisp_unquote(LispEnv *lisp, FILE *stream) {
-  if (lisp->quasiquote_level <= 0) {
-    WRONG("Attempted to unquote outside a quasiquote.");
-    return OBJ_UNDEFINED_TAG;
+#define QUOTER_READER(NAME)                                                    \
+  static Object lisp_reader_##NAME(LispEnv *lisp, FILE *stream) {              \
+    return lisp_quotify(lisp, lisp->keysyms.NAME, lisp_read(lisp, stream));    \
   }
-  lisp->quasiquote_level--;
-  Object res =
-      lisp_quotify(lisp, lisp->keysyms.unquote, lisp_read(lisp, stream));
-  lisp->quasiquote_level++;
-  return res;
-}
+QUOTER_READER(quote);
+QUOTER_READER(unquote);
+QUOTER_READER(quasiquote);
 
 /* Add 'symbol' to 'env' with 'value'. */
 static Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
@@ -583,10 +567,10 @@ LispEnv new_lisp_environment() {
   lisp.primitive_functions = kh_init(primitives);
   lisp.macros = kh_init(var_syms);
 
-  lisp.reader_macros['\''] = lisp_quote;
-  lisp.reader_macros['`'] = lisp_quasiquote;
-  lisp.reader_macros[','] = lisp_unquote;
-  lisp.reader_macros['?'] = lisp_question_mark;
+  lisp.reader_macros['\''] = lisp_reader_quote;
+  lisp.reader_macros['`'] = lisp_reader_quasiquote;
+  lisp.reader_macros[','] = lisp_reader_unquote;
+  lisp.reader_macros['?'] = lisp_reader_question_mark;
 
 #define REGISTER_KEYSYM(K) lisp.keysyms.K = lisp_intern(&lisp, s8(#K));
   LISP_KEYSYMS(REGISTER_KEYSYM);

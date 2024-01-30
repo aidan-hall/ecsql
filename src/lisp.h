@@ -77,7 +77,6 @@ typedef struct LispEnv {
   SymbolTable *globals;
   SymbolTable *functions;
   SymbolTable *macros;
-  int quasiquote_level;
   FILE *open_streams[LISP_MAX_OPEN_STREAMS];
   /* Each reader macro is installed to an ASCII character index in here. */
   ReaderMacro reader_macros[128];
