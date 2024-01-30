@@ -6,31 +6,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LOAD_SRC                                \
-  "(defun load (name)"                          \
-  "  ((lambda (f)"                              \
-  "     ((lambda (form)"                        \
-  "        (while (eq (eq form eof) nil)"       \
-  "          (eval form)"                       \
-  "          (setq form (read-stream f))))"     \
-  "      (read-stream f))"                      \
-  "     (fclose f))"                            \
-  "   (fopen name \"r\"))"                      \
+#define LOAD_SRC                                                               \
+  "(defun load (name)"                                                         \
+  "  ((lambda (f)"                                                             \
+  "     ((lambda (form)"                                                       \
+  "        (while (eq (eq form eof) nil)"                                      \
+  "          (eval form)"                                                      \
+  "          (setq form (read-stream f))))"                                    \
+  "      (read-stream f))"                                                     \
+  "     (fclose f))"                                                           \
+  "   (fopen name \"r\"))"                                                     \
   "  (print (list \"Loaded: \" name)))"
 
 int main(int argc, char *argv[]) {
-  /* if (argc <= 1) */
-  /*   return 1; */
-
-  /* s8 stream = (s8){(u8 *)argv[1], strlen(argv[1])}; */
-
-  /* for (Token tok = get_token(stdin); tok.t != TOK_ERROR && tok.t != TOK_END;
-   */
-  /*      tok = get_token(stdin)) { */
-  /*   printf("Token, t=%c, %d, '", tok.t, tok.lex_char); */
-  /*   fwrite(tok.lexeme.data, sizeof(u8), tok.lexeme.len, stdout); */
-  /*   printf("'\n"); */
-  /* } */
   LispEnv lisp = new_lisp_environment();
   if (setjmp(lisp.error_loc) != 0) {
     fprintf(stderr, "Error in a file loaded at startup: no good!\n");
