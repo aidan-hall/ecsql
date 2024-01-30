@@ -485,7 +485,7 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
     } else if (OBJ_TYPE(a) == OBJ_INT_TAG && OBJ_TYPE(b) == OBJ_FLOAT_TAG) {   \
       return lisp_bool(lisp, (float)(i32)OBJ_UNBOX(a) OP lisp_unbox_float(b)); \
     } else if (OBJ_TYPE(a) == OBJ_FLOAT_TAG && OBJ_TYPE(b) == OBJ_FLOAT_TAG) { \
-      return lisp_bool(lisp, lisp_unbox_float(a) OP(float)(i32) OBJ_UNBOX(b)); \
+      return lisp_bool(lisp, lisp_unbox_float(a) OP lisp_unbox_float(b));      \
     } else {                                                                   \
       WRONG("Invalid types of parameters to " #OP,                             \
             lisp_cons(lisp, lisp_type_of(lisp, a), lisp_type_of(lisp, b)));    \
