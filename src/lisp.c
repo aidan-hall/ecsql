@@ -1,6 +1,8 @@
 #include "lisp.h"
 #include "reader.h"
 #include "print.h"
+#include "primitives.h"
+#include <stdarg.h>
 
 void wrong(LispEnv *lisp, const char *message, Object arg) {
   fputs(message, stderr);
@@ -12,18 +14,7 @@ void wrong(LispEnv *lisp, const char *message, Object arg) {
   longjmp(lisp->error_loc, 1);
 }
 
-static inline size lisp_string_length(Object string) {
-  /* LISP_ASSERT_TYPE(string, STRING); */
-  return OBJ_UNBOX_METADATA(string);
-}
-
-static inline s8 lisp_string_to_s8(LispEnv *lisp, Object string) {
-  LISP_ASSERT_TYPE(string, STRING);
-  return (s8){(u8 *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(string)),
-              lisp_string_length(string)};
-}
-
-static inline u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
+u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
   LISP_ASSERT_TYPE(string, STRING);
   s8 string_s8 = lisp_string_to_s8(lisp, string);
   if (string_s8.data[string_s8.len] != '\0') {
@@ -35,7 +26,7 @@ static inline u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
 }
 
 /* Add 'symbol' to 'env' with 'value'. */
-static Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
+Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
                                     Object symbol, Object value) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
 
@@ -65,7 +56,7 @@ static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
   return value;
 }
 
-static Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
+Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
   size i;
   for (i = 0; i < LISP_MAX_OPEN_STREAMS; i++) {
     if (lisp->open_streams[i] == NULL) {
@@ -76,46 +67,6 @@ static Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
   WRONG("The maximum number of streams is already open.");
   return OBJ_UNDEFINED_TAG;
 }
-
-static Object lisp_open_file(LispEnv *lisp, Object args) {
-  Object filename = LISP_CAR(lisp, args);
-  args = LISP_CDR(lisp, args);
-  Object mode = LISP_CAR(lisp, args);
-  char *filename_s = (char *)lisp_string_to_null_terminated(lisp, filename);
-  char *mode_s = (char *)lisp_string_to_null_terminated(lisp, mode);
-  FILE *stream = fopen(filename_s, mode_s);
-  if (stream == NULL) {
-    return OBJ_NIL_TAG;
-  } else {
-    return lisp_store_stream_handle(lisp, stream);
-  }
-}
-
-static Object lisp_close_stream(LispEnv *lisp, Object args) {
-  args = LISP_CAR(lisp, args);
-  size index = OBJ_UNBOX(args);
-  fclose(lisp->open_streams[index]);
-  /* Release the slot so we can store another open stream there. */
-  lisp->open_streams[index] = NULL;
-  return OBJ_NIL_TAG;
-}
-
-static Object lisp_getc_stream(LispEnv *lisp, Object args) {
-  args = LISP_CAR(lisp, args);
-  char c = fgetc(lisp->open_streams[OBJ_UNBOX(args)]);
-  return OBJ_BOX(c, CHAR);
-}
-
-static i32 lisp_length(LispEnv *lisp, Object list) {
-  i32 length = 0;
-  while (OBJ_TYPE(list) == OBJ_PAIR_TAG) {
-    length += 1;
-    list = LISP_CDR(lisp, list);
-  }
-  LISP_ASSERT_TYPE(list, NIL);
-  return length;
-}
-
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
 
@@ -152,7 +103,7 @@ LispEnv new_lisp_environment() {
                      lisp_store_stream_handle(&lisp, stderr));
   lisp_define_global(&lisp, lisp.keysyms.eof, OBJ_BOX(EOF, CHAR));
   
-  lisp_install_primitives(lisp);
+  lisp_install_primitives(&lisp);
   return lisp;
 }
 
@@ -255,7 +206,7 @@ static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
 
 /* We don't support lexical function definitions, so this function takes no
  * context argument. */
-static Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
+Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
   /* TODO: Search in the lexical context. */
   khint_t function_key = kh_get(var_syms, lisp->functions, symbol);
@@ -424,7 +375,7 @@ Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
   return OBJ_REINTERPRET(lisp_cons(lisp, context, body), CLOSURE);
 }
 
-static Object lisp_macroexpand(LispEnv *lisp, Object expression) {
+Object lisp_macroexpand(LispEnv *lisp, Object expression) {
   if (OBJ_TYPE(expression) != OBJ_PAIR_TAG) {
     return expression;
   }

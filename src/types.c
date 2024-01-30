@@ -1,4 +1,5 @@
 #include "types.h"
+#include "lisp.h"
 
 
 Object lisp_type_of(LispEnv *lisp, Object obj) {

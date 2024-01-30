@@ -1,6 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include "common.h"
 #include "types.h"
 
 #define OBJ_MASK (0xffffffffffffffe0)
@@ -57,11 +58,6 @@ static inline float lisp_unbox_float(Object box) {
 
 #define EQ(X, Y) ((X) == (Y))
 
-/* Get the Lisp cell at the given index, with no error handling. */
-static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
-  return &((Object *)lisp->memory.space.begin)[index];
-}
-
 #define LISP_CAR_INDEX (0)
 #define LISP_CDR_INDEX (1)
 #define LISP_CAR_PLACE(LISP, PAIR)                                             \
@@ -70,16 +66,5 @@ static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
   (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
 #define LISP_CAR(LISP, PAIR) (*LISP_CAR_PLACE(LISP, PAIR))
 #define LISP_CDR(LISP, PAIR) (*LISP_CDR_PLACE(LISP, PAIR))
-
-static inline bool lisp_true(Object value) {
-  static_assert(!OBJ_NIL_TAG, "Lisp and C have the same truthy semantics.");
-  return value;
-}
-
-static inline bool lisp_false(Object value) { return !lisp_true(value); }
-
-static inline Object lisp_bool(LispEnv *lisp, bool value) {
-  return value ? lisp->keysyms.t : OBJ_NIL_TAG;
-}
 
 #endif

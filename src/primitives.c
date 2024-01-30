@@ -1,10 +1,13 @@
 /* Primitive Lisp functions, macros and reader macros. */
 #include "lisp.h"
-#include "eval.h"
 #include "primitives.h"
+#include "reader.h"
+#include "print.h"
 
 #define FIRST (LISP_CAR(lisp, args))
 #define SECOND (LISP_CAR(lisp, LISP_CDR(lisp, args)))
+
+/* PRIMITIVE FUNCTIONS */
 
 static Object prim_cons(LispEnv *lisp, Object args) {
   return lisp_cons(lisp, FIRST, SECOND);
@@ -433,6 +436,39 @@ static Object prim_cdr(LispEnv *lisp, Object args) {
   LISP_ASSERT_TYPE(pair, PAIR);
   return LISP_CDR(lisp, pair);
 }
+
+
+static Object lisp_open_file(LispEnv *lisp, Object args) {
+  Object filename = LISP_CAR(lisp, args);
+  args = LISP_CDR(lisp, args);
+  Object mode = LISP_CAR(lisp, args);
+  char *filename_s = (char *)lisp_string_to_null_terminated(lisp, filename);
+  char *mode_s = (char *)lisp_string_to_null_terminated(lisp, mode);
+  FILE *stream = fopen(filename_s, mode_s);
+  if (stream == NULL) {
+    return OBJ_NIL_TAG;
+  } else {
+    return lisp_store_stream_handle(lisp, stream);
+  }
+}
+
+static Object lisp_close_stream(LispEnv *lisp, Object args) {
+  args = LISP_CAR(lisp, args);
+  size index = OBJ_UNBOX(args);
+  fclose(lisp->open_streams[index]);
+  /* Release the slot so we can store another open stream there. */
+  lisp->open_streams[index] = NULL;
+  return OBJ_NIL_TAG;
+}
+
+static Object lisp_getc_stream(LispEnv *lisp, Object args) {
+  args = LISP_CAR(lisp, args);
+  char c = fgetc(lisp->open_streams[OBJ_UNBOX(args)]);
+  return OBJ_BOX(c, CHAR);
+}
+
+
+/* READER MACROS */
 
 Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
   return OBJ_BOX(fgetc(stream), CHAR);

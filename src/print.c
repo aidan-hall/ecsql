@@ -1,4 +1,5 @@
 #include "print.h"
+#include "lisp.h"
 
 /* list *must* be a pair or nil.  Any sub-structure should be handled correctly.
  */
@@ -55,16 +56,14 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     fprintf(stream, "#undefined");
     break;
   case OBJ_PRIMITIVE_TAG:
-    lisp_print(lisp,
-               lisp_list(lisp, lisp->keysyms.function,
-                         OBJ_REINTERPRET(object, SYMBOL), OBJ_NIL_TAG),
-               stream);
+    fputs("(function", stream);
+    lisp_print(lisp, OBJ_REINTERPRET(object, SYMBOL), stream);
+    fputs(")", stream);
     break;
   case OBJ_CLOSURE_TAG:
-    lisp_print(lisp,
-               lisp_list(lisp, lisp->keysyms.lambda,
-                         LISP_CAR(lisp, LISP_CDR(lisp, object)), OBJ_NIL_TAG),
-               stream);
+    fputs("(lambda", stream);
+    lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream),
+    fputs(")", stream);
     break;
   }
 }

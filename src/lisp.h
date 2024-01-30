@@ -5,7 +5,6 @@
 #include "khash.h"
 #include <assert.h>
 #include <setjmp.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include "memory.h"
@@ -72,7 +71,6 @@ typedef struct LispEnv {
 
 LispEnv new_lisp_environment();
 
-Object lisp_store_string(LispEnv *lisp, s8 string);
 /* Return the canonical symbol whose name is string 'name'. */
 Object lisp_intern(LispEnv *lisp, s8 name);
 
@@ -94,6 +92,61 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
   } while (0)
 
 
+/* Get the Lisp cell at the given index, with no error handling. */
+static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
+  return &((Object *)lisp->memory.space.begin)[index];
+}
+
+static inline bool lisp_true(Object value) {
+  static_assert(!OBJ_NIL_TAG, "Lisp and C have the same truthy semantics.");
+  return value;
+}
+
+static inline bool lisp_false(Object value) { return !lisp_true(value); }
+
+static inline Object lisp_bool(LispEnv *lisp, bool value) {
+  return value ? lisp->keysyms.t : OBJ_NIL_TAG;
+}
+
 /* Cons up a Lisp list. The last argument *must* have a NIL type tag. */
 Object lisp_list(LispEnv *lisp, ...);
+
+Object lisp_store_string(LispEnv *lisp, s8 string);
+
+static inline size lisp_string_length(Object string) {
+  /* LISP_ASSERT_TYPE(string, STRING); */
+  return OBJ_UNBOX_METADATA(string);
+}
+
+static inline s8 lisp_string_to_s8(LispEnv *lisp, Object string) {
+  LISP_ASSERT_TYPE(string, STRING);
+  return (s8){(u8 *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(string)),
+              lisp_string_length(string)};
+}
+
+u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string);
+
+static inline i32 lisp_length(LispEnv *lisp, Object list) {
+  i32 length = 0;
+  while (OBJ_TYPE(list) == OBJ_PAIR_TAG) {
+    length += 1;
+    list = LISP_CDR(lisp, list);
+  }
+  LISP_ASSERT_TYPE(list, NIL);
+  return length;
+}
+
+Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream);
+
+Object lisp_bind(struct LispEnv *lisp, Object parameters, Object arguments,
+                 Object context);
+Object lisp_evaluate(struct LispEnv *lisp, Object expression, Object context);
+Object lisp_eval(struct LispEnv *lisp, Object expression);
+Object lisp_apply(struct LispEnv *lisp, Object function, Object arguments);
+Object lisp_evaluate_sequence(struct LispEnv *lisp, Object sequence, Object context);
+Object lisp_add_to_namespace(struct LispEnv *lisp, khash_t(var_syms) * env,
+                             Object symbol, Object value);
+Object lisp_lookup_function(LispEnv *lisp, Object symbol);
+Object lisp_macroexpand(LispEnv *lisp, Object expression);
+
 #endif
