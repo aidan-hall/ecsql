@@ -18,7 +18,7 @@ Memory new_lisp_memory(size capacity) {
   return memory;
 }
 
-size lisp_allocate_cells(LispEnv *lisp, size cells) {
+size lisp_allocate_cells(struct LispEnv *lisp, size cells) {
   Object *start = ALLOC(&lisp->memory.active, Object, cells);
 
   if (start == NULL) {
@@ -28,6 +28,16 @@ size lisp_allocate_cells(LispEnv *lisp, size cells) {
   return start - (Object *)lisp->memory.space.begin;
 }
 
-size lisp_allocate_bytes(LispEnv *lisp, size count) {
+size lisp_allocate_bytes(struct LispEnv *lisp, size count) {
   return lisp_allocate_cells(lisp, (count / sizeof(Object)) + 1);
+}
+
+Object lisp_cons(LispEnv *lisp, Object car, Object cdr) {
+  size location = lisp_allocate_cells(lisp, 2);
+  Object *data = lisp_cell_at(lisp, location);
+  data[LISP_CAR_INDEX] = car;
+  data[LISP_CDR_INDEX] = cdr;
+
+  /* The 2 allows implicit conversion to an array type, if we implement one. */
+  return OBJ_BOX_INDEX(location, 2, PAIR);
 }

@@ -18,22 +18,6 @@
 /* s8 buffer; */
 
 static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream);
-static Object lisp_list_recurse(LispEnv *lisp, va_list args) {
-  Object arg = va_arg(args, Object);
-  if (OBJ_TYPE(arg) == OBJ_NIL_TAG) {
-    return arg;
-  } else {
-    return lisp_cons(lisp, arg, lisp_list_recurse(lisp, args));
-  }
-}
-
-Object lisp_list(LispEnv *lisp, ...) {
-  va_list args;
-  va_start(args, lisp);
-  Object res = lisp_list_recurse(lisp, args);
-  va_end(args);
-  return res;
-}
 
 static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
   switch (tok.t) {
