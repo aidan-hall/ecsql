@@ -2,6 +2,7 @@
 #include "primitives.h"
 #include "lisp.h"
 #include "memory.h"
+#include "object.h"
 #include "print.h"
 #include "reader.h"
 
@@ -448,6 +449,59 @@ static Object prim_setcdr(LispEnv *lisp, Object args) {
   return value;
 }
 
+static Object prim_make_vector(LispEnv *lisp, Object args) {
+  i32 length = (i32)OBJ_UNBOX(FIRST);
+  if (length < 0) {
+    WRONG("Negative length of vector", FIRST);
+    return OBJ_UNDEFINED_TAG;
+  }
+  Object vector = lisp_make_vector(lisp, length);
+  Object *cells = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector));
+
+  Object init_value = SECOND;
+
+  for (i32 i = 0; i < length; ++i) {
+    cells[i] = init_value;
+  }
+
+  return vector;
+}
+
+static Object prim_vector(LispEnv *lisp, Object args) {
+  i32 length = lisp_length(lisp, args);
+  Object vector = lisp_make_vector(lisp, length);
+  Object *cells = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector));
+
+  for (i32 i = 0; i < length; i++, args = LISP_CDR(lisp, args)) {
+    cells[i] = LISP_CAR(lisp, args);
+  }
+
+  return vector;
+}
+
+static Object *lisp_get_vector_item(LispEnv *lisp, Object vector, i32 index) {
+  if (index < 0 || index >= (i16)OBJ_UNBOX_METADATA(vector)) {
+    WRONG("Index out of bounds", lisp_cons(lisp, vector, OBJ_BOX(index, INT)));
+    return NULL;
+  }
+  return lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector) + index);
+}
+
+static Object prim_aset(LispEnv *lisp, Object args) {
+  Object vector = LISP_CAR(lisp, args);
+  args = LISP_CDR(lisp, args);
+  i32 index = (i32)OBJ_UNBOX(LISP_CAR(lisp, args));
+  args = LISP_CDR(lisp, args);
+  Object value = LISP_CAR(lisp, args);
+  return *lisp_get_vector_item(lisp, vector, index) = value;
+}
+
+static Object prim_aref(LispEnv *lisp, Object args) {
+  Object vector = LISP_CAR(lisp, args);
+  args = LISP_CDR(lisp, args);
+  i32 index = (i32)OBJ_UNBOX(LISP_CAR(lisp, args));
+  return *lisp_get_vector_item(lisp, vector, index);
+}
 
 static Object lisp_open_file(LispEnv *lisp, Object args) {
   Object filename = LISP_CAR(lisp, args);
@@ -526,6 +580,10 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("cons", "(t t)", prim_cons);
   DEFPRIMFUN("list", "t", prim_list);
   DEFPRIMFUN("length", "(pair)", prim_length);
+  DEFPRIMFUN("make-vector", "(i32 t)", prim_make_vector);
+  DEFPRIMFUN("vector", "t", prim_vector);
+  DEFPRIMFUN("aref", "(vector i32)", prim_aref);
+  DEFPRIMFUN("aset", "(vector i32 t)", prim_aset);
   DEFPRIMFUN("eq", "(t t)", prim_eq);
   DEFPRIMFUN("eql", "(t t)", prim_eql);
   DEFPRIMFUN("<", "(t t)", prim_less);

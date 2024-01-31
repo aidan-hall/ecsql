@@ -3,6 +3,7 @@
 
 #include "arena.h"
 #include "types.h"
+#include "object.h"
 
 typedef struct {
   Arena space;
@@ -17,7 +18,9 @@ Memory new_lisp_memory(size capacity);
 size lisp_allocate_cells(struct LispEnv *lisp, size cells);
 size lisp_allocate_bytes(struct LispEnv *lisp, size count);
 Object lisp_cons(struct LispEnv *lisp, Object car, Object cdr);
-
+static inline Object lisp_make_vector(struct LispEnv *lisp, i32 length) {
+  return OBJ_BOX_INDEX(lisp_allocate_cells(lisp, length), length, VECTOR);
+}
 
 
 #endif

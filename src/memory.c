@@ -1,5 +1,6 @@
 #include "arena.h"
 #include "lisp.h"
+#include "object.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

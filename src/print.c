@@ -1,5 +1,6 @@
 #include "print.h"
 #include "lisp.h"
+#include "object.h"
 
 /* list *must* be a pair or nil.  Any sub-structure should be handled correctly.
  */
@@ -65,5 +66,15 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream);
     fputs(")", stream);
     break;
+  case OBJ_VECTOR_TAG: {
+    fputs("(vector", stream);
+    Object *cells = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(object));
+    i16 length = OBJ_UNBOX_METADATA(object);
+    for (i16 i = 0; i < length; ++i) {
+      fputc(' ', stream);
+      lisp_print(lisp, cells[i], stream);
+    }
+    fputs(")", stream);
+  } break;
   }
 }

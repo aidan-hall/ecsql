@@ -1,7 +1,7 @@
 #include "lisp.h"
-#include "reader.h"
-#include "print.h"
 #include "primitives.h"
+#include "print.h"
+#include "reader.h"
 #include <stdarg.h>
 
 void wrong(LispEnv *lisp, const char *message, Object arg) {
@@ -27,7 +27,7 @@ u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
 
 /* Add 'symbol' to 'env' with 'value'. */
 Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
-                                    Object symbol, Object value) {
+                             Object symbol, Object value) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
 
   u32 iter = kh_get(var_syms, env, symbol);
@@ -102,7 +102,7 @@ LispEnv new_lisp_environment() {
   lisp_define_global(&lisp, lisp.keysyms.stderr,
                      lisp_store_stream_handle(&lisp, stderr));
   lisp_define_global(&lisp, lisp.keysyms.eof, OBJ_BOX(EOF, CHAR));
-  
+
   lisp_install_primitives(&lisp);
   return lisp;
 }

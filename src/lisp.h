@@ -44,7 +44,8 @@
   F(character)                                                                 \
   F(defun)                                                                     \
   F(defmacro)                                                                  \
-  F(eof)
+  F(eof)                                                                       \
+  F(vector)
 
 typedef struct LispEnv {
   Memory memory;

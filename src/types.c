@@ -1,5 +1,6 @@
 #include "types.h"
 #include "lisp.h"
+#include "object.h"
 
 
 Object lisp_type_of(LispEnv *lisp, Object obj) {
@@ -26,6 +27,8 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
     return lisp->keysyms.closure;
   case OBJ_PAIR_TAG:
     return lisp->keysyms.pair;
+  case OBJ_VECTOR_TAG:
+    return lisp->keysyms.vector;
   }
   WRONG("Invalid type tag of object.");
   return OBJ_UNDEFINED_TAG;
