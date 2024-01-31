@@ -1,5 +1,7 @@
 #ifndef PRIMITIVES_H
 #define PRIMITIVES_H
 
-void lisp_install_primitives(LispEnv *lisp);
+#include "types.h"
+
+void lisp_install_primitives(struct LispEnv *lisp);
 #endif
