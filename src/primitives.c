@@ -436,6 +436,18 @@ static Object prim_cdr(LispEnv *lisp, Object args) {
   return LISP_CDR(lisp, pair);
 }
 
+static Object prim_setcar(LispEnv *lisp, Object args) {
+  Object value = SECOND;
+  *LISP_CAR_PLACE(lisp, FIRST) = value;
+  return value;
+}
+
+static Object prim_setcdr(LispEnv *lisp, Object args) {
+  Object value = SECOND;
+  *LISP_CDR_PLACE(lisp, FIRST) = value;
+  return value;
+}
+
 
 static Object lisp_open_file(LispEnv *lisp, Object args) {
   Object filename = LISP_CAR(lisp, args);
@@ -509,6 +521,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("read-stream", "(file)", prim_read);
   DEFPRIMFUN("car", "(pair)", prim_car);
   DEFPRIMFUN("cdr", "(pair)", prim_cdr);
+  DEFPRIMFUN("setcar", "(pair t)", prim_setcar);
+  DEFPRIMFUN("setcdr", "(pair t)", prim_setcdr);
   DEFPRIMFUN("cons", "(t t)", prim_cons);
   DEFPRIMFUN("list", "t", prim_list);
   DEFPRIMFUN("length", "(pair)", prim_length);
