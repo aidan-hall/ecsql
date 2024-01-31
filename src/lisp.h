@@ -21,7 +21,6 @@
   F(quasiquote)                                                                \
   F(unquote)                                                                   \
   F(splice)                                                                    \
-  F(function)                                                                  \
   F(stdin)                                                                     \
   F(stdout)                                                                    \
   F(stderr)                                                                    \
@@ -29,7 +28,6 @@
   F(cond)                                                                      \
   F(and)                                                                       \
   F(progn)                                                                     \
-  F(define)                                                                    \
   F(setq)                                                                      \
   F(lambda)                                                                    \
   F(file)                                                                      \
@@ -42,8 +40,10 @@
   F(primitive)                                                                 \
   F(closure)                                                                   \
   F(character)                                                                 \
-  F(defun)                                                                     \
-  F(defmacro)                                                                  \
+  F(defname)                                                                   \
+  F(global)                                                                   \
+  F(function)                                                                  \
+  F(macro)                                                                     \
   F(eof)                                                                       \
   F(vector)
 
@@ -148,6 +148,8 @@ Object lisp_evaluate_sequence(struct LispEnv *lisp, Object sequence,
 Object lisp_add_to_namespace(struct LispEnv *lisp, khash_t(var_syms) * env,
                              Object symbol, Object value);
 Object lisp_lookup_function(LispEnv *lisp, Object symbol);
+Object lisp_macroexpand_top(LispEnv *lisp, Object expression);
+Object lisp_macroexpand_list(LispEnv *lisp, Object list);
 Object lisp_macroexpand(LispEnv *lisp, Object expression);
 
 #endif

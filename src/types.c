@@ -30,6 +30,7 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
   case OBJ_VECTOR_TAG:
     return lisp->keysyms.vector;
   }
+  fprintf(stderr, "type tag: %x\n", OBJ_TYPE(obj));
   WRONG("Invalid type tag of object.");
   return OBJ_UNDEFINED_TAG;
 }

@@ -412,11 +412,15 @@ static Object prim_funcall(LispEnv *lisp, Object args) {
 }
 
 static Object prim_eval(LispEnv *lisp, Object args) {
-  return lisp_eval(lisp, FIRST);
+  return lisp_eval(lisp, lisp_macroexpand(lisp, FIRST));
 }
 
 static Object prim_macroexpand(LispEnv *lisp, Object args) {
   return lisp_macroexpand(lisp, FIRST);
+}
+
+static Object prim_macroexpand_1(LispEnv *lisp, Object args) {
+  return lisp_macroexpand_top(lisp, FIRST);
 }
 
 static Object prim_car(LispEnv *lisp, Object args) {
@@ -532,6 +536,12 @@ static Object lisp_getc_stream(LispEnv *lisp, Object args) {
   return OBJ_BOX(c, CHAR);
 }
 
+static Object lisp_puts_stream(LispEnv *lisp, Object args) {
+  u8 *s = lisp_string_to_null_terminated(lisp, FIRST);
+  fputs((char *)s, lisp->open_streams[OBJ_UNBOX(SECOND)]);
+  return OBJ_NIL_TAG;
+}
+
 /* READER MACROS */
 
 Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
@@ -571,6 +581,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("quit", "()", prim_quit);
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
+  DEFPRIMFUN("fputs", "(string file) ", lisp_puts_stream);
   DEFPRIMFUN("getc", "(file)", lisp_getc_stream);
   DEFPRIMFUN("read-stream", "(file)", prim_read);
   DEFPRIMFUN("car", "(pair)", prim_car);
@@ -595,7 +606,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
   DEFPRIMFUN("eval", "(t)", prim_eval);
-  DEFPRIMFUN("macroexpand-1", "(t)", prim_macroexpand);
+  DEFPRIMFUN("macroexpand-1", "(t)", prim_macroexpand_1);
+  DEFPRIMFUN("macroexpand", "(t)", prim_macroexpand);
 #undef DEFPRIMFUN
 #undef OBJSX
 }

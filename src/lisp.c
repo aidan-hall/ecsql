@@ -1,4 +1,5 @@
 #include "lisp.h"
+#include "object.h"
 #include "primitives.h"
 #include "print.h"
 #include "reader.h"
@@ -43,6 +44,22 @@ Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
   }
   kh_value(env, iter) = value;
   return value;
+}
+
+Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value) {
+  khash_t(var_syms) * env;
+  if (EQ(ns, lisp->keysyms.global)) {
+    env = lisp->globals;
+  } else if (EQ(ns, lisp->keysyms.function)) {
+    env = lisp->functions;
+  } else if (EQ(ns, lisp->keysyms.macro)) {
+    env = lisp->macros;
+  } else {
+    WRONG("Invalid namespace", ns);
+    return OBJ_UNDEFINED_TAG;
+  }
+
+  return lisp_add_to_namespace(lisp, env, symbol, lisp_eval(lisp, value));
 }
 
 static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
@@ -218,17 +235,14 @@ Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
 
 Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
   Object tmp;
-  if (OBJ_TYPE(parameters) == OBJ_NIL_TAG ||
-      OBJ_TYPE(arguments) == OBJ_NIL_TAG) {
-    if (OBJ_TYPE(parameters) == OBJ_NIL_TAG &&
-        OBJ_TYPE(arguments) == OBJ_NIL_TAG) {
-      return OBJ_NIL_TAG;
+  if (OBJ_TYPE(parameters) == OBJ_NIL_TAG) {
+    if (OBJ_TYPE(arguments) != OBJ_NIL_TAG) {
+      WRONG("Too many arguments.");
     } else {
-      WRONG("Wrong number of arguments.");
-      return OBJ_UNDEFINED_TAG;
+      /* End of parameters and arguments lists */
+      return OBJ_NIL_TAG;
     }
-  }
-  if (OBJ_TYPE(parameters) == OBJ_PAIR_TAG) {
+  } else if (OBJ_TYPE(parameters) == OBJ_PAIR_TAG) {
     if (OBJ_TYPE(arguments) == OBJ_PAIR_TAG) {
       tmp = lisp_cons(lisp, LISP_CAR(lisp, parameters),
                       LISP_CAR(lisp, arguments));
@@ -332,89 +346,81 @@ Object lisp_evaluate_sequence(LispEnv *lisp, Object sequence, Object context) {
   return statement;
 }
 
-Object lisp_evaluate_quasiquoted(LispEnv *lisp, Object expression,
-                                 Object context, int level) {
-  if (level == 0) {
-    return lisp_evaluate(lisp, expression, context);
+Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
+  if (OBJ_TYPE(body) != OBJ_PAIR_TAG) {
+    WRONG("Lambda forms require an argument list and body.");
+  }
+  Object expanded = lisp_macroexpand_list(lisp, LISP_CDR(lisp, body));
+  return OBJ_REINTERPRET(lisp_cons(lisp, context, lisp_cons(lisp, LISP_CAR(lisp, body), expanded)), CLOSURE);
+}
+
+Object lisp_macroexpand_top(LispEnv *lisp, Object expression) {
+  if (OBJ_TYPE(expression) != OBJ_PAIR_TAG) {
+    return expression;
   }
 
-  Object tmp;
-
-  if (OBJ_TYPE(expression) == OBJ_PAIR_TAG) {
-    tmp = LISP_CAR(lisp, expression);
-    /* TODO: Error handling here. */
-    /* static_assert(false, "This is completely fucked."); */
-    if (EQ(tmp, lisp->keysyms.unquote)) {
-      tmp = lisp_evaluate_quasiquoted(
-          lisp, LISP_CAR(lisp, LISP_CDR(lisp, expression)), context, level - 1);
-      if (level > 1) {
-        tmp = lisp_cons(lisp, lisp->keysyms.unquote,
-                        lisp_cons(lisp, tmp, OBJ_NIL_TAG));
-      }
-      return tmp;
-    } else if (EQ(tmp, lisp->keysyms.quasiquote)) {
-      tmp = lisp_evaluate_quasiquoted(
-          lisp, LISP_CAR(lisp, LISP_CDR(lisp, expression)), context, level + 1);
-      return lisp_cons(lisp, lisp->keysyms.quasiquote,
-                       lisp_cons(lisp, tmp, OBJ_NIL_TAG));
-    } else {
-      return lisp_cons(lisp,
-                       lisp_evaluate_quasiquoted(lisp, tmp, context, level),
-                       lisp_evaluate_quasiquoted(
-                           lisp, LISP_CDR(lisp, expression), context, level));
+  /* Recursively macroexpand_top the head. */
+  Object macro;
+  Object original_car = LISP_CAR(lisp, expression);
+  if (EQ(original_car, lisp->keysyms.quote))
+    return expression;
+  
+  {
+    Object car = original_car;
+    macro = lisp_macroexpand_top(lisp, car);
+    while (!EQ(macro, car)) {
+      car = macro;
+      macro = lisp_macroexpand_top(lisp, car);
     }
+  }
+
+  /* Expand the macro form itself. */
+  u32 iter = kh_get(var_syms, lisp->macros, macro);
+  if (iter == kh_end(lisp->macros)) {
+    /* car of list was not a macro name: just update if the car expression
+     * expanded. */
+    if (!EQ(macro, original_car))
+      expression = lisp_cons(lisp, macro, LISP_CDR(lisp, expression));
+  } else {
+    expression = lisp_apply(lisp, kh_value(lisp->macros, iter),
+                            LISP_CDR(lisp, expression));
+  }
+  return expression;
+}
+
+
+Object lisp_macroexpand(LispEnv *lisp, Object expression) {
+  Object tmp = lisp_macroexpand_top(lisp, expression);
+  while (!EQ(tmp, expression)) {
+    expression = tmp;
+    tmp = lisp_macroexpand_top(lisp, expression);
+  }
+
+  if (EQ(OBJ_TYPE(expression), OBJ_PAIR_TAG)) {
+    if (EQ(LISP_CAR(lisp, expression), lisp->keysyms.quote))
+      return expression;
+    
+    return lisp_macroexpand_list(lisp, expression);
   } else {
     return expression;
   }
 }
 
-Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
-  if (OBJ_TYPE(body) != OBJ_PAIR_TAG) {
-    WRONG("Lambda forms require an argument list and body.");
+Object lisp_macroexpand_list(LispEnv *lisp, Object list) {
+  if (OBJ_TYPE(list) == OBJ_PAIR_TAG) {
+    return lisp_cons(lisp, lisp_macroexpand(lisp, LISP_CAR(lisp, list)),
+                     lisp_macroexpand_list(lisp, LISP_CDR(lisp, list)));
+  } else {
+    return list;
   }
-  return OBJ_REINTERPRET(lisp_cons(lisp, context, body), CLOSURE);
-}
-
-Object lisp_macroexpand(LispEnv *lisp, Object expression) {
-  if (OBJ_TYPE(expression) != OBJ_PAIR_TAG) {
-    return expression;
-  }
-
-  /* Recursively macroexpand the head. */
-  Object macro;
-  Object original_car = LISP_CAR(lisp, expression);
-  {
-    Object car = original_car;
-    macro = lisp_macroexpand(lisp, car);
-    while (!EQ(macro, car)) {
-      car = macro;
-      macro = lisp_macroexpand(lisp, car);
-    }
-  }
-
-  u32 iter = kh_get(var_syms, lisp->macros, macro);
-  if (iter == kh_end(lisp->macros)) {
-    if (macro == original_car)
-      return expression;
-    else
-      return lisp_cons(lisp, macro, LISP_CDR(lisp, expression));
-  }
-
-  return lisp_apply(lisp, kh_value(lisp->macros, iter),
-                    LISP_CDR(lisp, expression));
 }
 
 Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
-  Object tmp = lisp_macroexpand(lisp, expression);
-  while (!EQ(tmp, expression)) {
-    expression = tmp;
-    tmp = lisp_macroexpand(lisp, expression);
-  }
-
   /* fprintf(stderr, "Macroexpanded: "); */
   /* lisp_print(lisp, expression, stderr); */
   /* fputc('\n', stderr); */
 
+  Object tmp;
   Object *tmp_ptr;
   switch (OBJ_TYPE(expression)) {
   case OBJ_NIL_TAG:
@@ -449,9 +455,9 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       LISP_ASSERT_TYPE(tmp, PAIR);
       return lisp_lookup_function(lisp, LISP_CAR(lisp, tmp));
 
-    } else if (EQ(tmp, lisp->keysyms.quasiquote)) {
-      return lisp_evaluate_quasiquoted(
-          lisp, LISP_CAR(lisp, LISP_CDR(lisp, expression)), context, 1);
+    /* } else if (EQ(tmp, lisp->keysyms.quasiquote)) { */
+    /*   return lisp_evaluate_quasiquoted( */
+    /*       lisp, LISP_CAR(lisp, LISP_CDR(lisp, expression)), context, 1); */
 
     } else if (EQ(tmp, lisp->keysyms.progn)) {
       return lisp_evaluate_sequence(lisp, LISP_CDR(lisp, expression), context);
@@ -493,41 +499,21 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       /* Follow Emacs Lisp's behaviour. */
       return OBJ_NIL_TAG;
 
-    } else if (EQ(tmp, lisp->keysyms.define)) {
+    } else if (EQ(tmp, lisp->keysyms.defname)) {
       tmp = LISP_CDR(lisp, expression);
-      if (lisp_length(lisp, tmp) != 2) {
-        WRONG("Must have exactly 2 arguments to definition form: NAME and "
-              "VALUE.");
+      if (lisp_length(lisp, tmp) != 3) {
+        WRONG("Must have exactly 3 arguments to definition form: NAMESPACE, "
+              "NAME and VALUE.");
         return OBJ_UNDEFINED_TAG;
       }
-      return lisp_define_global(
-          lisp, LISP_CAR(lisp, tmp),
-          lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)), context));
 
-    } else if (EQ(tmp, lisp->keysyms.defmacro)) {
-      Object args = LISP_CDR(lisp, expression);
-      if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
-        WRONG("Macro definitions require macro name, argument list and "
-              "body.");
-        return OBJ_UNDEFINED_TAG;
-      } else if (OBJ_TYPE(LISP_CAR(lisp, args)) != OBJ_SYMBOL_TAG) {
-        WRONG("Macro name must be a symbol.");
-      }
-      return lisp_add_to_namespace(
-          lisp, lisp->macros, LISP_CAR(lisp, args),
-          lisp_make_closure(lisp, LISP_CDR(lisp, args), context));
-    } else if (EQ(tmp, lisp->keysyms.defun)) {
-      Object args = LISP_CDR(lisp, expression);
-      if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
-        WRONG("Function definitions require function name, argument list and "
-              "body.");
-        return OBJ_UNDEFINED_TAG;
-      } else if (OBJ_TYPE(LISP_CAR(lisp, args)) != OBJ_SYMBOL_TAG) {
-        WRONG("Function name must be a symbol.");
-      }
-      return lisp_add_to_namespace(
-          lisp, lisp->functions, LISP_CAR(lisp, args),
-          lisp_make_closure(lisp, LISP_CDR(lisp, args), context));
+      Object ns = LISP_CAR(lisp, tmp);
+      tmp = LISP_CDR(lisp, tmp);
+      Object name = LISP_CAR(lisp, tmp);
+      tmp = LISP_CDR(lisp, tmp);
+      Object value = LISP_CAR(lisp, tmp);
+
+      return lisp_defname(lisp, ns, name, value);
     } else if (EQ(tmp, lisp->keysyms.setq)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) != 2) {
@@ -560,8 +546,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
           lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
     }
   default:
-    printf("%lx\n", expression);
-    WRONG("Cannot evaluate object: unhandled type.");
+    WRONG("Cannot evaluate object: unhandled type", lisp_type_of(lisp, expression));
     break;
   }
 

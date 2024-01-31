@@ -1,23 +1,11 @@
 #include "lexer.h"
 #include "lisp.h"
-#include "reader.h"
 #include "print.h"
+#include "reader.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define LOAD_SRC                                                               \
-  "(defun load (name)"                                                         \
-  "  ((lambda (f)"                                                             \
-  "     ((lambda (form)"                                                       \
-  "        (while (eq (eq form eof) nil)"                                      \
-  "          (eval form)"                                                      \
-  "          (setq form (read-stream f))))"                                    \
-  "      (read-stream f))"                                                     \
-  "     (fclose f))"                                                           \
-  "   (fopen name \"r\"))"                                                     \
-  "  (print (list \"Loaded: \" name)))"
 
 int main(int argc, char *argv[]) {
   LispEnv lisp = new_lisp_environment();
@@ -26,26 +14,24 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  lisp_eval(&lisp, OBJS(&lisp, LOAD_SRC));
+  FILE *load_file = fopen("src/load.eld", "r");
+  if (load_file == NULL) {
+    fprintf(stderr, "Couldn't open file for load function.\n");
+    exit(1);
+  }
+  lisp_eval(&lisp, lisp_read(&lisp, load_file));
+  fclose(load_file);
+
   lisp_eval(&lisp, OBJS(&lisp, "(load \"src/util.eld\")"));
   Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);
-  Object first;
-  Object eof = OBJ_BOX(EOF, CHAR);
-  do {
-    if (setjmp(lisp.error_loc) != 0) {
-      fprintf(stderr, "Resuming from top level...\n");
-    }
-    fputs(LISP_PROMPT, stdout);
-    first = lisp_read(&lisp, stdin);
-    if (EQ(first, eof)) {
-      puts("End of file reached. Goodbye.");
-      return 0;
-    }
-    first = lisp_eval(&lisp, first);
-    lisp_print(&lisp, first, stdout);
-    fputc('\n', stdout);
-  } while (first != OBJ_UNDEFINED_TAG && !feof(stdin));
+
+  if (setjmp(lisp.error_loc) != 0) {
+    fprintf(stderr, "Resuming from top level...\n");
+  }
+
+  lisp_eval(&lisp, OBJS(&lisp, "(repl)"));
+
   return 0;
 }

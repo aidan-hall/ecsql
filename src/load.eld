@@ -1,0 +1,11 @@
+(defname function load
+         (lambda (name)
+           ((lambda (f)
+              ((lambda (form)
+                 (while (eq (eq form eof) nil)
+                   (eval form)
+                   (setq form (read-stream f))))
+               (read-stream f))
+              (fclose f))
+            (fopen name "r"))
+           (print (list "Loaded: " name))))
