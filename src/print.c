@@ -56,13 +56,13 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     fprintf(stream, "#undefined");
     break;
   case OBJ_PRIMITIVE_TAG:
-    fputs("(function", stream);
+    fputs("(function ", stream);
     lisp_print(lisp, OBJ_REINTERPRET(object, SYMBOL), stream);
     fputs(")", stream);
     break;
   case OBJ_CLOSURE_TAG:
-    fputs("(lambda", stream);
-    lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream),
+    fputs("(lambda ", stream);
+    lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream);
     fputs(")", stream);
     break;
   }

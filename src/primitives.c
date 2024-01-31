@@ -1,8 +1,9 @@
 /* Primitive Lisp functions, macros and reader macros. */
-#include "lisp.h"
 #include "primitives.h"
-#include "reader.h"
+#include "lisp.h"
+#include "memory.h"
 #include "print.h"
+#include "reader.h"
 
 #define FIRST (LISP_CAR(lisp, args))
 #define SECOND (LISP_CAR(lisp, LISP_CDR(lisp, args)))
@@ -20,8 +21,7 @@ static Object prim_read(LispEnv *lisp, Object args) {
 static Object prim_list(LispEnv *lisp, Object args) { return args; }
 
 static Object prim_eq(LispEnv *lisp, Object args) {
-  return lisp_bool(
-      lisp, EQ(FIRST, SECOND));
+  return lisp_bool(lisp, EQ(FIRST, SECOND));
 }
 
 static Object prim_eql(LispEnv *lisp, Object args) {
@@ -331,9 +331,9 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
 }
 #define LISP_CMP(NAME, OP)                                                     \
   static Object NAME(LispEnv *lisp, Object args) {                             \
-    Object a = FIRST;                                           \
+    Object a = FIRST;                                                          \
     args = LISP_CDR(lisp, args);                                               \
-    Object b = FIRST;                                           \
+    Object b = FIRST;                                                          \
     if (OBJ_TYPE(a) == OBJ_INT_TAG && OBJ_TYPE(b) == OBJ_INT_TAG) {            \
       return lisp_bool(lisp, (i32)OBJ_UNBOX(a) OP(i32) OBJ_UNBOX(b));          \
     } else if (OBJ_TYPE(a) == OBJ_FLOAT_TAG && OBJ_TYPE(b) == OBJ_INT_TAG) {   \
@@ -343,7 +343,7 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
     } else if (OBJ_TYPE(a) == OBJ_FLOAT_TAG && OBJ_TYPE(b) == OBJ_FLOAT_TAG) { \
       return lisp_bool(lisp, lisp_unbox_float(a) OP lisp_unbox_float(b));      \
     } else {                                                                   \
-      WRONG("Invalidtypes of parameters to " #OP,                             \
+      WRONG("Invalidtypes of parameters to " #OP,                              \
             lisp_cons(lisp, lisp_type_of(lisp, a), lisp_type_of(lisp, b)));    \
       return OBJ_UNDEFINED_TAG;                                                \
     }                                                                          \
@@ -363,7 +363,6 @@ static Object prim_print(LispEnv *lisp, Object args) {
 static Object prim_type_of(LispEnv *lisp, Object args) {
   return lisp_type_of(lisp, FIRST);
 }
-
 
 static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
                                  PrimitiveFunction fn,
@@ -467,7 +466,6 @@ static Object lisp_getc_stream(LispEnv *lisp, Object args) {
   return OBJ_BOX(c, CHAR);
 }
 
-
 /* READER MACROS */
 
 Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
@@ -495,9 +493,9 @@ void lisp_install_primitives(LispEnv *lisp) {
   lisp->reader_macros[','] = lisp_reader_unquote;
   lisp->reader_macros['?'] = lisp_reader_question_mark;
 
-  #define OBJSX(S) OBJS(lisp, S)
+#define OBJSX(S) OBJS(lisp, S)
 #define DEFPRIMFUN(NAME, SPEC, FUN)                                            \
-  lisp_add_primitive(lisp, OBJSX(NAME), OBJSX(SPEC), FUN,                     \
+  lisp_add_primitive(lisp, OBJSX(NAME), OBJSX(SPEC), FUN,                      \
                      lisp->primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
   DEFPRIMFUN("*", "t", prim_mul);

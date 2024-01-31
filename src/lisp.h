@@ -3,12 +3,12 @@
 
 #include "common.h"
 #include "khash.h"
+#include "memory.h"
+#include "object.h"
 #include <assert.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include "memory.h"
-#include "object.h"
 
 /* (Arbitrary constant) */
 #define LISP_MAX_OPEN_STREAMS (16)
@@ -51,9 +51,9 @@ typedef struct LispEnv {
   /* char* → Object of strings stored in 'memory'. */
   khash_t(sym_name) * symbols;
   khash_t(primitives) * primitive_functions;
-  khash_t(var_syms) *globals;
-  khash_t(var_syms) *functions;
-  khash_t(var_syms) *macros;
+  khash_t(var_syms) * globals;
+  khash_t(var_syms) * functions;
+  khash_t(var_syms) * macros;
   FILE *open_streams[LISP_MAX_OPEN_STREAMS];
   /* This is indexed with the ASCII values of reader macro characters. */
   ReaderMacro reader_macros[128];
@@ -90,7 +90,6 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
       exit(1); /* Should be unreachable */                                     \
     }                                                                          \
   } while (0)
-
 
 /* Get the Lisp cell at the given index, with no error handling. */
 static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
@@ -143,7 +142,8 @@ Object lisp_bind(struct LispEnv *lisp, Object parameters, Object arguments,
 Object lisp_evaluate(struct LispEnv *lisp, Object expression, Object context);
 Object lisp_eval(struct LispEnv *lisp, Object expression);
 Object lisp_apply(struct LispEnv *lisp, Object function, Object arguments);
-Object lisp_evaluate_sequence(struct LispEnv *lisp, Object sequence, Object context);
+Object lisp_evaluate_sequence(struct LispEnv *lisp, Object sequence,
+                              Object context);
 Object lisp_add_to_namespace(struct LispEnv *lisp, khash_t(var_syms) * env,
                              Object symbol, Object value);
 Object lisp_lookup_function(LispEnv *lisp, Object symbol);
