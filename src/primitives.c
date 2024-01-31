@@ -542,6 +542,12 @@ static Object lisp_puts_stream(LispEnv *lisp, Object args) {
   return OBJ_NIL_TAG;
 }
 
+static Object prim_wrong(LispEnv *lisp, Object args) {
+  u8 *message = lisp_string_to_null_terminated(lisp, FIRST);
+  WRONG((char*)message, SECOND);
+  return OBJ_UNDEFINED_TAG;
+}
+
 /* READER MACROS */
 
 Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
@@ -608,6 +614,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("eval", "(t)", prim_eval);
   DEFPRIMFUN("macroexpand-1", "(t)", prim_macroexpand_1);
   DEFPRIMFUN("macroexpand", "(t)", prim_macroexpand);
+  DEFPRIMFUN("wrong", "(string t)", prim_wrong);
 #undef DEFPRIMFUN
 #undef OBJSX
 }
