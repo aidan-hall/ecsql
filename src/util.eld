@@ -65,27 +65,35 @@
               (cons 'cond (cdr clauses))))
     clauses))
 
-(defmacro quasiquote-rec (form level)
+(defun qq-list-form (list)
+  (or (not list)
+      (and (consp list) (not (eq (car list) 'unquote)) (qq-list-form (cdr list)))))
+(defun quasiquote-rec (form level)
   (cond
    ((eq level 0)
-    (car form))
+    form)
    ((not (consp form))
     (list 'quote form))
    (t
     (let ((head (car form)))
       (cond
        ((eq head 'unquote)
-        (let ((unquoted (list 'quasiquote-rec (cdr form) (- level 1))))
+        (let ((unquoted (quasiquote-rec (cadr form) (- level 1))))
+          (print (list "unquote at level:" level))
           (if (> level 1)
               (list 'unquote unquoted)
             unquoted)))
+       ((eq head 'quasiquote)
+        (list 'quasiquote (quasiquote-rec (cadr form) (+ level 1))))
        (t
-        (list 'cons
-              (list 'quasiquote-rec head level)
-              (list 'quasiquote-rec (cdr form) level))))))))
+        (if (qq-list-form form)
+            (cons 'list (mapcar (lambda (form) (quasiquote-rec form level)) form))
+          (list 'cons
+           (quasiquote-rec head level)
+           (quasiquote-rec (cdr form) level)))))))))
 
 (defmacro quasiquote (form)
-  (list 'quasiquote-rec form 1))
+  (quasiquote-rec form 1))
 
 (defun equal (a b)
   (if (and (consp a) (consp b))
