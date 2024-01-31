@@ -424,6 +424,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
   case OBJ_FLOAT_TAG:
   case OBJ_FILE_PTR_TAG:
   case OBJ_PRIMITIVE_TAG:
+  case OBJ_VECTOR_TAG:
     return expression;
   case OBJ_SYMBOL_TAG:
     /* Variable name */
