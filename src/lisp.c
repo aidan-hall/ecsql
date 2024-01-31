@@ -228,6 +228,7 @@ Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
   /* TODO: Search in the lexical context. */
   khint_t function_key = kh_get(var_syms, lisp->functions, symbol);
   if (function_key == kh_end(lisp->functions)) {
+    WRONG("Undefined function", symbol);
     return OBJ_UNDEFINED_TAG;
   }
   return kh_value(lisp->functions, function_key);
