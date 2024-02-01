@@ -58,7 +58,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     return lisp_read_list_tail(lisp, stream);
     break;
   case TOK_LEX_CHAR: {
-    ReaderMacro macro = lisp->reader_macros[(usize) tok.lex_char];
+    ReaderMacro macro = lisp->reader_macros[(usize)tok.lex_char];
     if (macro == NULL) {
       WRONG("Nonexistent reader macro", OBJ_BOX(tok.lex_char, CHAR));
       return OBJ_UNDEFINED_TAG;
@@ -101,7 +101,9 @@ Object lisp_read(LispEnv *lisp, FILE *stream) {
 }
 
 Object lisp_read_from_string(LispEnv *lisp, s8 str) {
-  FILE *stream = fmemopen(str.data, str.len, "r");
+  /* Discarding the const qualifier here is ONLY fine because we know we aren't
+   * modifying the string. */
+  FILE *stream = fmemopen((u8 *)str.data, str.len, "r");
   Object result = lisp_read(lisp, stream);
   fclose(stream);
   return result;

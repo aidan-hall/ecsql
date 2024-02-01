@@ -24,7 +24,7 @@ typedef size_t usize;
 #define lengthof(s) (countof(s) - 1)
 
 typedef struct {
-  u8 *data;
+  const u8 *data;
   size len;
 } s8;
 #define s8(s)                                                                  \
