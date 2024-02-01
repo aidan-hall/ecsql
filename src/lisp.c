@@ -33,14 +33,17 @@ Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
 
   u32 iter = kh_get(var_syms, env, symbol);
   if (iter != kh_end(env)) {
-    WRONG("Attempt to re-define a name in the given namespace", symbol);
-    return OBJ_UNDEFINED_TAG;
-  }
-
-  int absent;
-  iter = kh_put(var_syms, env, symbol, &absent);
-  if (absent < 1) {
-    return OBJ_UNDEFINED_TAG;
+    fprintf(stderr, "WARNING: Re-defining a name in the given namespace: ");
+    lisp_print(lisp, symbol, stderr);
+    fputc('\n', stderr);
+  } else {
+    int absent;
+    iter = kh_put(var_syms, env, symbol, &absent);
+    if (absent < 1) {
+      WRONG("Failed to allocate a place in the namespace for a new name",
+            symbol);
+      return OBJ_UNDEFINED_TAG;
+    }
   }
   kh_value(env, iter) = value;
   return value;
