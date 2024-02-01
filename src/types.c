@@ -29,6 +29,8 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
     return lisp->keysyms.pair;
   case OBJ_VECTOR_TAG:
     return lisp->keysyms.vector;
+  case OBJ_STRUCT_TAG:
+    return lisp->keysyms.struct_k;
   }
   fprintf(stderr, "type tag: %x\n", OBJ_TYPE(obj));
   WRONG("Invalid type tag of object.");

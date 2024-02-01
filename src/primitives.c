@@ -591,6 +591,57 @@ static Object prim_defname(LispEnv *lisp, Object args) {
   return lisp_defname(lisp, ns, name, value);
 }
 
+/* (struct index dest-type) Access some sub-component of a struct as a given
+ * type. This is only intended for use in generated code, so it does no safety
+ * checks. */
+static Object prim_struct_get_vec(LispEnv *lisp, Object args) {
+  size base = OBJ_UNBOX_INDEX(FIRST);
+  args = LISP_CDR(lisp, args);
+  i32 index = (i32)OBJ_UNBOX(FIRST);
+  args = LISP_CDR(lisp, args);
+  u16 struct_type = (i32)OBJ_UNBOX(FIRST);
+  return OBJ_BOX_INDEX(base + index, struct_type, STRUCT);
+}
+
+/* (struct index) */
+static Object prim_struct_get_cell(LispEnv *lisp, Object args) {
+  return *lisp_cell_at(lisp, OBJ_UNBOX_INDEX(FIRST) + (i32)OBJ_UNBOX(SECOND));
+}
+
+/* (dest:struct index value:struct length) Copy the 'length' cells at value
+ * (boxed, struct-typed index) into the indicated place in the struct. Private:
+ * no safety.  Returns the newly-assigned member of the struct. */
+static Object prim_struct_set_vec(LispEnv *lisp, Object args) {
+  size dest_index = OBJ_UNBOX_INDEX(FIRST) + OBJ_UNBOX(SECOND);
+  Object *dest = lisp_cell_at(lisp, dest_index);
+  args = LISP_CDR(lisp, LISP_CDR(lisp, args));
+  Object source_object = OBJ_UNBOX_INDEX(FIRST);
+  Object *source = lisp_cell_at(lisp, source_object);
+  i32 length = OBJ_UNBOX(SECOND);
+  for (i32 i = 0; i < length; ++i) {
+    dest[i] = source[i];
+  }
+
+  return OBJ_BOX_INDEX(dest_index, OBJ_UNBOX_METADATA(source_object), STRUCT);
+}
+
+/* (struct index value) See prim_struct_set_vec. Same idea but just store the
+ * value of 'source'. */
+static Object prim_struct_set_cell(LispEnv *lisp, Object args) {
+  size dest_index = OBJ_UNBOX_INDEX(FIRST) + OBJ_UNBOX(SECOND);
+  args = LISP_CDR(lisp, LISP_CDR(lisp, args));
+  Object source_object = OBJ_UNBOX_INDEX(FIRST);
+
+  return *lisp_cell_at(lisp, dest_index) = source_object;
+}
+
+/* (i32 i32): struct type ID, # cells */
+static Object prim_struct_allocate(LispEnv *lisp, Object args) {
+  i32 cells = (i32)OBJ_UNBOX(FIRST);
+  size data_index = lisp_allocate_cells(lisp, cells);
+  return OBJ_BOX_INDEX(cells, (u16)OBJ_UNBOX(SECOND), STRUCT);
+}
+
 /* READER MACROS */
 
 Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
@@ -701,6 +752,14 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("macroexpand", "(t)", prim_macroexpand);
   DEFPRIMFUN("wrong", "(string t)", prim_wrong);
   DEFPRIMFUN("defname", "(symbol symbol t)", prim_defname);
+  /* TODO: These are private, and only called from generated code, so don't
+   * waste time checking the type. */
+  DEFPRIMFUN("--struct-set-vec", "(struct i32 struct i32)",
+             prim_struct_set_vec);
+  DEFPRIMFUN("--struct-set-cell", "(struct i32 t)", prim_struct_set_cell);
+  DEFPRIMFUN("--struct-get-vec", "(struct i32 i32)", prim_struct_get_vec);
+  DEFPRIMFUN("--struct-get-cell", "(struct i32)", prim_struct_get_cell);
+  DEFPRIMFUN("--struct-allocate", "(i32 i32)", prim_struct_allocate);
 #undef DEFPRIMFUN
 #undef OBJSX
 }

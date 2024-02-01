@@ -41,7 +41,7 @@
   F(closure)                                                                   \
   F(character)                                                                 \
   F(defname)                                                                   \
-  F(global)                                                                   \
+  F(global)                                                                    \
   F(function)                                                                  \
   F(macro)                                                                     \
   F(eof)                                                                       \
@@ -56,6 +56,7 @@ typedef struct LispEnv {
   khash_t(var_syms) * functions;
   khash_t(var_syms) * macros;
   FILE *open_streams[LISP_MAX_OPEN_STREAMS];
+
   /* This is indexed with the ASCII values of reader macro characters. */
   ReaderMacro reader_macros[128];
   struct {
@@ -64,8 +65,9 @@ typedef struct LispEnv {
 #undef DECL_KEYSYM
     /* The Lisp symbols we want for these are also C keywords so they need
      * special treatment. */
-    Object if_k;    /* if */
-    Object while_k; /* while */
+    Object if_k;     /* if */
+    Object while_k;  /* while */
+    Object struct_k; /* struct */
   } keysyms;
   jmp_buf error_loc;
 } LispEnv;

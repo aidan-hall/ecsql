@@ -22,6 +22,7 @@ enum ObjectTag {
   OBJ_FLOAT_TAG,
   OBJ_FILE_PTR_TAG,
   OBJ_VECTOR_TAG,
+  OBJ_STRUCT_TAG,
   /* Non-atomic objects */
   OBJ_UNDEFINED_TAG,
   OBJ_SYMBOL_TAG,
