@@ -5,6 +5,7 @@
 #include "object.h"
 #include "print.h"
 #include "reader.h"
+#include <string.h>
 
 #define FIRST (LISP_CAR(lisp, args))
 #define SECOND (LISP_CAR(lisp, LISP_CDR(lisp, args)))
@@ -545,6 +546,35 @@ static Object prim_wrong(LispEnv *lisp, Object args) {
   return OBJ_UNDEFINED_TAG;
 }
 
+/* Concatenate all string arguments */
+static Object prim_concat(LispEnv *lisp, Object args) {
+  if (OBJ_TYPE(args) == OBJ_NIL_TAG) {
+    /* Return an empty string: No allocation necessary, memory address
+     * (hopefully) irrelevant. */
+    return OBJ_BOX_INDEX(0, 0, STRING);
+  }
+
+  u16 length = 0;
+  for (Object t = args, elem = LISP_CAR(lisp, t); OBJ_TYPE(t) == OBJ_PAIR_TAG;
+       t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
+    LISP_ASSERT_TYPE(elem, STRING);
+    length += (u16)OBJ_UNBOX_METADATA(elem);
+  }
+
+  /* Include null terminator byte. */
+  size data_index = lisp_allocate_bytes(lisp, length + 1);
+  char *dest = (char *)lisp_cell_at(lisp, data_index);
+  dest[0] = '\0';
+
+  for (Object t = args, elem = LISP_CAR(lisp, t); OBJ_TYPE(t) == OBJ_PAIR_TAG;
+       t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
+    strncat(dest, (const char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(elem)),
+            (u16)OBJ_UNBOX_METADATA(elem));
+  }
+
+  return OBJ_BOX_INDEX(data_index, length, STRING);
+}
+
 static Object prim_defname(LispEnv *lisp, Object args) {
   Object ns = LISP_CAR(lisp, args);
   args = LISP_CDR(lisp, args);
@@ -595,6 +625,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
   DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
+  DEFPRIMFUN("concat", "t", prim_concat);
   DEFPRIMFUN("getc", "(file)", prim_getc_stream);
   DEFPRIMFUN("feof", "(file) ", prim_feof);
   DEFPRIMFUN("read-stream", "(file)", prim_read);
