@@ -352,7 +352,9 @@ Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
     WRONG("Lambda forms require an argument list and body.");
   }
   Object expanded = lisp_macroexpand_list(lisp, LISP_CDR(lisp, body));
-  return OBJ_REINTERPRET(lisp_cons(lisp, context, lisp_cons(lisp, LISP_CAR(lisp, body), expanded)), CLOSURE);
+  return OBJ_REINTERPRET(
+      lisp_cons(lisp, context, lisp_cons(lisp, LISP_CAR(lisp, body), expanded)),
+      CLOSURE);
 }
 
 Object lisp_macroexpand_top(LispEnv *lisp, Object expression) {
@@ -365,7 +367,7 @@ Object lisp_macroexpand_top(LispEnv *lisp, Object expression) {
   Object original_car = LISP_CAR(lisp, expression);
   if (EQ(original_car, lisp->keysyms.quote))
     return expression;
-  
+
   {
     Object car = original_car;
     macro = lisp_macroexpand_top(lisp, car);
@@ -388,7 +390,6 @@ Object lisp_macroexpand_top(LispEnv *lisp, Object expression) {
   }
   return expression;
 }
-
 
 Object lisp_macroexpand(LispEnv *lisp, Object expression) {
   Object tmp = lisp_macroexpand_top(lisp, expression);
@@ -455,10 +456,6 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
       return lisp_lookup_function(lisp, LISP_CAR(lisp, tmp));
-
-    /* } else if (EQ(tmp, lisp->keysyms.quasiquote)) { */
-    /*   return lisp_evaluate_quasiquoted( */
-    /*       lisp, LISP_CAR(lisp, LISP_CDR(lisp, expression)), context, 1); */
 
     } else if (EQ(tmp, lisp->keysyms.progn)) {
       return lisp_evaluate_sequence(lisp, LISP_CDR(lisp, expression), context);
@@ -532,7 +529,8 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
           lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
     }
   default:
-    WRONG("Cannot evaluate object: unhandled type", lisp_type_of(lisp, expression));
+    WRONG("Cannot evaluate object: unhandled type",
+          lisp_type_of(lisp, expression));
     break;
   }
 
