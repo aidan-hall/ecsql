@@ -4,6 +4,7 @@
               ((lambda (form)
                  (while (eq (eq form eof) nil)
                    (eval form)
+                   (print (list "Evaluated:" form))
                    (setq form (read-stream f))))
                (read-stream f))
               (fclose f))
