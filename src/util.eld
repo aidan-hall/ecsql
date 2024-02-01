@@ -105,12 +105,11 @@
   (fputs string stdout))
 
 (defun repl ()
-  (while t
+  (while (not (feof stdin))
     (puts "* ")
     (let ((form (read-stream stdin)))
       (if (eq form eof)
-          (progn
-            (puts "End of file reached. Goodbye.
+          (puts "End of file reached. Goodbye.
 ")
-            (quit))
-        (print (eval form))))))
+        (print (eval form)))))
+  (puts "End of file reached. Goodbye."))
