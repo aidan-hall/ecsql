@@ -358,42 +358,6 @@ static Object prim_type_of(LispEnv *lisp, Object args) {
   return lisp_type_of(lisp, FIRST);
 }
 
-static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
-                                 PrimitiveFunction fn,
-                                 khash_t(primitives) * primitives) {
-  Object prim_obj = OBJ_REINTERPRET_RAWTAG(name_sym, OBJ_PRIMITIVE_TAG);
-
-  InterpreterPrimitive prim;
-  prim.fn = fn;
-  /* Just used for error messages. */
-  prim.id_symbol = name_sym;
-  /* The input argument type list may be stack-allocated. */
-  prim.argument_types = params;
-
-  u32 fn_iter = kh_get(primitives, primitives, prim_obj);
-  if (fn_iter != kh_end(primitives)) {
-    WRONG("Attempt to redefine primitive function.");
-    return OBJ_UNDEFINED_TAG;
-  }
-  int absent;
-  fn_iter = kh_put(primitives, primitives, prim_obj, &absent);
-  if (absent < 1) {
-    WRONG("Failed to define primitive function.");
-    return OBJ_UNDEFINED_TAG;
-  }
-
-  kh_value(primitives, fn_iter) = prim;
-
-  Object sym_iter =
-      lisp_add_to_namespace(lisp, lisp->functions, name_sym, prim_obj);
-  if (sym_iter == OBJ_UNDEFINED_TAG) {
-    WRONG("Failed to add a primitive function name.");
-    return sym_iter;
-  }
-
-  return prim_obj;
-}
-
 static Object prim_funcall(LispEnv *lisp, Object args) {
   Object function = FIRST;
   args = LISP_CDR(lisp, args);
@@ -646,6 +610,42 @@ static inline Object lisp_quotify(LispEnv *lisp, Object quoter, Object object) {
 QUOTER_READER(quote);
 QUOTER_READER(unquote);
 QUOTER_READER(quasiquote);
+
+static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
+                                 PrimitiveFunction fn,
+                                 khash_t(primitives) * primitives) {
+  Object prim_obj = OBJ_REINTERPRET_RAWTAG(name_sym, OBJ_PRIMITIVE_TAG);
+
+  InterpreterPrimitive prim;
+  prim.fn = fn;
+  /* Just used for error messages. */
+  prim.id_symbol = name_sym;
+  /* The input argument type list may be stack-allocated. */
+  prim.argument_types = params;
+
+  u32 fn_iter = kh_get(primitives, primitives, prim_obj);
+  if (fn_iter != kh_end(primitives)) {
+    WRONG("Attempt to redefine primitive function.");
+    return OBJ_UNDEFINED_TAG;
+  }
+  int absent;
+  fn_iter = kh_put(primitives, primitives, prim_obj, &absent);
+  if (absent < 1) {
+    WRONG("Failed to define primitive function.");
+    return OBJ_UNDEFINED_TAG;
+  }
+
+  kh_value(primitives, fn_iter) = prim;
+
+  Object sym_iter =
+      lisp_add_to_namespace(lisp, lisp->functions, name_sym, prim_obj);
+  if (sym_iter == OBJ_UNDEFINED_TAG) {
+    WRONG("Failed to add a primitive function name.");
+    return sym_iter;
+  }
+
+  return prim_obj;
+}
 
 void lisp_install_primitives(LispEnv *lisp) {
 
