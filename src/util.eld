@@ -1,14 +1,14 @@
-(defname macro defmacro
+(defname 'macro 'defmacro
          (lambda (name params . body)
            (list
-            'defname 'macro name (cons 'lambda (cons params body)))))
+            'defname ''macro (list 'quote name) (cons 'lambda (cons params body)))))
 
 (defmacro defun (name params . body)
   (list
-   'defname 'function name (cons 'lambda (cons params body))))
+   'defname ''function (list 'quote name) (cons 'lambda (cons params body))))
 
 (defmacro define (name value)
-  (list 'defname 'global name value))
+  (list 'defname ''global (list 'quote name) value))
 
 (defun cadr (x)
   (car (cdr x)))

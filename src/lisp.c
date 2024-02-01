@@ -59,7 +59,7 @@ Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value) {
     return OBJ_UNDEFINED_TAG;
   }
 
-  return lisp_add_to_namespace(lisp, env, symbol, lisp_eval(lisp, value));
+  return lisp_add_to_namespace(lisp, env, symbol, value);
 }
 
 static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
@@ -500,21 +500,6 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       /* Follow Emacs Lisp's behaviour. */
       return OBJ_NIL_TAG;
 
-    } else if (EQ(tmp, lisp->keysyms.defname)) {
-      tmp = LISP_CDR(lisp, expression);
-      if (lisp_length(lisp, tmp) != 3) {
-        WRONG("Must have exactly 3 arguments to definition form: NAMESPACE, "
-              "NAME and VALUE.");
-        return OBJ_UNDEFINED_TAG;
-      }
-
-      Object ns = LISP_CAR(lisp, tmp);
-      tmp = LISP_CDR(lisp, tmp);
-      Object name = LISP_CAR(lisp, tmp);
-      tmp = LISP_CDR(lisp, tmp);
-      Object value = LISP_CAR(lisp, tmp);
-
-      return lisp_defname(lisp, ns, name, value);
     } else if (EQ(tmp, lisp->keysyms.setq)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) != 2) {

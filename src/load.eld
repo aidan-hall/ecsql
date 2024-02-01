@@ -1,4 +1,4 @@
-(defname function load
+(defname 'function 'load
          (lambda (name)
            ((lambda (f)
               ((lambda (form)
