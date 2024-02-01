@@ -530,13 +530,18 @@ static Object lisp_close_stream(LispEnv *lisp, Object args) {
   return OBJ_NIL_TAG;
 }
 
-static Object lisp_getc_stream(LispEnv *lisp, Object args) {
+static Object prim_feof(LispEnv *lisp, Object args) {
+  FILE *file = lisp->open_streams[OBJ_UNBOX(FIRST)];
+  return lisp_bool(lisp, feof(file) != 0);
+}
+
+static Object prim_getc_stream(LispEnv *lisp, Object args) {
   args = LISP_CAR(lisp, args);
   char c = fgetc(lisp->open_streams[OBJ_UNBOX(args)]);
   return OBJ_BOX(c, CHAR);
 }
 
-static Object lisp_puts_stream(LispEnv *lisp, Object args) {
+static Object prim_fputs_stream(LispEnv *lisp, Object args) {
   u8 *s = lisp_string_to_null_terminated(lisp, FIRST);
   fputs((char *)s, lisp->open_streams[OBJ_UNBOX(SECOND)]);
   return OBJ_NIL_TAG;
@@ -544,7 +549,7 @@ static Object lisp_puts_stream(LispEnv *lisp, Object args) {
 
 static Object prim_wrong(LispEnv *lisp, Object args) {
   u8 *message = lisp_string_to_null_terminated(lisp, FIRST);
-  WRONG((char*)message, SECOND);
+  WRONG((char *)message, SECOND);
   return OBJ_UNDEFINED_TAG;
 }
 
@@ -587,8 +592,9 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("quit", "()", prim_quit);
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
-  DEFPRIMFUN("fputs", "(string file) ", lisp_puts_stream);
-  DEFPRIMFUN("getc", "(file)", lisp_getc_stream);
+  DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
+  DEFPRIMFUN("getc", "(file)", prim_getc_stream);
+  DEFPRIMFUN("feof", "(file) ", prim_feof);
   DEFPRIMFUN("read-stream", "(file)", prim_read);
   DEFPRIMFUN("car", "(pair)", prim_car);
   DEFPRIMFUN("cdr", "(pair)", prim_cdr);
