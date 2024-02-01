@@ -418,8 +418,7 @@ Object lisp_macroexpand(LispEnv *lisp, Object expression) {
       return lisp_cons(
           lisp, lisp->keysyms.lambda,
           lisp_cons(lisp, LISP_CAR(lisp, cdr),
-                    lisp_macroexpand_list(
-                        lisp, LISP_CDR(lisp, cdr))));
+                    lisp_macroexpand_list(lisp, LISP_CDR(lisp, cdr))));
 
     } else {
       return lisp_macroexpand_list(lisp, expression);
