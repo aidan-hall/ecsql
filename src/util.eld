@@ -137,6 +137,9 @@
 
 ;;; Less Essential Utilities (Not Needed by any Common Macros)
 
+(defun print (form)
+  (print-to stdout form))
+
 (defun equal (a b)
   ;; Return t if `a' and `b' are the same, traversing the sub-structure of `cons' pairs.
   ;; TODO: Do the right thing for vectors and structs.

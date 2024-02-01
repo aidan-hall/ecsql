@@ -5,6 +5,7 @@
 #include "object.h"
 #include "print.h"
 #include "reader.h"
+#include <stdio.h>
 #include <string.h>
 
 #define FIRST (LISP_CAR(lisp, args))
@@ -348,7 +349,7 @@ LISP_CMP(prim_greater, >);
 LISP_CMP(prim_greater_equal, >=);
 
 static Object prim_print(LispEnv *lisp, Object args) {
-  lisp_print(lisp, FIRST, stdout);
+  lisp_print(lisp, SECOND, lisp->open_streams[OBJ_UNBOX(FIRST)]);
   fputc('\n', stdout);
   return OBJ_NIL_TAG;
 }
@@ -575,6 +576,47 @@ static Object prim_concat(LispEnv *lisp, Object args) {
   return OBJ_BOX_INDEX(data_index, length, STRING);
 }
 
+/* Create a new string of the specified length, filled with the supplied
+ * character. */
+static Object prim_make_string(LispEnv *lisp, Object args) {
+  i32 length = (i32)OBJ_UNBOX(FIRST);
+  if (length < 0) {
+    WRONG("Negative length of string", FIRST);
+    return OBJ_UNDEFINED_TAG;
+  }
+  size data_index = lisp_allocate_bytes(lisp, length + 1);
+  char *chars = (char *)lisp_cell_at(lisp, data_index);
+
+  memset(chars, OBJ_UNBOX(SECOND), length);
+  chars[length] = '\0';
+
+  return OBJ_BOX_INDEX(data_index, length, STRING);
+}
+
+static Object prim_to_string(LispEnv *lisp, Object args) {
+  u8 buf[LISP_MAX_STRING_LENGTH];
+  FILE *string_stream = fmemopen(buf, LISP_MAX_STRING_LENGTH - 1, "w");
+  lisp_print(lisp, FIRST, string_stream);
+  u16 length = ftell(string_stream);
+  fputc('\0', string_stream);
+  fclose(string_stream);
+  return lisp_store_string(lisp, (s8){buf, length});
+}
+
+static Object prim_symbol_name(LispEnv *lisp, Object args) {
+  return OBJ_REINTERPRET(FIRST, STRING);
+}
+
+static Object prim_intern(LispEnv *lisp, Object args) {
+  return lisp_intern(lisp, lisp_string_to_s8(lisp, FIRST));
+}
+
+/* Create a new, uninterned symbol with its name being the supplied argument. */
+static Object prim_make_symbol(LispEnv *lisp, Object args) {
+  s8 string = lisp_string_to_s8(lisp, FIRST);
+  return OBJ_REINTERPRET(lisp_store_string(lisp, string), SYMBOL);
+}
+
 static Object prim_defname(LispEnv *lisp, Object args) {
   Object ns = LISP_CAR(lisp, args);
   args = LISP_CDR(lisp, args);
@@ -626,6 +668,10 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
   DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
   DEFPRIMFUN("concat", "t", prim_concat);
+  DEFPRIMFUN("make-string", "(i32 char)", prim_make_string);
+  DEFPRIMFUN("symbol-name", "(symbol)", prim_symbol_name);
+  DEFPRIMFUN("intern", "(string)", prim_intern);
+  DEFPRIMFUN("make-symbol", "(string)", prim_make_symbol);
   DEFPRIMFUN("getc", "(file)", prim_getc_stream);
   DEFPRIMFUN("feof", "(file) ", prim_feof);
   DEFPRIMFUN("read-stream", "(file)", prim_read);
@@ -646,7 +692,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("<=", "(t t)", prim_less_equal);
   DEFPRIMFUN(">", "(t t)", prim_greater);
   DEFPRIMFUN(">=", "(t t)", prim_greater_equal);
-  DEFPRIMFUN("print", "(t)", prim_print);
+  DEFPRIMFUN("print-to", "(file t)", prim_print);
+  DEFPRIMFUN("to-string", "(t)", prim_to_string);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
   DEFPRIMFUN("eval", "(t)", prim_eval);
