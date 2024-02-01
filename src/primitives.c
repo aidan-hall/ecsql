@@ -46,15 +46,6 @@ static Object prim_eql(LispEnv *lisp, Object args) {
   return lisp_bool(lisp, EQ(a, b));
 }
 
-static Object prim_assert(LispEnv *lisp, Object args) {
-  if (lisp_false(FIRST)) {
-    WRONG("Assertion failure in lisp!");
-    return OBJ_NIL_TAG;
-  }
-
-  return lisp->keysyms.t;
-}
-
 static Object prim_length(LispEnv *lisp, Object args) {
   return OBJ_BOX(lisp_length(lisp, FIRST), INT);
 }
@@ -623,7 +614,6 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("<=", "(t t)", prim_less_equal);
   DEFPRIMFUN(">", "(t t)", prim_greater);
   DEFPRIMFUN(">=", "(t t)", prim_greater_equal);
-  DEFPRIMFUN("assert", "(t)", prim_assert);
   DEFPRIMFUN("print", "(t)", prim_print);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);

@@ -145,6 +145,10 @@
            (equal (cdr a) (cdr b)))
     (eql a b)))
 
+(defmacro assert (spec)
+  `(unless ,spec
+     (wrong "ASSERTION FAILURE" ',spec)))
+
 (defun puts (string)
   ;; Write `string' to `stdout'.
   (fputs string stdout))
