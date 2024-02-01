@@ -135,6 +135,11 @@
   `(if ,cond
        (progn . ,body)))
 
+(define gensym-counter 0)
+(defun gensym ()
+  (setq gensym-counter (+ gensym-counter 1))
+  (make-symbol (concat "g" (to-string gensym-counter))))
+
 ;;; Less Essential Utilities (Not Needed by any Common Macros)
 
 (defun print (form)
