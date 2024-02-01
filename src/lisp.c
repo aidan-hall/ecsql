@@ -398,13 +398,32 @@ Object lisp_macroexpand(LispEnv *lisp, Object expression) {
     tmp = lisp_macroexpand_top(lisp, expression);
   }
 
-  if (EQ(OBJ_TYPE(expression), OBJ_PAIR_TAG)) {
-    if (EQ(LISP_CAR(lisp, expression), lisp->keysyms.quote))
-      return expression;
-    
-    return lisp_macroexpand_list(lisp, expression);
-  } else {
+  /* Macroexpand sub-structure, handling special forms specially.
+   * See:
+   * https://stackoverflow.com/questions/72865649/how-does-macroexpansion-actually-work-in-lisp
+   */
+
+  if (!EQ(OBJ_TYPE(expression), OBJ_PAIR_TAG)) {
     return expression;
+
+  } else {
+    Object car = LISP_CAR(lisp, expression);
+    Object cdr = LISP_CDR(lisp, expression);
+    if (EQ(car, lisp->keysyms.quote)) {
+      /* Don't macroexpand a quoted form at all. */
+      return expression;
+
+    } else if (EQ(car, lisp->keysyms.lambda) && lisp_length(lisp, cdr) >= 2) {
+      /* Don't macroexpand the parameter list of a lambda form. */
+      return lisp_cons(
+          lisp, lisp->keysyms.lambda,
+          lisp_cons(lisp, LISP_CAR(lisp, cdr),
+                    lisp_macroexpand_list(
+                        lisp, LISP_CDR(lisp, cdr))));
+
+    } else {
+      return lisp_macroexpand_list(lisp, expression);
+    }
   }
 }
 
