@@ -15,9 +15,15 @@ void wrong(LispEnv *lisp, const char *message, Object arg) {
   longjmp(lisp->error_loc, 1);
 }
 
-u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
+
+static const u8 empty_string[] = u8"";
+
+const u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
   LISP_ASSERT_TYPE(string, STRING);
   s8 string_s8 = lisp_string_to_s8(lisp, string);
+  if (string_s8.len == 0) {
+    return empty_string;
+  }
   if (string_s8.data[string_s8.len] != '\0') {
     string = lisp_store_string(lisp, string_s8);
     return (u8 *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(string));

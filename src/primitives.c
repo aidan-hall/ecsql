@@ -533,14 +533,15 @@ static Object prim_getc_stream(LispEnv *lisp, Object args) {
 }
 
 static Object prim_fputs_stream(LispEnv *lisp, Object args) {
-  u8 *s = lisp_string_to_null_terminated(lisp, FIRST);
-  fputs((char *)s, lisp->open_streams[OBJ_UNBOX(SECOND)]);
+  const char *s = (const char *)lisp_string_to_null_terminated(lisp, FIRST);
+  fputs(s, lisp->open_streams[OBJ_UNBOX(SECOND)]);
   return OBJ_NIL_TAG;
 }
 
 static Object prim_wrong(LispEnv *lisp, Object args) {
-  u8 *message = lisp_string_to_null_terminated(lisp, FIRST);
-  WRONG((char *)message, SECOND);
+  const char *message =
+      (const char *)lisp_string_to_null_terminated(lisp, FIRST);
+  WRONG(message, SECOND);
   return OBJ_UNDEFINED_TAG;
 }
 

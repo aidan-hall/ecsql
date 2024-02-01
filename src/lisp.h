@@ -124,7 +124,7 @@ static inline s8 lisp_string_to_s8(LispEnv *lisp, Object string) {
               lisp_string_length(string)};
 }
 
-u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string);
+const u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string);
 
 static inline i32 lisp_length(LispEnv *lisp, Object list) {
   i32 length = 0;
