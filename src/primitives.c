@@ -639,7 +639,7 @@ static Object prim_struct_set_cell(LispEnv *lisp, Object args) {
 static Object prim_struct_allocate(LispEnv *lisp, Object args) {
   i32 cells = (i32)OBJ_UNBOX(FIRST);
   size data_index = lisp_allocate_cells(lisp, cells);
-  return OBJ_BOX_INDEX(cells, (u16)OBJ_UNBOX(SECOND), STRUCT);
+  return OBJ_BOX_INDEX(data_index, (u16)OBJ_UNBOX(SECOND), STRUCT);
 }
 
 /* READER MACROS */
