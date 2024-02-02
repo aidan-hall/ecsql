@@ -602,6 +602,26 @@ static Object prim_defname(LispEnv *lisp, Object args) {
   return lisp_defname(lisp, ns, name, value);
 }
 
+Object prim_size_of(LispEnv *lisp, Object args) {
+  Object obj = FIRST;
+  if (EQ(obj, lisp->keysyms.i32) || EQ(obj, lisp->keysyms.f32) ||
+      EQ(obj, lisp->keysyms.character) || EQ(obj, lisp->keysyms.file) ||
+      EQ(obj, lisp->keysyms.vector) || EQ(obj, lisp->keysyms.pair) ||
+      EQ(obj, lisp->keysyms.primitive) || EQ(obj, lisp->keysyms.closure) ||
+      EQ(obj, lisp->keysyms.string) || EQ(obj, lisp->keysyms.symbol)) {
+    return OBJ_BOX(1, INT);
+  } else {
+    /* Get the size of a struct, stored in the first element of the struct
+     * metadata vector. */
+    khint_t iter = kh_get(var_syms, lisp->structs, obj);
+    if (iter != kh_end(lisp->structs))
+      return *lisp_get_vector_item(lisp, kh_value(lisp->structs, iter), 0);
+
+    WRONG("Called size-of with a non-type argument.");
+    return OBJ_UNDEFINED_TAG;
+  }
+}
+
 /* (struct index dest-type) Access some sub-component of a struct as a given
  * type. This is only intended for use in generated code, so it does no safety
  * checks. */
@@ -763,6 +783,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("macroexpand", "(t)", prim_macroexpand);
   DEFPRIMFUN("wrong", "(string t)", prim_wrong);
   DEFPRIMFUN("defname", "(symbol symbol t)", prim_defname);
+  DEFPRIMFUN("size-of", "(symbol)", prim_size_of);
   /* TODO: These are private, and only called from generated code, so don't
    * waste time checking the type. */
   DEFPRIMFUN("--struct-set-vec", "(struct i32 struct i32)",
