@@ -175,9 +175,9 @@
   `(unless ,spec
      (wrong "ASSERTION FAILURE" ',spec)))
 
-(defmacro incq (var value)
+(defmacro incq (var . rest)
   (assert (symbolp var))
-  `(setq ,var (+ ,var ,value)))
+  `(setq ,var (+ ,var ,(if rest (car rest) 1))))
 
 (defun puts (string)
   ;; Write `string' to `stdout'.
