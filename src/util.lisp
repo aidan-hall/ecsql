@@ -156,6 +156,20 @@
     (setq elements (cdr elements)))
   start)
 
+(defun last (l)
+  (if (and (consp l) (consp (cdr l)))
+      (last (cdr l))
+    l))
+
+(defun nconc lists
+  (when (consp lists)
+    (reduce
+     (lambda (front next)
+       (setcdr (last front) next))
+     (car lists)
+     (cdr lists))
+    (car lists)))
+
 (defun negated (f)
   (lambda (x)
     (not (funcall f x))))
