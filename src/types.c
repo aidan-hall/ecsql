@@ -32,8 +32,7 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
   case OBJ_STRUCT_TAG:
     return lisp->keysyms.struct_k;
   }
-  fprintf(stderr, "type tag: %x\n", OBJ_TYPE(obj));
-  WRONG("Invalid type tag of object.");
+  WRONG("Invalid type tag of object.", OBJ_BOX(OBJ_TYPE(obj), INT));
   return OBJ_UNDEFINED_TAG;
 }
 
