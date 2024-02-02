@@ -13,7 +13,7 @@
              (member-size (size-of (cadr elt)))
              (size 0))
         
-        (aset offsets i (cons size elt))
+        (aset offsets i (cons offset elt))
         
         (incq offset member-size)
 
