@@ -52,6 +52,7 @@ typedef struct LispEnv {
   /* char* → Object of strings stored in 'memory'. */
   khash_t(sym_name) * symbols;
   khash_t(primitives) * primitive_functions;
+  khash_t(var_syms) * structs;
   khash_t(var_syms) * globals;
   khash_t(var_syms) * functions;
   khash_t(var_syms) * macros;

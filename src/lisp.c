@@ -15,7 +15,6 @@ void wrong(LispEnv *lisp, const char *message, Object arg) {
   longjmp(lisp->error_loc, 1);
 }
 
-
 static const u8 empty_string[] = u8"";
 
 const u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
@@ -63,6 +62,8 @@ Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value) {
     env = lisp->functions;
   } else if (EQ(ns, lisp->keysyms.macro)) {
     env = lisp->macros;
+  } else if (EQ(ns, lisp->keysyms.struct_k)) {
+    env = lisp->structs;
   } else {
     WRONG("Invalid namespace", ns);
     return OBJ_UNDEFINED_TAG;
@@ -111,6 +112,7 @@ LispEnv new_lisp_environment() {
   lisp.functions = kh_init(var_syms);
   lisp.primitive_functions = kh_init(primitives);
   lisp.macros = kh_init(var_syms);
+  lisp.structs = kh_init(var_syms);
 
 #define REGISTER_KEYSYM(K) lisp.keysyms.K = lisp_intern(&lisp, s8(#K));
   LISP_KEYSYMS(REGISTER_KEYSYM);
