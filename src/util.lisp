@@ -8,7 +8,7 @@
   (list
    'defname ''function (list 'quote name) (cons 'lambda (cons params body))))
 
-(defmacro define (name value)
+(defmacro defvar (name value)
   (list 'defname ''global (list 'quote name) value))
 
 ;;; Common shorthands for accessing the contents of
@@ -135,7 +135,7 @@
   `(if ,cond
        (progn . ,body)))
 
-(define gensym-counter 0)
+(defvar gensym-counter 0)
 (defun gensym ()
   (setq gensym-counter (+ gensym-counter 1))
   (make-symbol (concat "g" (to-string gensym-counter))))
