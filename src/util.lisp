@@ -150,6 +150,12 @@
           rest))
     nil))
 
+(defun reduce (f start elements)
+  (while elements
+    (setq start (funcall f start (car elements)))
+    (setq elements (cdr elements)))
+  start)
+
 (defun negated (f)
   (lambda (x)
     (not (funcall f x))))
