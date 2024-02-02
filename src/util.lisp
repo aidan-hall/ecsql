@@ -30,6 +30,7 @@
 (def-type-predicate consp pair)
 (def-type-predicate integerp i32)
 (def-type-predicate floatp f32)
+(def-type-predicate symbolp symbol)
 
 (defun not (v)
   (eq v nil))
@@ -49,10 +50,10 @@
 ;;; Essential Utility Functions
 
 (defun mapcar (f l)
-  (if (not l)
-      nil
-    (cons (funcall f (car l))
-          (mapcar f (cdr l)))))
+  (if l
+      (cons (funcall f (car l))
+            (mapcar f (cdr l)))
+    nil))
 
 ;;; Common Macros
 (defmacro let (binds . body)
@@ -135,12 +136,23 @@
   `(if ,cond
        (progn . ,body)))
 
+;;; Less Essential Utilities (Not Needed by any Common Macros)
 (defvar gensym-counter 0)
 (defun gensym ()
   (setq gensym-counter (+ gensym-counter 1))
   (make-symbol (concat "g" (to-string gensym-counter))))
 
-;;; Less Essential Utilities (Not Needed by any Common Macros)
+(defun filter (f l)
+  (if l
+      (let ((rest (filter f (cdr l))))
+        (if (funcall f (car l))
+            (cons (car l) rest)
+          rest))
+    nil))
+
+(defun negated (f)
+  (lambda (x)
+    (not (funcall f x))))
 
 (defun print (form)
   (print-to stdout form))
@@ -156,6 +168,10 @@
 (defmacro assert (spec)
   `(unless ,spec
      (wrong "ASSERTION FAILURE" ',spec)))
+
+(defmacro incq (var value)
+  (assert (symbolp var))
+  `(setq ,var (+ ,var ,value)))
 
 (defun puts (string)
   ;; Write `string' to `stdout'.
