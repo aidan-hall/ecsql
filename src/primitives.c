@@ -5,6 +5,7 @@
 #include "object.h"
 #include "print.h"
 #include "reader.h"
+#include "types.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -49,7 +50,17 @@ static Object prim_eql(LispEnv *lisp, Object args) {
 }
 
 static Object prim_length(LispEnv *lisp, Object args) {
-  return OBJ_BOX(lisp_length(lisp, FIRST), INT);
+  Object obj = FIRST;
+  switch (OBJ_TYPE(obj)) {
+  case OBJ_PAIR_TAG:
+    return OBJ_BOX(lisp_length(lisp, FIRST), INT);
+  case OBJ_VECTOR_TAG:
+  case OBJ_STRING_TAG:
+    return OBJ_BOX(OBJ_UNBOX_METADATA(obj), INT);
+  default:
+    WRONG("Cannot take the length of object of type", lisp_type_of(lisp, obj));
+    return OBJ_UNDEFINED_TAG;
+  }
 }
 
 static Object prim_quit(LispEnv *lisp, Object args) {
@@ -732,7 +743,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("setcdr", "(pair t)", prim_setcdr);
   DEFPRIMFUN("cons", "(t t)", prim_cons);
   DEFPRIMFUN("list", "t", prim_list);
-  DEFPRIMFUN("length", "(pair)", prim_length);
+  DEFPRIMFUN("length", "(t)", prim_length);
   DEFPRIMFUN("make-vector", "(i32 t)", prim_make_vector);
   DEFPRIMFUN("vector", "t", prim_vector);
   DEFPRIMFUN("aref", "(vector i32)", prim_aref);
