@@ -47,6 +47,12 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     fputc(OBJ_UNBOX(object), stream);
     break;
   case OBJ_PAIR_TAG:
+    if (EQ(LISP_CAR(lisp, object), lisp->keysyms.quote)) {
+      fputc('\'', stream);
+      lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream);
+      break;
+    }
+    [[fallthrough]];
   case OBJ_NIL_TAG:
     lisp_print_list(lisp, object, stream);
     break;
