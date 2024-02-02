@@ -266,7 +266,7 @@ The bare essential built-in types are:
 - [X] Primitive function
 - [X] Closure (lambda)
 - [ ] Compiled Closure(?)
-- [ ] Fixed-length vectors(?)
+- [X] Fixed-length vectors(?)
 - [ ] Struct
 
 **** DONE Scope, Namespaces etc.
@@ -399,6 +399,35 @@ Requirements:
 - [ ] Getters
 - [ ] *Setters*: Do we attempt "generalised variables"?
 - [ ] Field types: All fundamental types, or struct types(?).
+Lisp Representation:
+- Storage :: Vector, each member (which *must* be of the provided
+  typespec, checked by ~lisp_type_spec_matches~) in a cell.
+- Name :: Symbol, bound in the function namespace as a constructor(?).
+- Definition :: As below:
+  #+begin_src lisp
+(defstruct v3f
+  (x f32)
+  (y f32)
+  (z f32))
+(defstruct physics
+  (pos v3f) ; Recursive structs
+  (vel v3f))
+(defstruct node
+  (car t)
+  (cdr t))
+  #+end_src
+- API :: As below:
+  #+begin_src lisp
+(node-car (make-node 'a 'b)) ; a
+(set-v3f-x v (+ 1 (v3f-x v)))
+(set-physics-pos-x player (+ 1 (physics-pos-x player)))
+(set-physics-vel player (make-vector 2 2 2))
+  #+end_src
+- Single Inheritance :: Possibly useful idea: Same members and
+  interface as another struct, but considered a distinct type by Lisp.
+  - Could be as simple as physically splicing in the struct member
+    list from the parent class and dispatching to normal ~defstruct~.
+  - Include a cast to the base class.
 *** TODO ECS [0/5]
 **** TODO Entity IDs
 **** TODO Component Store
