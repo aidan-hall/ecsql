@@ -52,11 +52,15 @@ typedef struct LispEnv {
   /* char* → Object of strings stored in 'memory'. */
   khash_t(sym_name) * symbols;
   khash_t(primitives) * primitive_functions;
+  /* id → name symbol */
+  khash_t(struct_ids) * struct_ids;
+  /* name symbol → metadata */
   khash_t(var_syms) * structs;
   khash_t(var_syms) * globals;
   khash_t(var_syms) * functions;
   khash_t(var_syms) * macros;
   FILE *open_streams[LISP_MAX_OPEN_STREAMS];
+  u16 next_struct_id;
 
   /* This is indexed with the ASCII values of reader macro characters. */
   ReaderMacro reader_macros[128];
@@ -66,9 +70,10 @@ typedef struct LispEnv {
 #undef DECL_KEYSYM
     /* The Lisp symbols we want for these are also C keywords so they need
      * special treatment. */
-    Object if_k;     /* if */
-    Object while_k;  /* while */
-    Object struct_k; /* struct */
+    Object if_k;         /* if */
+    Object while_k;      /* while */
+    Object struct_k;     /* struct */
+    Object print_struct; /* print-struct-to */
   } keysyms;
   jmp_buf error_loc;
 } LispEnv;

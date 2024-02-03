@@ -1,6 +1,7 @@
 #include "print.h"
 #include "lisp.h"
 #include "object.h"
+#include "types.h"
 
 /* list *must* be a pair or nil.  Any sub-structure should be handled correctly.
  */
@@ -82,5 +83,12 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     }
     fputs(")", stream);
   } break;
+  case OBJ_STRUCT_TAG:
+    /* TODO: Implement a clever way to call struct printer methods. */
+    fprintf(stream, "(struct ");
+    lisp_print(lisp, lisp_type_of(lisp, object), stream);
+    fputs(")", stream);
+    break;
   }
+  /* Should be unreachable. */
 }

@@ -1,7 +1,7 @@
 #include "types.h"
+#include "khash.h"
 #include "lisp.h"
 #include "object.h"
-
 
 Object lisp_type_of(LispEnv *lisp, Object obj) {
   switch (OBJ_TYPE(obj)) {
@@ -29,15 +29,21 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
     return lisp->keysyms.pair;
   case OBJ_VECTOR_TAG:
     return lisp->keysyms.vector;
-  case OBJ_STRUCT_TAG:
-    return lisp->keysyms.struct_k;
+  case OBJ_STRUCT_TAG: {
+    khint_t iter =
+        kh_get(struct_ids, lisp->struct_ids, OBJ_UNBOX_METADATA(obj));
+    if (iter == kh_end(lisp->struct_ids)) {
+      WRONG("Unknown struct type", OBJ_BOX(OBJ_UNBOX_METADATA(obj), INT));
+      return OBJ_UNDEFINED_TAG;
+    }
+    return kh_value(lisp->struct_ids, iter);
+  }
   }
   WRONG("Invalid type tag of object.", OBJ_BOX(OBJ_TYPE(obj), INT));
   return OBJ_UNDEFINED_TAG;
 }
 
-bool lisp_type_spec_matches(LispEnv *lisp, Object value,
-                                          Object spec) {
+bool lisp_type_spec_matches(LispEnv *lisp, Object value, Object spec) {
 
   while (OBJ_TYPE(value) == OBJ_PAIR_TAG && OBJ_TYPE(spec) == OBJ_PAIR_TAG) {
     if (!lisp_type_spec_matches(lisp, LISP_CAR(lisp, value),

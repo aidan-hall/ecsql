@@ -114,6 +114,7 @@ LispEnv new_lisp_environment() {
   lisp.symbols = kh_init(sym_name);
   lisp.globals = kh_init(var_syms);
   lisp.functions = kh_init(var_syms);
+  lisp.struct_ids = kh_init(struct_ids);
   lisp.primitive_functions = kh_init(primitives);
   lisp.macros = kh_init(var_syms);
   lisp.structs = kh_init(var_syms);
@@ -137,6 +138,20 @@ LispEnv new_lisp_environment() {
   lisp_define_global(&lisp, lisp.keysyms.eof, OBJ_BOX(EOF, CHAR));
 
   lisp_install_primitives(&lisp);
+
+  FILE *load_file = fopen("src/load.lisp", "r");
+  if (load_file == NULL) {
+    fprintf(stderr, "Couldn't open file for load function.\n");
+    exit(1);
+  }
+  lisp_eval(&lisp, lisp_read(&lisp, load_file));
+  fclose(load_file);
+
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"src/util.lisp\")"));
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"src/struct.lisp\")"));
+  lisp.keysyms.print_struct =
+      lisp_lookup_function(&lisp, OBJS(&lisp, "print-struct-to"));
+
   return lisp;
 }
 

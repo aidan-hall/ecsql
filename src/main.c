@@ -13,16 +13,6 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Error in a file loaded at startup: no good!\n");
     exit(1);
   }
-
-  FILE *load_file = fopen("src/load.lisp", "r");
-  if (load_file == NULL) {
-    fprintf(stderr, "Couldn't open file for load function.\n");
-    exit(1);
-  }
-  lisp_eval(&lisp, lisp_read(&lisp, load_file));
-  fclose(load_file);
-
-  lisp_eval(&lisp, OBJS(&lisp, "(load \"src/util.lisp\")"));
   Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);

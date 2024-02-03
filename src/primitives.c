@@ -1,5 +1,6 @@
 /* Primitive Lisp functions, macros and reader macros. */
 #include "primitives.h"
+#include "khash.h"
 #include "lisp.h"
 #include "memory.h"
 #include "object.h"
@@ -598,7 +599,7 @@ static Object prim_defname(LispEnv *lisp, Object args) {
   return lisp_defname(lisp, ns, name, value);
 }
 
-Object prim_size_of(LispEnv *lisp, Object args) {
+static Object prim_size_of(LispEnv *lisp, Object args) {
   Object obj = FIRST;
   if (EQ(obj, lisp->keysyms.i32) || EQ(obj, lisp->keysyms.f32) ||
       EQ(obj, lisp->keysyms.character) || EQ(obj, lisp->keysyms.file) ||
@@ -613,9 +614,50 @@ Object prim_size_of(LispEnv *lisp, Object args) {
     if (iter != kh_end(lisp->structs))
       return *lisp_get_vector_item(lisp, kh_value(lisp->structs, iter), 0);
 
-    WRONG("Called size-of with a non-type argument.");
+    WRONG("Called size-of with a non-type argument", obj);
     return OBJ_UNDEFINED_TAG;
   }
+}
+
+static Object prim_is_struct(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp, kh_get(var_syms, lisp->structs, FIRST) !=
+                             kh_end(lisp->structs));
+}
+
+/* (symbol) Generate a new struct id, pointing to the given symbol. */
+static Object prim_struct_register(LispEnv *lisp, Object args) {
+  Object name = FIRST;
+  if (lisp->next_struct_id == UINT16_MAX) {
+    WRONG("Ran out of 16-bit IDs for structs, somehow.");
+    return OBJ_UNDEFINED_TAG;
+  }
+  u16 id = lisp->next_struct_id++;
+  const Object boxed_id = OBJ_BOX(id, INT);
+
+  khint_t iter = kh_get(struct_ids, lisp->struct_ids, id);
+  if (iter != kh_end(lisp->struct_ids)) {
+    WRONG("Somehow generated a duplicate struct ID", boxed_id);
+    exit(1);
+  }
+
+  int absent;
+  iter = kh_put(struct_ids, lisp->struct_ids, id, &absent);
+  if (absent < 1) {
+    WRONG("Failed to add struct id to lisp->struct_ids", boxed_id);
+  }
+
+  kh_value(lisp->struct_ids, iter) = name;
+
+  return boxed_id;
+}
+
+static Object prim_struct_metadata(LispEnv *lisp, Object args) {
+  khint_t iter = kh_get(var_syms, lisp->structs, FIRST);
+  if (iter == kh_end(lisp->structs)) {
+    WRONG("Symbol is not a struct name", FIRST);
+    return OBJ_UNDEFINED_TAG;
+  }
+  return kh_value(lisp->structs, iter);
 }
 
 /* (struct index dest-type) Access some sub-component of a struct as a given
@@ -657,9 +699,8 @@ static Object prim_struct_set_vec(LispEnv *lisp, Object args) {
 static Object prim_struct_set_cell(LispEnv *lisp, Object args) {
   size dest_index = OBJ_UNBOX_INDEX(FIRST) + OBJ_UNBOX(SECOND);
   args = LISP_CDR(lisp, LISP_CDR(lisp, args));
-  Object source_object = OBJ_UNBOX_INDEX(FIRST);
 
-  return *lisp_cell_at(lisp, dest_index) = source_object;
+  return *lisp_cell_at(lisp, dest_index) = FIRST;
 }
 
 /* (i32 i32): struct type ID, # cells */
@@ -782,12 +823,14 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("size-of", "(symbol)", prim_size_of);
   /* TODO: These are private, and only called from generated code, so don't
    * waste time checking the type. */
-  DEFPRIMFUN("--struct-set-vec", "(struct i32 struct i32)",
-             prim_struct_set_vec);
-  DEFPRIMFUN("--struct-set-cell", "(struct i32 t)", prim_struct_set_cell);
-  DEFPRIMFUN("--struct-get-vec", "(struct i32 i32)", prim_struct_get_vec);
-  DEFPRIMFUN("--struct-get-cell", "(struct i32)", prim_struct_get_cell);
+  DEFPRIMFUN("--struct-set-vec", "(t i32 t i32)", prim_struct_set_vec);
+  DEFPRIMFUN("--struct-set-cell", "(t i32 t)", prim_struct_set_cell);
+  DEFPRIMFUN("--struct-get-vec", "(t i32 i32)", prim_struct_get_vec);
+  DEFPRIMFUN("--struct-get-cell", "(t i32)", prim_struct_get_cell);
   DEFPRIMFUN("--struct-allocate", "(i32 i32)", prim_struct_allocate);
+  DEFPRIMFUN("--struct-register", "(symbol)", prim_struct_register);
+  DEFPRIMFUN("structp", "(symbol)", prim_is_struct);
+  DEFPRIMFUN("struct-metadata", "(symbol)", prim_struct_metadata);
 #undef DEFPRIMFUN
 #undef OBJSX
 }
