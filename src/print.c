@@ -70,7 +70,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     break;
   case OBJ_CLOSURE_TAG:
     fputs("(lambda ", stream);
-    lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream);
+    lisp_print(lisp, OBJ_REINTERPRET(object, PAIR), stream);
     fputs(")", stream);
     break;
   case OBJ_VECTOR_TAG: {
