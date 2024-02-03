@@ -87,7 +87,11 @@ Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
   size i;
   for (i = 0; i < LISP_MAX_OPEN_STREAMS; i++) {
     if (lisp->open_streams[i] == NULL) {
+      /* Store the stream in the first available slot. */
       lisp->open_streams[i] = stream;
+      return OBJ_BOX(i, FILE_PTR);
+    } else if (lisp->open_streams[i] == stream) {
+      /* If that stream is already stored, reuse the slot it's in. */
       return OBJ_BOX(i, FILE_PTR);
     }
   }
