@@ -162,10 +162,12 @@
     l))
 
 (defun nconc lists
+  (while (and lists (not (car lists)))
+    (setq lists (cdr lists)))
   (when (consp lists)
     (reduce
      (lambda (front next)
-       (setcdr (last front) next))
+       (if next (setcdr (last front) next)))
      (car lists)
      (cdr lists))
     (car lists)))
