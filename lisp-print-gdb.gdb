@@ -1,5 +1,4 @@
 define lprint
-  call lisp_print(lisp, $arg0, stdout)
-  call (int)fputc('\n', stdout)
+  call lisp_to_string(lisp, $arg0)
 end
 

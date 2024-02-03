@@ -569,13 +569,9 @@ static Object prim_make_string(LispEnv *lisp, Object args) {
 }
 
 static Object prim_to_string(LispEnv *lisp, Object args) {
-  u8 buf[LISP_MAX_STRING_LENGTH];
-  FILE *string_stream = fmemopen(buf, LISP_MAX_STRING_LENGTH - 1, "w");
-  lisp_print(lisp, FIRST, string_stream);
-  u16 length = ftell(string_stream);
-  fputc('\0', string_stream);
-  fclose(string_stream);
-  return lisp_store_string(lisp, (s8){buf, length});
+  u8 *buf = lisp_to_string(lisp, FIRST);
+  return lisp_store_string(
+      lisp, (s8){buf, strnlen((const char *)buf, LISP_MAX_STRING_LENGTH)});
 }
 
 static Object prim_symbol_name(LispEnv *lisp, Object args) {

@@ -591,3 +591,14 @@ Object lisp_list(LispEnv *lisp, ...) {
   va_end(args);
   return res;
 }
+
+u8 *lisp_to_string(LispEnv *lisp, Object object) {
+  /* We want this string to persist for a little bit after we return it. */
+  static u8 buf[LISP_MAX_STRING_LENGTH];
+
+  FILE *string_stream = fmemopen(buf, LISP_MAX_STRING_LENGTH - 1, "w");
+  lisp_print(lisp, object, string_stream);
+  fputc('\0', string_stream);
+  fclose(string_stream);
+  return buf;
+}
