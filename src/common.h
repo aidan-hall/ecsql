@@ -35,4 +35,11 @@ static inline void print_s8(FILE *stream, s8 s) {
     fputc(s.data[i], stream);
   }
 }
+
+#define BIT_CAST(TO, VALUE)                                                    \
+  (((union {                                                                   \
+     typeof(VALUE) from;                                                       \
+     TO to;                                                                    \
+   }){.from = (VALUE)})                                                        \
+       .to)
 #endif
