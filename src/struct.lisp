@@ -77,8 +77,8 @@
              . ,(mapcar
                  (lambda (member-name)
                    `(,(intern (concat "set-" my-name "-" member-name))
-                     me
-                     ,(intern member-name)))
+                      me
+                      ,(intern member-name)))
                  my-member-names))
            ;; Return the produced struct
            me))
@@ -108,15 +108,15 @@
                               ,is-struct-type
                               ,is-member-type
                               (--struct-set-vec structure ,offset value ,size))))
-                     (print "... it's a cell type")
-                     `(progn
-                        (defun ,getter (structure)
-                          ,is-struct-type
-                          (--struct-get-cell structure ,offset))
-                        (defun ,setter (structure value)
-                          ,is-struct-type
-                          ,is-member-type
-                          (--struct-set-cell structure ,offset value))))))))
+                       (print "... it's a cell type")
+                       `(progn
+                          (defun ,getter (structure)
+                            ,is-struct-type
+                            (--struct-get-cell structure ,offset))
+                          (defun ,setter (structure value)
+                            ,is-struct-type
+                            ,is-member-type
+                            (--struct-set-cell structure ,offset value))))))))
            offsets))))
 
 (defun prin1-struct-to (stream obj)
@@ -141,11 +141,11 @@
     (if (>= (length name-string) 128)
         (wrong "struct name is way too long" struct-type)
 
-      (struct-install name (car size-and-offsets) stringy-members nil)
-      `(let ((printer-function ,printer-code))
-         ,(struct-accessors name (cadr size-and-offsets))
-         ;; printer-code is a defun form, so we can get the function name with cadr.
-         (aset (struct-metadata ',name) 3 (function ,(cadr printer-code)))))))
+        (struct-install name (car size-and-offsets) stringy-members nil)
+        `(let ((printer-function ,printer-code))
+           ,(struct-accessors name (cadr size-and-offsets))
+           ;; printer-code is a defun form, so we can get the function name with cadr.
+           (aset (struct-metadata ',name) 3 (function ,(cadr printer-code)))))))
 
 ;;; Temporary stuff for testing
 ;; (struct-install 'v2f 2 '(("x" f32) ("y" f32)))
