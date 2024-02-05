@@ -626,8 +626,9 @@ static Object prim_size_of(LispEnv *lisp, Object args) {
 }
 
 static Object prim_is_struct(LispEnv *lisp, Object args) {
-  return lisp_bool(lisp, kh_get(var_syms, lisp->structs, FIRST) !=
-                             kh_end(lisp->structs));
+  /* We can't write this test in Lisp because type-of returns a struct's struct
+   * type name, not the symbol 'struct. */
+  return lisp_bool(lisp, OBJ_TYPE(FIRST) == OBJ_STRUCT_TAG);
 }
 
 /* (symbol) Generate a new struct id, pointing to the given symbol. */
@@ -848,7 +849,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("--struct-get-cell", "(t i32)", prim_struct_get_cell);
   DEFPRIMFUN("--struct-allocate", "(i32 i32)", prim_struct_allocate);
   DEFPRIMFUN("--struct-register", "(symbol)", prim_struct_register);
-  DEFPRIMFUN("structp", "(symbol)", prim_is_struct);
+  DEFPRIMFUN("structp", "(t)", prim_is_struct);
   DEFPRIMFUN("struct-metadata", "(symbol)", prim_struct_metadata);
 #undef DEFPRIMFUN
 #undef OBJSX
