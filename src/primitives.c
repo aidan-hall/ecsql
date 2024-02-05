@@ -684,8 +684,8 @@ static Object prim_struct_set_vec(LispEnv *lisp, Object args) {
   size dest_index = OBJ_UNBOX_INDEX(FIRST) + OBJ_UNBOX(SECOND);
   Object *dest = lisp_cell_at(lisp, dest_index);
   args = LISP_CDR(lisp, LISP_CDR(lisp, args));
-  Object source_object = OBJ_UNBOX_INDEX(FIRST);
-  Object *source = lisp_cell_at(lisp, source_object);
+  Object source_object = FIRST;
+  Object *source = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(source_object));
   i32 length = OBJ_UNBOX(SECOND);
   for (i32 i = 0; i < length; ++i) {
     dest[i] = source[i];
