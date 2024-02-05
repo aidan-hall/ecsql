@@ -197,8 +197,40 @@
   (lambda (x)
     (not (funcall f x))))
 
+(defun prin1-list (file list)
+  (fputc #\( file)
+  (while (and (consp list) (consp (cdr list)))
+    (prin1-to file (car list))
+    (fputc #\  file)
+    (setq list (cdr list)))
+  (when (consp list)
+    (prin1-to file (car list))
+    (when (cdr list)
+      (fputs " . " file)
+      (prin1-to file (cdr list))))
+  (fputc #\) file))
+
+(defun prin1-to (stream form)
+  (if (structp form)
+      (prin1-struct-to stream form)
+    (case (type-of form)
+      ((pair nil)
+       (prin1-list stream form))
+      ((character)                    ; #\c escape
+       (fputc #\# stream)
+       (fputc #\\ stream)
+       (fputc form stream))
+      (t
+       (prin1-to* stream form)))))
+
+(defun prin1 (form)
+  (prin1-to stdout form))
+
 (defun print (form)
-  (print-to stdout form))
+  (fputc #\ stdout)
+  (prin1 form)
+  (fputs "
+" stdout))
 
 (defun equal (a b)
   ;; Return t if `a' and `b' are the same, traversing the sub-structure of `cons' pairs.
@@ -228,5 +260,9 @@
       (if (eq form eof)
           (puts "End of file reached. Goodbye.
 ")
-        (print (eval form)))))
-  (puts "End of file reached. Goodbye."))
+        (prin1 (eval form))
+        (puts "
+")
+        )))
+  (puts "End of file reached. Goodbye.
+"))

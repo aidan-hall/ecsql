@@ -362,7 +362,6 @@ LISP_CMP(prim_greater_equal, >=);
 
 static Object prim_print(LispEnv *lisp, Object args) {
   lisp_print(lisp, SECOND, lisp->open_streams[OBJ_UNBOX(FIRST)]);
-  fputc('\n', stdout);
   return OBJ_NIL_TAG;
 }
 
@@ -831,7 +830,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("<=", "(t t)", prim_less_equal);
   DEFPRIMFUN(">", "(t t)", prim_greater);
   DEFPRIMFUN(">=", "(t t)", prim_greater_equal);
-  DEFPRIMFUN("print-to", "(file t)", prim_print);
+  DEFPRIMFUN("prin1-to*", "(file t)", prim_print);
   DEFPRIMFUN("to-string", "(t)", prim_to_string);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);

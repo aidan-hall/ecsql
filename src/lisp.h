@@ -73,7 +73,7 @@ typedef struct LispEnv {
     Object if_k;         /* if */
     Object while_k;      /* while */
     Object struct_k;     /* struct */
-    Object print_struct; /* print-struct-to */
+    Object print_struct; /* prin1-struct-to */
   } keysyms;
   jmp_buf error_loc;
 } LispEnv;
