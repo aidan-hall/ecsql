@@ -115,7 +115,7 @@ static Object prim_mul(LispEnv *lisp, Object args) {
     }
   }
 
-  return OBJ_BOX(*(u64 *)&product_float, FLOAT);
+  return OBJ_IMM(product_float);
 }
 
 static Object prim_sub(LispEnv *lisp, Object args) {
@@ -136,7 +136,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
       return OBJ_BOX(-(i32)OBJ_UNBOX(element), INT);
     case OBJ_FLOAT_TAG:
       difference_float = -lisp_unbox_float(element);
-      return OBJ_BOX(*(u64 *)&difference_float, FLOAT);
+      return OBJ_IMM(difference_float);
     default:
       WRONG("Wrong type argument to -");
       return OBJ_UNDEFINED_TAG;
@@ -196,7 +196,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
     }
   }
 
-  return OBJ_BOX(*(u64 *)&difference_float, FLOAT);
+  return OBJ_IMM(difference_float);
 }
 
 static Object prim_div(LispEnv *lisp, Object args) {
@@ -213,7 +213,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
       return OBJ_BOX(1 / (i32)OBJ_UNBOX(element), INT);
     case OBJ_FLOAT_TAG:
       numerator_float = 1.0 / lisp_unbox_float(element);
-      return OBJ_BOX(*(u64 *)&numerator_float, FLOAT);
+      return OBJ_IMM(numerator_float);
     default:
       WRONG("Wrong type argument to /");
       return OBJ_UNDEFINED_TAG;
@@ -273,7 +273,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
     }
   }
 
-  return OBJ_BOX(*(u64 *)&numerator_float, FLOAT);
+  return OBJ_IMM(numerator_float);
 }
 
 static Object prim_add(LispEnv *lisp, Object args) {
@@ -322,7 +322,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
     }
   }
 
-  return OBJ_BOX(*(u64 *)&sum_float, FLOAT);
+  return OBJ_IMM(sum_float);
 }
 
 static Object prim_add2f(LispEnv *lisp, Object args) {
@@ -333,7 +333,7 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
   Object second = FIRST;
   LISP_ASSERT_TYPE(second, FLOAT);
   float result = lisp_unbox_float(first) + lisp_unbox_float(second);
-  return OBJ_BOX(*(u64 *)&result, FLOAT);
+  return OBJ_IMM(result);
 }
 #define LISP_CMP(NAME, OP)                                                     \
   static Object NAME(LispEnv *lisp, Object args) {                             \

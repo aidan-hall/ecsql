@@ -55,8 +55,7 @@ enum ObjectTag {
 
 static inline float lisp_unbox_float(Object box) {
   if (OBJ_TYPE(box) == OBJ_FLOAT_TAG) {
-    u32 val_bits = (u32)OBJ_UNBOX(box);
-    return *(float *)&val_bits;
+    return BIT_CAST(float, (u32)OBJ_UNBOX(box));
   } else if (OBJ_TYPE(box) == OBJ_INT_TAG) {
     return (float)(i32)OBJ_UNBOX(box);
   } else {

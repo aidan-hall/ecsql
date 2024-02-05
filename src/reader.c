@@ -35,7 +35,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     }
     float float_value = strtof((char *)tok.lexeme.data, (char **)&endptr);
     if (*endptr == '\0') {
-      return OBJ_BOX(*(u64 *)&float_value, FLOAT);
+      return OBJ_IMM(float_value);
     }
     /* Symbol could not be parsed as an integer or float, so it really is a
      * symbol. */
