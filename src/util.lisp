@@ -55,6 +55,12 @@
             (mapcar f (cdr l)))
     nil))
 
+(defun memql (elt list)
+  (if (consp list)
+      (if (eql elt (car list))
+          list
+        (memql elt (cdr list)))))
+
 ;;; Common Macros
 (defmacro let (binds . body)
   ;; Generate a set of lexical bindings that cannot refer to one another,
