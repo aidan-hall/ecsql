@@ -1,6 +1,6 @@
 CC	= gcc
-SRCDIR = src
-SRCS	:= $(wildcard $(SRCDIR)/*.c)
+SRCDIR	= src
+SRCS	:= $(wildcard $(SRCDIR)/**/*.c)
 
 TARGET = ecsql
 
@@ -13,11 +13,12 @@ OBJDIR := obj
 OBJS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
 DFILES = $(OBJS:.o=.d)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)/%.d
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/%.d: $(SRCDIR)/%.c
-	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,$(OBJDIR)/\1.o $(OBJDIR)/\1.d : ,g' > $@
+	mkdir -p $(@D)
+	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,$(@D)/\1.o $(@D)/\1.d : ,g' > $@
 
 debug: CFLAGS += -g
 debug: $(TARGET)
@@ -29,6 +30,6 @@ $(TARGET): $(OBJS) $(DFILES)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 clean:
-	$(RM) -v $(OBJDIR)/* ecsql
+	$(RM) -rv $(OBJDIR)/* ecsql
 
 include $(DFILES)
