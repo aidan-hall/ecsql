@@ -4,9 +4,9 @@
               ((lambda (form)
                  (while (eq (eq form eof) nil)
                    (eval form)
-                   (print-to stdout (list "Evaluated:" form))
                    (setq form (read-stream f))))
                (read-stream f))
               (fclose f))
             (fopen name "r"))
-           (print-to stdout (list "Loaded: " name))))
+           ;; Disgusting hack: load loads print the first time it is called.
+           (print (list "Loaded: " name))))
