@@ -161,7 +161,7 @@
 (defvar gensym-counter 0)
 (defun gensym ()
   (setq gensym-counter (+ gensym-counter 1))
-  (make-symbol (concat "g" (to-string gensym-counter))))
+  (make-symbol (concat "#g" (to-string gensym-counter))))
 
 (defun filter (f l)
   (if l
