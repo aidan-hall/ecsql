@@ -26,7 +26,7 @@
 (defmacro def-type-predicate (name type)
   ;; Generate a function that tests if a value has the specified type.
   (list 'defun name (list 'v)
-     (list 'eq '(type-of v) (list 'quote type))))
+        (list 'eq '(type-of v) (list 'quote type))))
 (def-type-predicate consp pair)
 (def-type-predicate integerp i32)
 (def-type-predicate floatp f32)
@@ -63,7 +63,7 @@
   ((lambda (names values)
      (cons
       (cons 'lambda (cons names body))
-       values))
+      values))
    (mapcar (lambda (bind) (if (consp bind) (car bind) bind)) binds)
    (mapcar (lambda (bind) (and (consp bind) (cadr bind))) binds)))
 
@@ -71,7 +71,7 @@
   ;; Generate a set of lexical bindings where each binding can refer to the previous ones.
   (if binds
       (list 'let (list (car binds))
-         (cons 'let* (cons (cdr binds) body)))
+            (cons 'let* (cons (cdr binds) body)))
     (cons 'progn body)))
 
 (defmacro cond clauses
@@ -122,8 +122,8 @@
             ;; Generating calls to `list' instead of `cons' makes the output shorter.
             (cons 'list (mapcar (lambda (form) (quasiquote-rec form level)) form))
           (list 'cons
-           (quasiquote-rec head level)
-           (quasiquote-rec (cdr form) level)))))))))
+                (quasiquote-rec head level)
+                (quasiquote-rec (cdr form) level)))))))))
 
 (defmacro quasiquote (form)
   (quasiquote-rec form 1))
