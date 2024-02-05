@@ -58,7 +58,7 @@ static inline float lisp_unbox_float(Object box) {
   }
 }
 
-#define EQ(X, Y) ((X) == (Y))
+#define EQ(X, Y) ((bool)((X) == (Y)))
 
 #define LISP_CAR_INDEX (0)
 #define LISP_CDR_INDEX (1)
