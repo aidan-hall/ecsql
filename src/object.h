@@ -39,6 +39,12 @@ enum ObjectTag {
 #define OBJ_BOX(VALUE, TAG) OBJ_BOX_RAWTAG(VALUE, OBJ_TAG_NAME(TAG))
 #define OBJ_BOX_INDEX(INDEX, METADATA, TAG)                                    \
   (OBJ_BOX(((INDEX) << LISP_INDEX_METADATA_LENGTH) | (METADATA), TAG))
+/* Automatically box an immediate value based on the type. */
+#define OBJ_IMM(VALUE)                                                         \
+  OBJ_BOX_RAWTAG(BIT_CAST(u64, VALUE), _Generic((VALUE),                       \
+                                       float: OBJ_FLOAT_TAG,                   \
+                                       i32: OBJ_INT_TAG,                       \
+                                       u8: OBJ_CHAR_TAG))
 #define OBJ_UNBOX(BOX) (BOX >> OBJ_TAG_LENGTH)
 #define OBJ_UNBOX_INDEX(BOX) (BOX >> LISP_INDEX_OFFSET)
 #define OBJ_UNBOX_METADATA(BOX)                                                \
