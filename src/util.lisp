@@ -142,6 +142,21 @@
   `(if ,cond
        (progn . ,body)))
 
+(defmacro case (expr . clauses)
+  (let ((gname (gensym)))
+    `(let ((,gname ,expr))
+       (cond . ,(mapcar
+                 (lambda (clause)
+                   ;; Treat t and otherwise as default clauses.
+                   (if (memql (car clause) '(t otherwise))
+                       (cons t (cdr clause))
+                     ;; Use `eql' directly if there is only one item in the clause.
+                     `(,(if (not (cdr (car clause)))
+                            `(eql ,gname ',(car (car clause)))
+                          `(memql ,gname ',(car clause)))
+                       . ,(cdr clause))))
+                 clauses)))))
+
 ;;; Less Essential Utilities (Not Needed by any Common Macros)
 (defvar gensym-counter 0)
 (defun gensym ()
