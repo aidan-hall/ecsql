@@ -2,8 +2,10 @@ CC	= gcc
 SRCDIR = src
 SRCS	:= $(wildcard $(SRCDIR)/*.c)
 
+TARGET = ecsql
+
 CPPFLAGS := -std=gnu2x $(CVERSION)
-CFLAGS	+= -g $(CPPFLAGS) -Wall
+CFLAGS	+= $(CPPFLAGS) -Wall
 
 LDLIBS =
 
@@ -17,7 +19,13 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 $(OBJDIR)/%.d: $(SRCDIR)/%.c
 	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,$(OBJDIR)/\1.o $(OBJDIR)/\1.d : ,g' > $@
 
-ecsql: $(OBJS) $(DFILES)
+debug: CFLAGS += -g
+debug: $(TARGET)
+
+release: CFLAGS += -O2 -Wall -Wextra -Werror
+release: $(TARGET)
+
+$(TARGET): $(OBJS) $(DFILES)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 clean:
