@@ -44,7 +44,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     fprintf(stream, "%s", (char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(object)));
     break;
   case OBJ_CHAR_TAG:
-    fputc('?', stream);
+    fputs("#\\", stream);
     fputc(OBJ_UNBOX(object), stream);
     break;
   case OBJ_PAIR_TAG:
