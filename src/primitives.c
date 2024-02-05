@@ -660,8 +660,8 @@ static Object prim_struct_register(LispEnv *lisp, Object args) {
 static Object prim_struct_metadata(LispEnv *lisp, Object args) {
   khint_t iter = kh_get(var_syms, lisp->structs, FIRST);
   if (iter == kh_end(lisp->structs)) {
-    WRONG("Symbol is not a struct name", FIRST);
-    return OBJ_UNDEFINED_TAG;
+    /* Indicates that the provided symbol is not a struct name. */
+    return OBJ_NIL_TAG;
   }
   return kh_value(lisp->structs, iter);
 }
