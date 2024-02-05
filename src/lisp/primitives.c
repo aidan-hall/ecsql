@@ -1,12 +1,12 @@
 /* Primitive Lisp functions, macros and reader macros. */
-#include "primitives.h"
-#include "khash.h"
-#include "lisp.h"
-#include "memory.h"
-#include "object.h"
-#include "print.h"
-#include "reader.h"
-#include "types.h"
+#include <khash.h>
+#include <lisp/primitives.h>
+#include <lisp/lisp.h>
+#include <lisp/memory.h>
+#include <lisp/object.h>
+#include <lisp/print.h>
+#include <lisp/reader.h>
+#include <lisp/types.h>
 #include <stdio.h>
 #include <string.h>
 

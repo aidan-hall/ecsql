@@ -1,7 +1,7 @@
-#include "lexer.h"
-#include "lisp.h"
-#include "print.h"
-#include "reader.h"
+#include <lisp/lexer.h>
+#include <lisp/lisp.h>
+#include <lisp/print.h>
+#include <lisp/reader.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

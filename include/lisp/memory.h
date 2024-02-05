@@ -1,9 +1,9 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "arena.h"
-#include "types.h"
-#include "object.h"
+#include <arena.h>
+#include <lisp/types.h>
+#include <lisp/object.h>
 
 typedef struct {
   Arena space;

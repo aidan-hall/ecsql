@@ -1,8 +1,8 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "common.h"
-#include "lisp.h"
+#include <common.h>
+#include <lisp/lisp.h>
 #include <stdio.h>
 
 #define LEX_COMMENT_CHAR ';'

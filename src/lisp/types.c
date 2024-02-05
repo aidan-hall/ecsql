@@ -1,7 +1,7 @@
-#include "types.h"
-#include "khash.h"
-#include "lisp.h"
-#include "object.h"
+#include <khash.h>
+#include <lisp/types.h>
+#include <lisp/lisp.h>
+#include <lisp/object.h>
 
 Object lisp_type_of(LispEnv *lisp, Object obj) {
   switch (OBJ_TYPE(obj)) {

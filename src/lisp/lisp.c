@@ -1,8 +1,8 @@
-#include "lisp.h"
-#include "object.h"
-#include "primitives.h"
-#include "print.h"
-#include "reader.h"
+#include <lisp/lisp.h>
+#include <lisp/object.h>
+#include <lisp/primitives.h>
+#include <lisp/print.h>
+#include <lisp/reader.h>
 #include <stdarg.h>
 
 void wrong(LispEnv *lisp, const char *message, Object arg) {

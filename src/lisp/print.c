@@ -1,7 +1,7 @@
-#include "print.h"
-#include "lisp.h"
-#include "object.h"
-#include "types.h"
+#include <lisp/print.h>
+#include <lisp/lisp.h>
+#include <lisp/object.h>
+#include <lisp/types.h>
 
 /* list *must* be a pair or nil.  Any sub-structure should be handled correctly.
  */

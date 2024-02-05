@@ -1,9 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include "khash.h"
+#include <khash.h>
 
-#include "common.h"
+#include <common.h>
 
 typedef u64 Object;
 

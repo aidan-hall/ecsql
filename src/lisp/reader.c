@@ -1,21 +1,13 @@
-#include "reader.h"
-#include "common.h"
-#include "lexer.h"
-#include "lisp.h"
+#include <common.h>
+#include <lisp/reader.h>
+#include <lisp/lexer.h>
+#include <lisp/lisp.h>
 
 #include <errno.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-/* #include <readline/readline.h> */
-/* #include <readline/history.h> */
-#include "common.h"
-
-/* Stores the line most recently read by readline. */
-/* char *line; */
-/* A slice into line. */
-/* s8 buffer; */
 
 static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream);
 

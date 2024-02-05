@@ -1,6 +1,6 @@
-#include "lexer.h"
-#include "lisp.h"
-#include "arena.h"
+#include <arena.h>
+#include <lisp/lexer.h>
+#include <lisp/lisp.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

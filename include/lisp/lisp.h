@@ -1,10 +1,10 @@
 #ifndef LISP_H
 #define LISP_H
 
-#include "common.h"
-#include "khash.h"
-#include "memory.h"
-#include "object.h"
+#include <common.h>
+#include <khash.h>
+#include <lisp/memory.h>
+#include <lisp/object.h>
 #include <assert.h>
 #include <setjmp.h>
 #include <stddef.h>

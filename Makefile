@@ -1,11 +1,12 @@
 CC	= gcc
 SRCDIR	= src
-SRCS	:= $(wildcard $(SRCDIR)/**/*.c)
+SRCS	:= $(wildcard $(SRCDIR)/*.c) $(wildcard $(SRCDIR)/**/*.c)
 
 TARGET = ecsql
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
 CFLAGS	+= $(CPPFLAGS) -Wall
+CFLAGS += $(addprefix -I, $(wildcard include/**/) include/)
 
 LDLIBS =
 
@@ -14,7 +15,7 @@ OBJS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
 DFILES = $(OBJS:.o=.d)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)/%.d
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJDIR)/%.d: $(SRCDIR)/%.c
 	mkdir -p $(@D)
