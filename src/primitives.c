@@ -712,6 +712,17 @@ static Object prim_struct_allocate(LispEnv *lisp, Object args) {
 
 /* READER MACROS */
 
+Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
+  u8 next = fgetc(stream);
+  switch (next) {
+  case '\\':
+    return OBJ_BOX(fgetc(stream), CHAR);
+  default:
+    WRONG("Unknown # reader macro", OBJ_BOX(next, CHAR));
+    return OBJ_NIL_TAG;
+  }
+}
+
 Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
   return OBJ_BOX(fgetc(stream), CHAR);
 }
@@ -772,6 +783,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   lisp->reader_macros['`'] = lisp_reader_quasiquote;
   lisp->reader_macros[','] = lisp_reader_unquote;
   lisp->reader_macros['?'] = lisp_reader_question_mark;
+  lisp->reader_macros['#'] = lisp_reader_hash;
 
 #define OBJSX(S) OBJS(lisp, S)
 #define DEFPRIMFUN(NAME, SPEC, FUN)                                            \
