@@ -19,7 +19,7 @@
                              name
                              type)
                             offsets))
-        (if (structp type)
+        (if (struct-metadata type)
             (setq offsets
                   (nconc (cadr (struct-generate-offsets
                                 (struct-metadata-members (struct-metadata type))
