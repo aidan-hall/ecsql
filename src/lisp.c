@@ -139,7 +139,7 @@ LispEnv new_lisp_environment() {
 
   lisp_install_primitives(&lisp);
 
-  FILE *load_file = fopen("src/load.lisp", "r");
+  FILE *load_file = fopen("lisp/load.lisp", "r");
   if (load_file == NULL) {
     fprintf(stderr, "Couldn't open file for load function.\n");
     exit(1);
@@ -147,8 +147,8 @@ LispEnv new_lisp_environment() {
   lisp_eval(&lisp, lisp_read(&lisp, load_file));
   fclose(load_file);
 
-  lisp_eval(&lisp, OBJS(&lisp, "(load \"src/util.lisp\")"));
-  lisp_eval(&lisp, OBJS(&lisp, "(load \"src/struct.lisp\")"));
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/util.lisp\")"));
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/struct.lisp\")"));
   lisp.keysyms.print_struct =
       lisp_lookup_function(&lisp, OBJS(&lisp, "prin1-struct-to"));
 
