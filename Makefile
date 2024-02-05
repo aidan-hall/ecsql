@@ -1,23 +1,26 @@
 CC	= gcc
 SRCDIR = src
-SRC	:= $(wildcard $(SRCDIR)/*.c)
-SRC	+= $(wildcard deps/*/*.c)
+SRCS	:= $(wildcard $(SRCDIR)/*.c)
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
 CFLAGS	+= -g $(CPPFLAGS) -Wall
 
 LDLIBS =
 
-OBJ := $(SRC:.c=.o)
-DFILES := $(SRC:.c=.d)
+OBJDIR := obj
+OBJS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRCS))
+DFILES = $(OBJS:.o=.d)
 
-%.d: %.c
-	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,$(SRCDIR)/\1.o $(SRCDIR)/\1.d : ,g' > $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-ecsql: $(OBJ) $(DFILES)
-	$(CC) -o $@ $(OBJ) $(LDLIBS)
+$(OBJDIR)/%.d: $(SRCDIR)/%.c
+	$(CC) -MM $(CPPFLAGS) $< | sed -E 's,(.*)\.o[ :]*,$(OBJDIR)/\1.o $(OBJDIR)/\1.d : ,g' > $@
+
+ecsql: $(OBJS) $(DFILES)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 clean:
-	$(RM) -v $(OBJ) $(DFILES) $(wildcard src/*.d.*) $(wildcard src/*.d) $(wildcard a-*.d) ecsql
+	$(RM) -v $(OBJDIR)/* ecsql
 
 include $(DFILES)
