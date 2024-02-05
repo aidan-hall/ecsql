@@ -516,6 +516,12 @@ static Object prim_fputs_stream(LispEnv *lisp, Object args) {
   return OBJ_NIL_TAG;
 }
 
+static Object prim_fputc_stream(LispEnv *lisp, Object args) {
+  const u8 c = OBJ_UNBOX(FIRST);
+  fputc(c, lisp->open_streams[OBJ_UNBOX(SECOND)]);
+  return OBJ_NIL_TAG;
+}
+
 static Object prim_wrong(LispEnv *lisp, Object args) {
   const char *message =
       (const char *)lisp_string_to_null_terminated(lisp, FIRST);
@@ -798,6 +804,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
   DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
+  DEFPRIMFUN("fputc", "(character file) ", prim_fputc_stream);
   DEFPRIMFUN("concat", "t", prim_concat);
   DEFPRIMFUN("make-string", "(i32 char)", prim_make_string);
   DEFPRIMFUN("symbol-name", "(symbol)", prim_symbol_name);
