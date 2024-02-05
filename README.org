@@ -116,7 +116,14 @@ the conditional and switch instructions.
      expression nesting level).
 3. Evaluator: libgccjit or simple interpreter.
 ** Implementation
-*** TODO Lisp [12/14]
+*** DONE Lisp Interpreter [14/14]
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-05 Mon 11:04] \\
+  We have now implemented a sufficient interpreter to do some
+  higher-level ECS stuff with macros, though that depends on having the
+  ECS itself, so the primary Lisp implementation is done.
+- State "DOING"      from "TODO"       [2024-02-05 Mon 11:04]
+:END:
 **** DONE Lexer
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-01-11 Thu 18:11] \\
@@ -387,13 +394,25 @@ Options:
 #+attr_org: :radio t
 - [ ] Invalid type/error object (de facto approach)
 - [X] setjmp/longjump
-**** TODO [#C] LValues
+**** CANCELLED [#C] LValues
+:LOGBOOK:
+- State "CANCELLED"  from "TODO"       [2024-02-05 Mon 11:02] \\
+  This would introduce a very un-Lispy complication to the
+  implementation.
+:END:
 - ~(setf place value)~: ~place~ must be an lvalue.
 - In C/libgccjit, lvalues are a subkind of rvalues (normal values).
 - Issues:
   - Can't have references to globals, outside Lisp memory.
   - Potential efficiency cost, especially for struct accessors.
-**** TODO Struct Types
+**** DONE Struct Types
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-05 Mon 11:02] \\
+  Implemented in Lisp as far as possible (only using C to manipulate
+  internal representations), with simple 1-cell alignment/size for all
+  primitive types.
+- State "DOING"      from "TODO"       [2024-02-05 Mon 11:02]
+:END:
 - Use libgccjit's structs for reflection etc.
 Requirements:
 - [ ] Getters
@@ -428,6 +447,7 @@ Lisp Representation:
   - Could be as simple as physically splicing in the struct member
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
+  - Not in the spirit of, or relevant to, what we are doing.
 *** TODO ECS [0/5]
 **** TODO Entity IDs
 **** TODO Component Store
