@@ -146,6 +146,3 @@
            ,(struct-accessors name (cadr size-and-offsets))
            ;; printer-code is a defun form, so we can get the function name with cadr.
            (aset (struct-metadata ',name) 3 (function ,(cadr printer-code)))))))
-
-;;; Temporary stuff for testing
-;; (struct-install 'v2f 2 '(("x" f32) ("y" f32)))
