@@ -6,14 +6,14 @@
 ;;; → (list total-size offsets)
 (defun struct-generate-offsets (members prefix offset)
   (let ((offsets nil))
-    
+
     (while members
       (let* ((elt (car members))
              (type (cadr elt))
              (member-size (size-of type))
              (size 0)
              (name (concat prefix "-" (car elt))))
-        
+
         (setq offsets (cons (list
                              offset
                              name
@@ -25,11 +25,11 @@
                                 (struct-metadata-members (struct-metadata type))
                                 name offset))
                          offsets)))
-        
+
         (incq offset member-size)
 
         (setq members (cdr members))))
-    
+
     (list offset offsets)))
 
 (defun struct-metadata-size (metadata)
