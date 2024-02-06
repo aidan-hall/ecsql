@@ -6,7 +6,7 @@ TARGET = ecsql
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
 CFLAGS	+= $(CPPFLAGS) -Wall
-CFLAGS += $(addprefix -I, $(wildcard include/**/) include/)
+CFLAGS += $(addprefix -I, $(wildcard include/**/) include/ external/)
 
 LDLIBS =
 

@@ -1,7 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <khash.h>
+#include <klib/khash.h>
 
 #include <common.h>
 

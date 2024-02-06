@@ -1,4 +1,4 @@
-#include <khash.h>
+#include <klib/khash.h>
 #include <lisp/types.h>
 #include <lisp/lisp.h>
 #include <lisp/object.h>

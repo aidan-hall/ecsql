@@ -2,7 +2,7 @@
 #define LISP_H
 
 #include <common.h>
-#include <khash.h>
+#include <klib/khash.h>
 #include <lisp/memory.h>
 #include <lisp/object.h>
 #include <assert.h>

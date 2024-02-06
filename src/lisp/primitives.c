@@ -1,5 +1,5 @@
 /* Primitive Lisp functions, macros and reader macros. */
-#include <khash.h>
+#include <klib/khash.h>
 #include <lisp/primitives.h>
 #include <lisp/lisp.h>
 #include <lisp/memory.h>
