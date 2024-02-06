@@ -13,10 +13,37 @@ This is the source code for ECSQL.
 `Since we must rely on some piece of software for project management,
 we will use the most reliable one (in terms of longevity): Emacs.
 ** Design
-*** TODO Basic ECS Architecture [0/3]
-**** TODO Automatically generated Entity IDs
-**** TODO Component Store
-**** TODO System Scheduler
+*** TODO Basic ECS Architecture [1/4]
+**** DONE Automatically generated Entity IDs
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-05 Mon 14:51]
+- State "DOING"      from "TODO"       [2024-02-05 Mon 14:51]
+:END:
+- Simple generational ID system.
+- Hash IDs to get indices so we don't have to aggressively collect
+  them like in Tecs.
+**** TODO Component "Ownership"
+- What components does an Entity have?
+  - Array of Component IDs per archetype(?)
+  - Something like Flecs: Each Component has a hash set of the
+    archetypes that contain it, and provide an efficient facility to
+    identify an Entity's archetype.
+- API for +/-?
+- Don't conflate data layout and Component type: Many Components may
+  be a single number or vector, and it should be possible to treat
+  them as such.
+**** DOING Component Storage
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-05 Mon 14:52]
+:END:
+- Archetype tables: Entity=row, Component data=column.
+**** DOING System Scheduler
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-05 Mon 15:14]
+:END:
+- Fairly tangential to the premise of ECSQL, so either:
+  - Manual :: User code to specify the order of execution.
+  - Ordering Relation Tree :: As in Flecs.
 *** TODO ECSQL Language Specification [0/11]
 - [ ] Create and delete entities
 - [ ] Add and remove Components
@@ -447,7 +474,7 @@ Lisp Representation:
   - Could be as simple as physically splicing in the struct member
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
-  - Not in the spirit of, or relevant to, what we are doing.
+**** Not in the spirit of, or relevant to, what we are doing.
 *** TODO ECS [0/5]
 **** TODO Entity IDs
 **** TODO Component Store
