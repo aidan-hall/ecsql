@@ -1,3 +1,4 @@
+#include <common.h>
 #include <lisp/lexer.h>
 #include <lisp/lisp.h>
 #include <lisp/print.h>
@@ -6,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ecs/ecs.h>
 
 int main(int argc, char *argv[]) {
   LispEnv lisp = new_lisp_environment();
@@ -21,7 +23,8 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Resuming from top level...\n");
   }
 
-  lisp_eval(&lisp, OBJS(&lisp, "(repl)"));
 
+  struct World *world = init_world();
+  /* lisp_eval(&lisp, OBJS(&lisp, "(repl)")); */
   return 0;
 }

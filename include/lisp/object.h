@@ -28,7 +28,9 @@ enum ObjectTag {
   OBJ_SYMBOL_TAG,
   OBJ_PAIR_TAG,
   OBJ_PRIMITIVE_TAG,
-  OBJ_CLOSURE_TAG
+  OBJ_CLOSURE_TAG,
+  OBJ_ENTITY_TAG,
+  OBJ_COMPONENT_TAG
 };
 
 /* Filter out just the type tag of an object */
