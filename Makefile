@@ -5,8 +5,8 @@ SRCS	:= $(wildcard $(SRCDIR)/*.c) $(wildcard $(SRCDIR)/**/*.c)
 TARGET = ecsql
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
+CPPFLAGS += $(addprefix -I, $(wildcard include/**/) include/ external/)
 CFLAGS	+= $(CPPFLAGS) -Wall
-CFLAGS += $(addprefix -I, $(wildcard include/**/) include/ external/)
 
 LDLIBS =
 
