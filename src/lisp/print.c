@@ -14,7 +14,7 @@ static void lisp_print_list(LispEnv *lisp, Object list, FILE *stream) {
       fputc(' ', stream);
   }
 
-  if (OBJ_TYPE(list) != OBJ_NIL_TAG) {
+  if (!EQ(list, NIL)) {
     fputs(" . ", stream);
     lisp_print(lisp, list, stream);
   }
@@ -25,7 +25,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
   /* for (int i = 0; i < depth; i++) { */
   /*   fputc(' ', stream); */
   /* } */
-  switch ((enum ObjectTag)OBJ_TYPE(object)) {
+  switch (OBJ_TYPE(object)) {
   case OBJ_FLOAT_TAG:
     fprintf(stream, "%f", lisp_unbox_float(object));
     break;

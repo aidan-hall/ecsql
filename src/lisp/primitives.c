@@ -60,18 +60,18 @@ static Object prim_length(LispEnv *lisp, Object args) {
     return OBJ_BOX(OBJ_UNBOX_METADATA(obj), INT);
   default:
     WRONG("Cannot take the length of object of type", lisp_type_of(lisp, obj));
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
 }
 
 static Object prim_quit(LispEnv *lisp, Object args) {
   exit(0);
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 
 static Object prim_mul(LispEnv *lisp, Object args) {
   i32 product_int = 1;
-  Object element = OBJ_INT_TAG;
+  Object element = OBJ_BOX(0, INT);
 
   /* Integers */
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
@@ -85,11 +85,11 @@ static Object prim_mul(LispEnv *lisp, Object args) {
       break;
     default:
       WRONG("Wrong type argument to *");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
-  if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+  if (EQ(args, NIL) && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
     return OBJ_BOX(product_int, INT);
   }
 
@@ -111,7 +111,7 @@ static Object prim_mul(LispEnv *lisp, Object args) {
       break;
     default:
       WRONG("Wrong type argument to *");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
@@ -121,14 +121,14 @@ static Object prim_mul(LispEnv *lisp, Object args) {
 static Object prim_sub(LispEnv *lisp, Object args) {
   i32 difference_int;
   float difference_float;
-  Object element = OBJ_INT_TAG;
+  Object element = OBJ_BOX(0, INT);
 
   /* No arguments: 0 */
   if (OBJ_TYPE(args) != OBJ_PAIR_TAG)
     return OBJ_BOX(0, INT);
 
   /* Single argument: compute '- arg' */
-  if (OBJ_TYPE(LISP_CDR(lisp, args)) == OBJ_NIL_TAG) {
+  if (EQ(LISP_CDR(lisp, args), NIL)) {
     element = FIRST;
 
     switch (OBJ_TYPE(element)) {
@@ -139,7 +139,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
       return OBJ_IMM(difference_float);
     default:
       WRONG("Wrong type argument to -");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
@@ -162,11 +162,11 @@ static Object prim_sub(LispEnv *lisp, Object args) {
         break;
       default:
         WRONG("Wrong type argument to -");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
     }
 
-    if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+    if (EQ(args, NIL) && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
       return OBJ_BOX(difference_int, INT);
     }
 
@@ -192,7 +192,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
       break;
     default:
       WRONG("Wrong type argument to *");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
@@ -202,7 +202,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
 static Object prim_div(LispEnv *lisp, Object args) {
   i32 numerator_int = 1;
   float numerator_float;
-  Object element = OBJ_INT_TAG;
+  Object element = OBJ_BOX(0, INT);
 
   /* Single argument: compute 1 / arg */
   if (OBJ_TYPE(LISP_CDR(lisp, args)) == OBJ_NIL_TAG) {
@@ -216,7 +216,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
       return OBJ_IMM(numerator_float);
     default:
       WRONG("Wrong type argument to /");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
@@ -239,11 +239,11 @@ static Object prim_div(LispEnv *lisp, Object args) {
         break;
       default:
         WRONG("Wrong type argument to /");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
     }
 
-    if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+    if (EQ(args, NIL) && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
       return OBJ_BOX(numerator_int, INT);
     }
 
@@ -269,7 +269,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
       break;
     default:
       WRONG("Wrong type argument to *");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
@@ -278,7 +278,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
 
 static Object prim_add(LispEnv *lisp, Object args) {
   i32 sum_int = 0;
-  Object element = OBJ_INT_TAG;
+  Object element = OBJ_BOX(0, INT);
 
   /* Integers */
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
@@ -292,11 +292,11 @@ static Object prim_add(LispEnv *lisp, Object args) {
       break;
     default:
       WRONG("Wrong type argument to +");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
-  if (OBJ_TYPE(args) == OBJ_NIL_TAG && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
+  if (EQ(args, NIL) && OBJ_TYPE(element) != OBJ_FLOAT_TAG) {
     return OBJ_BOX(sum_int, INT);
   }
 
@@ -318,7 +318,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
       break;
     default:
       WRONG("Wrong type argument to *");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
 
@@ -351,7 +351,7 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
     } else {                                                                   \
       WRONG("Invalidtypes of parameters to " #OP,                              \
             lisp_cons(lisp, lisp_type_of(lisp, a), lisp_type_of(lisp, b)));    \
-      return OBJ_UNDEFINED_TAG;                                                \
+      return UNDEFINED;                                                \
     }                                                                          \
   }
 
@@ -362,7 +362,7 @@ LISP_CMP(prim_greater_equal, >=);
 
 static Object prim_print(LispEnv *lisp, Object args) {
   lisp_print(lisp, SECOND, lisp->open_streams[OBJ_UNBOX(FIRST)]);
-  return OBJ_NIL_TAG;
+  return NIL;
 }
 
 static Object prim_type_of(LispEnv *lisp, Object args) {
@@ -393,8 +393,8 @@ static Object prim_macroexpand_1(LispEnv *lisp, Object args) {
 
 static Object prim_car(LispEnv *lisp, Object args) {
   Object pair = LISP_CAR(lisp, args);
-  if (OBJ_TYPE(pair) == OBJ_NIL_TAG)
-    return OBJ_NIL_TAG;
+  if (EQ(pair, NIL))
+    return NIL;
 
   LISP_ASSERT_TYPE(pair, PAIR);
   return LISP_CAR(lisp, pair);
@@ -402,8 +402,8 @@ static Object prim_car(LispEnv *lisp, Object args) {
 
 static Object prim_cdr(LispEnv *lisp, Object args) {
   Object pair = LISP_CAR(lisp, args);
-  if (OBJ_TYPE(pair) == OBJ_NIL_TAG)
-    return OBJ_NIL_TAG;
+  if (EQ(pair, NIL))
+    return NIL;
 
   LISP_ASSERT_TYPE(pair, PAIR);
   return LISP_CDR(lisp, pair);
@@ -425,7 +425,7 @@ static Object prim_make_vector(LispEnv *lisp, Object args) {
   i32 length = (i32)OBJ_UNBOX(FIRST);
   if (length < 0) {
     WRONG("Negative length of vector", FIRST);
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
   Object vector = lisp_make_vector(lisp, length);
   Object *cells = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector));
@@ -483,7 +483,7 @@ static Object lisp_open_file(LispEnv *lisp, Object args) {
   char *mode_s = (char *)lisp_string_to_null_terminated(lisp, mode);
   FILE *stream = fopen(filename_s, mode_s);
   if (stream == NULL) {
-    return OBJ_NIL_TAG;
+    return NIL;
   } else {
     return lisp_store_stream_handle(lisp, stream);
   }
@@ -495,7 +495,7 @@ static Object lisp_close_stream(LispEnv *lisp, Object args) {
   fclose(lisp->open_streams[index]);
   /* Release the slot so we can store another open stream there. */
   lisp->open_streams[index] = NULL;
-  return OBJ_NIL_TAG;
+  return NIL;
 }
 
 static Object prim_feof(LispEnv *lisp, Object args) {
@@ -512,25 +512,25 @@ static Object prim_getc_stream(LispEnv *lisp, Object args) {
 static Object prim_fputs_stream(LispEnv *lisp, Object args) {
   const char *s = (const char *)lisp_string_to_null_terminated(lisp, FIRST);
   fputs(s, lisp->open_streams[OBJ_UNBOX(SECOND)]);
-  return OBJ_NIL_TAG;
+  return NIL;
 }
 
 static Object prim_fputc_stream(LispEnv *lisp, Object args) {
   const u8 c = OBJ_UNBOX(FIRST);
   fputc(c, lisp->open_streams[OBJ_UNBOX(SECOND)]);
-  return OBJ_NIL_TAG;
+  return NIL;
 }
 
 static Object prim_wrong(LispEnv *lisp, Object args) {
   const char *message =
       (const char *)lisp_string_to_null_terminated(lisp, FIRST);
   WRONG(message, SECOND);
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 
 /* Concatenate all string arguments */
 static Object prim_concat(LispEnv *lisp, Object args) {
-  if (OBJ_TYPE(args) == OBJ_NIL_TAG) {
+  if (EQ(args, NIL)) {
     /* Return an empty string: No allocation necessary, memory address
      * (hopefully) irrelevant. */
     return OBJ_BOX_INDEX(0, 0, STRING);
@@ -563,7 +563,7 @@ static Object prim_make_string(LispEnv *lisp, Object args) {
   i32 length = (i32)OBJ_UNBOX(FIRST);
   if (length < 0) {
     WRONG("Negative length of string", FIRST);
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
   size data_index = lisp_allocate_bytes(lisp, length + 1);
   char *chars = (char *)lisp_cell_at(lisp, data_index);
@@ -615,12 +615,12 @@ static Object prim_size_of(LispEnv *lisp, Object args) {
   } else {
     /* Get the size of a struct, stored in the first element of the struct
      * metadata vector. */
-    khint_t iter = kh_get(var_syms, lisp->structs, obj);
+    khint_t iter = kh_get(var_syms, lisp->structs, obj.bits);
     if (iter != kh_end(lisp->structs))
       return *lisp_get_vector_item(lisp, kh_value(lisp->structs, iter), 0);
 
     WRONG("Called size-of with a non-type argument", obj);
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
 }
 
@@ -635,7 +635,7 @@ static Object prim_struct_register(LispEnv *lisp, Object args) {
   Object name = FIRST;
   if (lisp->next_struct_id == UINT16_MAX) {
     WRONG("Ran out of 16-bit IDs for structs, somehow.");
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
   u16 id = lisp->next_struct_id++;
   const Object boxed_id = OBJ_BOX(id, INT);
@@ -658,10 +658,10 @@ static Object prim_struct_register(LispEnv *lisp, Object args) {
 }
 
 static Object prim_struct_metadata(LispEnv *lisp, Object args) {
-  khint_t iter = kh_get(var_syms, lisp->structs, FIRST);
+  khint_t iter = kh_get(var_syms, lisp->structs, FIRST.bits);
   if (iter == kh_end(lisp->structs)) {
     /* Indicates that the provided symbol is not a struct name. */
-    return OBJ_NIL_TAG;
+    return NIL;
   }
   return kh_value(lisp->structs, iter);
 }
@@ -725,7 +725,7 @@ Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
     return OBJ_BOX(fgetc(stream), CHAR);
   default:
     WRONG("Unknown # reader macro", OBJ_BOX(next, CHAR));
-    return OBJ_NIL_TAG;
+    return NIL;
   }
 }
 
@@ -735,7 +735,7 @@ Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
 
 /* Build a list of the form (quoter object) */
 static inline Object lisp_quotify(LispEnv *lisp, Object quoter, Object object) {
-  return lisp_cons(lisp, quoter, lisp_cons(lisp, object, OBJ_NIL_TAG));
+  return lisp_cons(lisp, quoter, lisp_cons(lisp, object, NIL));
 }
 
 /* Some built-in reader macros. */
@@ -759,23 +759,23 @@ static Object lisp_add_primitive(LispEnv *lisp, Object name_sym, Object params,
   /* The input argument type list may be stack-allocated. */
   prim.argument_types = params;
 
-  u32 fn_iter = kh_get(primitives, primitives, prim_obj);
+  u32 fn_iter = kh_get(primitives, primitives, prim_obj.bits);
   if (fn_iter != kh_end(primitives)) {
     WRONG("Attempt to redefine primitive function.");
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
   int absent;
-  fn_iter = kh_put(primitives, primitives, prim_obj, &absent);
+  fn_iter = kh_put(primitives, primitives, prim_obj.bits, &absent);
   if (absent < 1) {
     WRONG("Failed to define primitive function.");
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
 
   kh_value(primitives, fn_iter) = prim;
 
   Object sym_iter =
       lisp_add_to_namespace(lisp, lisp->functions, name_sym, prim_obj);
-  if (sym_iter == OBJ_UNDEFINED_TAG) {
+  if (EQ(sym_iter, UNDEFINED)) {
     WRONG("Failed to add a primitive function name.");
     return sym_iter;
   }

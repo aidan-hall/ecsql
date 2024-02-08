@@ -34,13 +34,13 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
         kh_get(struct_ids, lisp->struct_ids, OBJ_UNBOX_METADATA(obj));
     if (iter == kh_end(lisp->struct_ids)) {
       WRONG("Unknown struct type", OBJ_BOX(OBJ_UNBOX_METADATA(obj), INT));
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
     return kh_value(lisp->struct_ids, iter);
   }
   }
   WRONG("Invalid type tag of object.", OBJ_BOX(OBJ_TYPE(obj), INT));
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 
 bool lisp_type_spec_matches(LispEnv *lisp, Object value, Object spec) {
@@ -58,7 +58,7 @@ bool lisp_type_spec_matches(LispEnv *lisp, Object value, Object spec) {
     return true;
   }
   /* Handle end of list. */
-  if (OBJ_TYPE(value) == OBJ_NIL_TAG && OBJ_TYPE(spec) == OBJ_NIL_TAG)
+  if (EQ(value, NIL) && EQ(spec, NIL))
     return true;
 
   return EQ(lisp_type_of(lisp, value), spec);

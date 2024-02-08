@@ -1,11 +1,10 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include "object.h"
 #include <klib/khash.h>
 
 #include <common.h>
-
-typedef u64 Object;
 
 struct LispEnv;
 

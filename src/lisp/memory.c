@@ -22,14 +22,14 @@ Memory new_lisp_memory(size capacity) {
 size lisp_allocate_cells(struct LispEnv *lisp, size cells) {
   if (cells <= 0) {
     WRONG("Attempt to allocate a non-positive number of cells.", OBJ_BOX(cells, INT));
-    return OBJ_UNDEFINED_TAG;
+    return -1;
   }
   
   Object *start = ALLOC(&lisp->memory.active, Object, cells);
 
   if (start == NULL) {
     WRONG("allocation failure");
-    return OBJ_UNDEFINED_TAG;
+    return -1;
   }
 
   return start - (Object *)lisp->memory.space.begin;

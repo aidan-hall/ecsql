@@ -303,6 +303,11 @@ The bare essential built-in types are:
 - [X] Fixed-length vectors(?)
 - [ ] Struct
 
+We initially used a simple ~typedef~ for the Lisp object type, but
+this was error prone, since C was allowing implicit conversions
+between integers and Objects, which were invalid.  We replaced this
+with a complex union with bit fields, immediately revealed a large
+number of such invalid conversions (<2024-02-08 Thu>).
 **** DONE Scope, Namespaces etc.
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-01-26 Fri 12:13] \\

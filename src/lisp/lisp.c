@@ -7,7 +7,7 @@
 
 void wrong(LispEnv *lisp, const char *message, Object arg) {
   fputs(message, stderr);
-  if (OBJ_TYPE(arg) != OBJ_NIL_TAG) {
+  if (!EQ(arg, NIL)) {
     fputs(": ", stderr);
     lisp_print(lisp, arg, stderr);
   }
@@ -36,18 +36,18 @@ Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
                              Object symbol, Object value) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
 
-  u32 iter = kh_get(var_syms, env, symbol);
+  u32 iter = kh_get(var_syms, env, symbol.bits);
   if (iter != kh_end(env)) {
     fprintf(stderr, "WARNING: Re-defining a name in the given namespace: ");
     lisp_print(lisp, symbol, stderr);
     fputc('\n', stderr);
   } else {
     int absent;
-    iter = kh_put(var_syms, env, symbol, &absent);
+    iter = kh_put(var_syms, env, symbol.bits, &absent);
     if (absent < 1) {
       WRONG("Failed to allocate a place in the namespace for a new name",
             symbol);
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
   }
   kh_value(env, iter) = value;
@@ -66,7 +66,7 @@ Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value) {
     env = lisp->structs;
   } else {
     WRONG("Invalid namespace", ns);
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
 
   return lisp_add_to_namespace(lisp, env, symbol, value);
@@ -77,7 +77,7 @@ static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
    * irrelevant. */
   /* TODO: Do something better here? We've created an over-general API. */
   symbol = lisp_add_to_namespace(lisp, lisp->globals, symbol, value);
-  if (symbol == OBJ_UNDEFINED_TAG) {
+  if (EQ(symbol, UNDEFINED)) {
     WRONG("Failed to define global variable");
   }
   return value;
@@ -96,7 +96,7 @@ Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
     }
   }
   WRONG("The maximum number of streams is already open.");
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
@@ -127,7 +127,7 @@ LispEnv new_lisp_environment() {
   lisp.keysyms.while_k = lisp_intern(&lisp, s8("while"));
   lisp.keysyms.struct_k = lisp_intern(&lisp, s8("struct"));
 
-  lisp_define_global(&lisp, lisp.keysyms.nil, OBJ_NIL_TAG);
+  lisp_define_global(&lisp, lisp.keysyms.nil, NIL);
   lisp_define_global(&lisp, lisp.keysyms.t, lisp.keysyms.t);
   lisp_define_global(&lisp, lisp.keysyms.stdin,
                      lisp_store_stream_handle(&lisp, stdin));
@@ -175,7 +175,7 @@ void lisp_store_object(LispEnv *lisp, Object value) {
 Object lisp_intern(LispEnv *lisp, s8 string) {
   /* s8 string = lisp_string_to_s8(lisp, name); */
 
-  Object symbol = OBJ_UNDEFINED_TAG;
+  Object symbol = UNDEFINED;
   /* Strings created as slices of others may not be NULL-terminated. */
   if (string.data[string.len] != '\0') {
     /* Convert to NULL-terminated string before passing to hash_get. */
@@ -190,7 +190,7 @@ Object lisp_intern(LispEnv *lisp, s8 string) {
 
   if (interned_key == kh_end(lisp->symbols)) {
     /* Create a symbol object pointing to the symbol name in memory. */
-    if (symbol == OBJ_UNDEFINED_TAG) {
+    if (EQ(symbol, UNDEFINED)) {
       symbol = lisp_store_string(lisp, string);
       string = lisp_string_to_s8(lisp, symbol);
       symbol = OBJ_REINTERPRET(symbol, SYMBOL);
@@ -202,7 +202,7 @@ Object lisp_intern(LispEnv *lisp, s8 string) {
         kh_put(sym_name, lisp->symbols, (char *)string.data, &absent);
     if (absent < 0) {
       WRONG("Failed to intern a symbol: couldn't add it to the symbol table.");
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
     kh_value(lisp->symbols, interned_key) = symbol;
     return symbol;
@@ -231,7 +231,7 @@ static Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
         return element;
     alist = LISP_CDR(lisp, alist);
   }
-  return OBJ_NIL_TAG;
+  return NIL;
 }
 
 static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
@@ -240,12 +240,12 @@ static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
   /* TODO: Search in the lexical context. */
   while (OBJ_TYPE(context) == OBJ_PAIR_TAG) {
     Object element = lisp_assoc(lisp, symbol, LISP_CAR(lisp, context));
-    if (element != OBJ_NIL_TAG) {
+    if (!EQ(element, NIL)) {
       return LISP_CDR_PLACE(lisp, element);
     }
     context = LISP_CDR(lisp, context);
   }
-  khint_t global_key = kh_get(var_syms, lisp->globals, symbol);
+  khint_t global_key = kh_get(var_syms, lisp->globals, symbol.bits);
   if (global_key == kh_end(lisp->globals)) {
     return NULL;
   }
@@ -257,22 +257,22 @@ static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
 Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
   /* TODO: Search in the lexical context. */
-  khint_t function_key = kh_get(var_syms, lisp->functions, symbol);
+  khint_t function_key = kh_get(var_syms, lisp->functions, symbol.bits);
   if (function_key == kh_end(lisp->functions)) {
     WRONG("Undefined function", symbol);
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   }
   return kh_value(lisp->functions, function_key);
 }
 
 Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
   Object tmp;
-  if (OBJ_TYPE(parameters) == OBJ_NIL_TAG) {
-    if (OBJ_TYPE(arguments) != OBJ_NIL_TAG) {
+  if (EQ(parameters, NIL)) {
+    if (!EQ(arguments, NIL)) {
       WRONG("Too many arguments.");
     } else {
       /* End of parameters and arguments lists */
-      return OBJ_NIL_TAG;
+      return NIL;
     }
   } else if (OBJ_TYPE(parameters) == OBJ_PAIR_TAG) {
     if (OBJ_TYPE(arguments) == OBJ_PAIR_TAG) {
@@ -288,7 +288,7 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
 
   /* This allows rest parameters: ((lambda (x . xs)) 1 2 3) binds ((x . 1) (xs .
    * (2 3))) */
-  return lisp_cons(lisp, lisp_cons(lisp, parameters, arguments), OBJ_NIL_TAG);
+  return lisp_cons(lisp, lisp_cons(lisp, parameters, arguments), NIL);
 }
 
 /* Create a context (alist) on top of 'context' with 'parameters' bound to
@@ -314,9 +314,9 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
 
     InterpreterPrimitive prim =
         kh_value(lisp->primitive_functions,
-                 kh_get(primitives, lisp->primitive_functions, function));
+                 kh_get(primitives, lisp->primitive_functions, function.bits));
     if (!lisp_check_argument_types(lisp, prim, arguments)) {
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     }
     return prim.fn(lisp, arguments);
   }
@@ -334,13 +334,13 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
     WRONG("Unsupported type of function", lisp_type_of(lisp, function));
     break;
   }
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 
 Object lisp_or(LispEnv *lisp, Object sequence, Object context) {
   Object statement;
-  if (OBJ_TYPE(sequence) == OBJ_NIL_TAG) {
-    return OBJ_NIL_TAG;
+  if (EQ(sequence, NIL)) {
+    return NIL;
   }
   do {
     statement = LISP_CAR(lisp, sequence);
@@ -352,7 +352,7 @@ Object lisp_or(LispEnv *lisp, Object sequence, Object context) {
 
 Object lisp_and(LispEnv *lisp, Object sequence, Object context) {
   Object statement;
-  if (OBJ_TYPE(sequence) == OBJ_NIL_TAG) {
+  if (EQ(sequence, NIL)) {
     return lisp->keysyms.t;
   }
   do {
@@ -367,8 +367,8 @@ Object lisp_and(LispEnv *lisp, Object sequence, Object context) {
  */
 Object lisp_evaluate_sequence(LispEnv *lisp, Object sequence, Object context) {
   Object statement;
-  if (OBJ_TYPE(sequence) == OBJ_NIL_TAG) {
-    return OBJ_NIL_TAG;
+  if (EQ(sequence, NIL)) {
+    return NIL;
   }
   do {
     statement = LISP_CAR(lisp, sequence);
@@ -409,7 +409,7 @@ Object lisp_macroexpand_top(LispEnv *lisp, Object expression) {
   }
 
   /* Expand the macro form itself. */
-  u32 iter = kh_get(var_syms, lisp->macros, macro);
+  u32 iter = kh_get(var_syms, lisp->macros, macro.bits);
   if (iter == kh_end(lisp->macros)) {
     /* car of list was not a macro name: just update if the car expression
      * expanded. */
@@ -434,7 +434,7 @@ Object lisp_macroexpand(LispEnv *lisp, Object expression) {
    * https://stackoverflow.com/questions/72865649/how-does-macroexpansion-actually-work-in-lisp
    */
 
-  if (!EQ(OBJ_TYPE(expression), OBJ_PAIR_TAG)) {
+  if (OBJ_TYPE(expression) != OBJ_PAIR_TAG) {
     return expression;
 
   } else {
@@ -519,7 +519,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) < 2) {
         WRONG("Need at least the CONDITION and THEN clauses for an if form.");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
 
       if (lisp_true(lisp_evaluate(lisp, LISP_CAR(lisp, tmp), context))) {
@@ -535,7 +535,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
 
       if (lisp_length(lisp, tmp) < 1) {
         WRONG("Need at least the CONDITION clause for a while form.");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
 
       Object test = LISP_CAR(lisp, tmp);
@@ -544,19 +544,19 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
         lisp_evaluate_sequence(lisp, tmp, context);
       }
       /* Follow Emacs Lisp's behaviour. */
-      return OBJ_NIL_TAG;
+      return NIL;
 
     } else if (EQ(tmp, lisp->keysyms.setq)) {
       tmp = LISP_CDR(lisp, expression);
       if (lisp_length(lisp, tmp) != 2) {
         WRONG("Currently we only accept 2 arguments for setq: VARIABLE and "
               "VALUE.");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
       tmp_ptr = lisp_lookup_variable(lisp, LISP_CAR(lisp, tmp), context);
       if (tmp_ptr == NULL) {
         WRONG("Undefined variable.");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
       return *tmp_ptr = lisp_evaluate(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)),
                                       context);
@@ -566,7 +566,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     } else if (OBJ_TYPE(tmp) == OBJ_PAIR_TAG) {
       if (!EQ(LISP_CAR(lisp, tmp), lisp->keysyms.lambda)) {
         WRONG("Invalid function form.");
-        return OBJ_UNDEFINED_TAG;
+        return UNDEFINED;
       }
       return lisp_apply(
           lisp, lisp_make_closure(lisp, LISP_CDR(lisp, tmp), context),
@@ -583,16 +583,16 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     break;
   }
 
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 
 Object lisp_eval(LispEnv *lisp, Object expression) {
-  return lisp_evaluate(lisp, expression, OBJ_NIL_TAG);
+  return lisp_evaluate(lisp, expression, NIL);
 }
 
 static Object lisp_list_recurse(LispEnv *lisp, va_list args) {
   Object arg = va_arg(args, Object);
-  if (OBJ_TYPE(arg) == OBJ_NIL_TAG) {
+  if (EQ(arg, NIL)) {
     return arg;
   } else {
     return lisp_cons(lisp, arg, lisp_list_recurse(lisp, args));

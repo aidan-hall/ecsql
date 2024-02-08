@@ -53,14 +53,14 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     ReaderMacro macro = lisp->reader_macros[(usize)tok.lex_char];
     if (macro == NULL) {
       WRONG("Nonexistent reader macro", OBJ_BOX(tok.lex_char, CHAR));
-      return OBJ_UNDEFINED_TAG;
+      return UNDEFINED;
     } else {
       return macro(lisp, stream);
     }
   }
   }
 
-  return OBJ_UNDEFINED_TAG;
+  return UNDEFINED;
 }
 
 static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
@@ -68,7 +68,7 @@ static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
   Object tmp;
   switch (tok.t) {
   case TOK_RPAR:
-    return OBJ_NIL_TAG;
+    return NIL;
   case TOK_POINT:
     tmp = read_with_token(lisp, get_token(lisp, stream), stream);
     tok = get_token(lisp, stream);
@@ -78,7 +78,7 @@ static Object lisp_read_list_tail(LispEnv *lisp, FILE *stream) {
     return tmp;
   case TOK_END:
     WRONG("Unexpected end of stream in list tail.");
-    return OBJ_UNDEFINED_TAG;
+    return UNDEFINED;
   default:
     tmp = read_with_token(lisp, tok, stream);
     return lisp_cons(lisp, tmp, lisp_read_list_tail(lisp, stream));

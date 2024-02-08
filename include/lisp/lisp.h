@@ -88,7 +88,7 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
   do {                                                                         \
     wrong(lisp, MESSAGE, ARG);                                                 \
   } while (0)
-#define WRONG1(MESSAGE) WRONG2(MESSAGE, OBJ_NIL_TAG)
+#define WRONG1(MESSAGE) WRONG2(MESSAGE, NIL)
 #define WRONGX(a, b, c, ...) c
 #define WRONG(...) WRONGX(__VA_ARGS__, WRONG2, WRONG1)(__VA_ARGS__)
 #define LISP_ASSERT_TYPE(OBJ, TYPE)                                            \
@@ -106,14 +106,13 @@ static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
 }
 
 static inline bool lisp_true(Object value) {
-  static_assert(!OBJ_NIL_TAG, "Lisp and C have the same truthy semantics.");
-  return value;
+  return value.bits != NIL.bits;
 }
 
 static inline bool lisp_false(Object value) { return !lisp_true(value); }
 
 static inline Object lisp_bool(LispEnv *lisp, bool value) {
-  return value ? lisp->keysyms.t : OBJ_NIL_TAG;
+  return value ? lisp->keysyms.t : NIL;
 }
 
 /* Cons up a Lisp list. The last argument *must* have a NIL type tag. */
