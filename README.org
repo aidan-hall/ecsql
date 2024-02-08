@@ -480,9 +480,56 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
 **** Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [0/5]
-**** TODO Entity IDs
-**** TODO Component Store
+*** TODO ECS [0/6]
+**** DOING Entity IDs
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-06 Tue 14:07]
+:END:
+
+**** DOING Component Store
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-06 Tue 14:07]
+:END:
+***** Lookup Archetype by Component List
+- In Mertens's blog post, which introduces a basic archetype-based
+  Component store, he uses C++ stdlib sets and maps, which support
+  hashing stdlib data structures, notably including hashing arrays of
+  Components to access the correct Archetype.  We have been using
+  khash for sets and maps, and it only supports hashing integers and
+  null-terminated strings.
+- Mertens explains that array hashing is too slow for operations like
+  adding or removing one Component in a hot loop: when is the
+  ~Component[]~ → ~Archetype~ map actually useful?
+- Extend khash to support hashing arrays?  This sounds like a
+  disappointingly brute-force solution.
+- Naively store Archetypes in an array and search for them?  This
+  could yield O(n^2) lookup to find the Archetype for a particular
+  Component set, if implemented poorly.
+  - This "direct" access is exceptional anyway, so don't worry about
+    it being slow!
+- One solution could be to limit Component IDs to [1, 255] and
+  actually store them in null-terminated strings, but we want to
+  implement relationships, and Entities as Components, so we need
+  32-bit Component IDs (since they are equivalent to Entity IDs).
+- Traverse the Archetype graph by "adding" 1 Component at a time?
+  - Doesn't require direct access to the Component list.
+  - Requires a path from the empty Archetype to every other, wasting
+    memory for the many unused Archetypes.
+  - Effectively O(n) /linked list/ traversal, vs O(n) array hashing.
+    This could be amortized if Archetype references are reused for
+    creating many Entities.
+  - This needs to be built initially, however.
+***** Columns and Alignment
+- Columns store Component data in packed byte vectors, so it's
+  possible we could have alignment problems.  A solution would be to
+  add an alignment parameter for registering Component data blocks.
+***** Bootstrapping Process
+- It's a nice idea to use a "Component Storage" Component to store the alignment and size of a Component, but it makes the initial setup a little awkward, since we need to add it to itself.
+- Our solution is as follows:
+  1. Create the "Component Storage" Component/Entity (it will go into the empty archetype),
+  2. Create the Archetype for Entities with only the "Component Storage" Component, manually specifying the storage parameters in its only Column (which contains the Component Storage data),
+  3. Add "Component Storage" to itself, with the appropriate data values.
+  4. For all Subsequent Components with storage, simply add the "Component Storage" Component and it will just work™.
 **** TODO Systems
 **** TODO [#C] Relationships
 - Is this essential?
@@ -556,3 +603,43 @@ implement of 16 weeks.
 - Trying to produce a nice API like one would have in C may be the
   wrong approach: Allow the C plumbing API to be awful, and build nice
   ones on top of that?
+**** DOING Structs and Components
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-07 Wed 17:38]
+:END:
+- It should be possible to implement Lisp structs in such a way that
+  they blend with the ECS.  [[https://ajmmertens.medium.com/doing-a-lot-with-a-little-ecs-identifiers-25a72bd2647][Mertens proposes an approach to this.]]
+- Struct metadata relation:
+  - Name (symbol?) & type per struct member.
+    This would be the maximally ECS'd option.
+  - Reference to an entry in my existing Lisp struct metadata table.
+    This may require less work, but isn't as conceptually elegant.
+***** Struct/Component Reflection Data in the ECS
+As described by Mertens, have a "Struct" Component that contains
+reflection data.  Adding it to a Component Entity associates that
+reflection data with the data stored for that Component type.
+
+Reflection data includes:
+- Size of the whole Component,
+- Alignment of the whole Component,
+- Information about sub-structure.
+
+The ECS itself only needs the size and alignment for manipulating
+Component data: it just works with bytes and pointers.
+The information about sub-structure is only needed in Lisp.
+Sub-structure means the set of struct members, and the following
+information about each:
+- Offset from the start of the struct,
+- Type: A Component, with its own Reflection data Component(s)
+  - Size,
+  - Alignment,
+  - Name,
+
+
+A bar to hit for supporting general and useful structures could be to
+support structs that contain structs.  Alternatively, we could rigidly
+require that a struct only contains primitive types, and use separate
+Components to group them together.  That would probably be
+unnecessarily restrictive, and there are many plausible Components
+such as "Transform" that would contain multiple vectors/matrices for
+position and orientation.
