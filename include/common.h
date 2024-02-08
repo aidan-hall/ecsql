@@ -36,6 +36,7 @@ static inline void print_s8(FILE *stream, s8 s) {
   }
 }
 
+#define IGNORE(X) ((void)(X))
 #define BIT_CAST(TO, VALUE)                                                    \
   (((union {                                                                   \
      typeof(VALUE) from;                                                       \
