@@ -194,13 +194,6 @@ static Object new_entity_id_partitioned(World *world, u32 *start, u32 low,
   return ENT_BOX(id, *entity_generation(world, id));
 }
 
-/* Object new_component(World *world) { */
-/*   /\* TODO: Add it to the empty Archetype *\/ */
-/*   return new_entity_id_partitioned(world, &world->next_entity, MIN_COMPONENT,
- */
-/*                                    MAX_COMPONENT); */
-/* } */
-
 /* Add the Entity to the Archetype.
  * Returns the row in the Archetype where the entity is stored. */
 size archetype_add_entity(World *world, Archetype *archetype, u32 eid) {
