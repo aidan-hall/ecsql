@@ -52,25 +52,39 @@ int main(int argc, char *argv[]) {
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);
 
-
   test_type_bsearch();
   struct World *world = init_world();
   Object pos = ECS_NEW_COMPONENT(world, struct Vec3);
   Object vel = ECS_NEW_COMPONENT(world, struct Vec3);
   Object fooable = ecs_new(world);
+  Object apple = ecs_new(world);
   Object player = ecs_new(world);
   ecs_add(world, player, pos);
   *(struct Vec3 *)ecs_get(world, player, pos) = (struct Vec3){1, 2, 3};
+  Object pear = ecs_new(world);
   ecs_add(world, player, vel);
   *(struct Vec3 *)ecs_get(world, player, vel) = (struct Vec3){0, 0, 2};
   ecs_remove(world, player, pos);
   ecs_add(world, player, fooable);
+  Object orange = ecs_new(world);
+
+  Object eats = ecs_new(world);
+  ecs_add(world, player, ecs_pair(eats, apple));
+  ecs_add(world, player, ecs_pair(eats, orange));
+  ecs_add(world, player, ecs_pair(eats, pear));
+  Type type = ecs_type(world, player);
+  printf("eats: %lx, eats.id: %d\n", eats.bits, eats.id);
+  for (size i = 0; i < kv_size(type); ++i) {
+    printf("type[%ld] = %lx, .relation = %d\n", i, kv_A(type, i).bits,
+           kv_A(type, i).relation);
+  }
+
   ecs_remove(world, player, vel);
   ecs_remove(world, player, fooable);
-
   if (setjmp(lisp.error_loc) != 0) {
     fprintf(stderr, "Resuming from top level...\n");
   }
   lisp_eval(&lisp, OBJS(&lisp, "(repl)"));
+
   return 0;
 }
