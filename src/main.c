@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
   ecs_add(world, player, ecs_pair(eats, orange));
   ecs_add(world, player, ecs_pair(eats, pear));
   Type type = ecs_type(world, player);
-  printf("eats: %lx, eats.id: %d\n", eats.bits, eats.id);
+  printf("eats: %lx, eats.id: %d\n", eats.bits, eats.id.val);
   for (size i = 0; i < kv_size(type); ++i) {
     printf("type[%ld] = %lx, .relation = %d\n", i, kv_A(type, i).bits,
            kv_A(type, i).relation);
