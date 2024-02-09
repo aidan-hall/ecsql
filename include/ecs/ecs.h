@@ -39,7 +39,6 @@ static inline Object ENT_BOX(EntityID id, u16 gen) {
 }
 
 static inline u64 ENT_SIG(Object ent) {
-  ent.flags = 0;
   return ent.bits;
 }
 

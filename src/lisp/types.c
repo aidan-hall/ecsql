@@ -38,6 +38,10 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
     }
     return kh_value(lisp->struct_ids, iter);
   }
+  case OBJ_ENTITY_TAG:
+    return lisp->keysyms.entity;
+  case OBJ_RELATION_TAG:
+    return lisp->keysyms.relation;
   }
   WRONG("Invalid type tag of object.", OBJ_BOX(OBJ_TYPE(obj), INT));
   return UNDEFINED;

@@ -3,8 +3,8 @@
 #include <klib/khash.h>
 #include <klib/ksort.h>
 #include <klib/kvec.h>
-#include <lisp/object.h>
 #include <lisp/lisp.h>
+#include <lisp/object.h>
 #include <stdlib.h>
 
 KSORT_INIT(sort_type, Object, COMP_LT)

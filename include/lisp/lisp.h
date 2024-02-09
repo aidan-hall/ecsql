@@ -46,7 +46,9 @@
   F(function)                                                                  \
   F(macro)                                                                     \
   F(eof)                                                                       \
-  F(vector)
+  F(vector)                                                                    \
+  F(entity)                                                                    \
+  F(relation)
 
 typedef struct LispEnv {
   Memory memory;
