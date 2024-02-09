@@ -480,14 +480,19 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
 **** Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [0/6]
-**** DOING Entity IDs
+*** TODO ECS [2/6]
+**** DONE Entity IDs
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-09 Fri 12:45] \\
+  23-bit unsigned integers.
 - State "DOING"      from "TODO"       [2024-02-06 Tue 14:07]
 :END:
 
-**** DOING Component Store
+**** DONE Component Store
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-09 Fri 12:52] \\
+  As explained by Mertens, the implementation is the same with or
+  without relations.
 - State "DOING"      from "TODO"       [2024-02-06 Tue 14:07]
 :END:
 ***** Lookup Archetype by Component List
@@ -519,7 +524,12 @@ Lisp Representation:
     This could be amortized if Archetype references are reused for
     creating many Entities.
   - This needs to be built initially, however.
-***** Columns and Alignment
+***** CANCELLED Columns and Alignment
+:LOGBOOK:
+- State "CANCELLED"  from "TODO"       [2024-02-09 Fri 12:51] \\
+  C automatically pads structs to ensure alignment, so we must solve any
+  problems with alignment in struct.lisp.
+:END:
 - Columns store Component data in packed byte vectors, so it's
   possible we could have alignment problems.  A solution would be to
   add an alignment parameter for registering Component data blocks.
@@ -563,7 +573,7 @@ implement of 16 weeks.
    entities in the relationship.
 5. [X] Wildcard queries: Looks impressive, and Mertens doesn't even
    consider it especially hard, at "merely" 2 weeks.
-6. [ ] Component index
+6. [X] Component index
 7. [ ] Cleanup: Important, but we must find a simplified approach if
    we are to consider implementing it.
 8. [ ] Cleanup Traits
