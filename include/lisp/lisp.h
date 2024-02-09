@@ -162,7 +162,8 @@ static inline Object *lisp_get_vector_item(LispEnv *lisp, Object vector,
   return lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector) + index);
 }
 
-static inline Object lisp_vector_from_kvec(LispEnv *lisp, ObjectVector objects) {
+static inline Object lisp_vector_from_kvec(LispEnv *lisp,
+                                           ObjectVector objects) {
   Object vector = lisp_make_vector(lisp, kv_size(objects));
   memcpy(lisp_get_vector_item(lisp, vector, 0), &kv_A(objects, 0),
          kv_size(objects) * sizeof(Object));

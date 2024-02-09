@@ -69,11 +69,25 @@ static inline Object ecs_pair(Object relationship, Object entity) {
 
 struct World *init_world();
 Object ecs_new(struct World *world);
-bool entity_live(struct World *world, Object entity);
+void ecs_destroy(struct World *world, Object entity);
+bool ecs_alive(struct World *world, Object entity);
 void *ecs_get(struct World *world, Object entity, Object component);
+bool ecs_has(struct World *world, Object entity, Object component);
 void ecs_add(struct World *world, Object entity, Object component);
 void ecs_remove(struct World *world, Object entity, Object component);
 Object ecs_new_component(struct World *world, struct Storage storage);
+u16 *ecs_generation(struct World *world, EntityID id);
+
+static inline Object ecs_object_with_id(struct World *world, EntityID id) {
+  u16 gen = *ecs_generation(world, id);
+  Object entity = ENT_BOX(id, gen);
+  if (!ecs_alive(world, entity)) {
+    fprintf(stderr, "BAD: Attempted to look up dead entity.\n");
+    return NIL;
+  }
+  return entity;
+}
+
 /* TODO: Remove from public API */
 typedef ObjectVector Type;
 Type ecs_type(struct World *world, Object entity);

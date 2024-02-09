@@ -13,6 +13,7 @@
 
 #define FIRST (LISP_CAR(lisp, args))
 #define SECOND (LISP_CAR(lisp, LISP_CDR(lisp, args)))
+#define THIRD (LISP_CAR(lisp, LISP_CDR(lisp, LISP_CDR(lisp, args))))
 
 /* PRIMITIVE FUNCTIONS */
 
@@ -710,6 +711,80 @@ static Object prim_struct_allocate(LispEnv *lisp, Object args) {
   return OBJ_BOX_INDEX(data_index, (u16)OBJ_UNBOX(SECOND), STRUCT);
 }
 
+/* ECS API */
+
+static Object prim_make_entity(LispEnv *lisp, Object args) {
+  return ENT_BOX((EntityID){BIT_CAST(u32, OBJ_UNBOX(FIRST))},
+                 BIT_CAST(u32, OBJ_UNBOX(SECOND)));
+}
+static Object prim_ecs_new(LispEnv *lisp, Object args) {
+  return ecs_new(lisp->world);
+}
+
+static Object prim_ecs_destroy(LispEnv *lisp, Object args) {
+  Object obj = FIRST;
+  if (!ecs_alive(lisp->world, obj)) {
+    WRONG("Attempt to destroy a dead object.", obj);
+  }
+  ecs_destroy(lisp->world, FIRST);
+  return NIL;
+}
+
+static Object prim_ecs_get(LispEnv *lisp, Object args) {
+  /* XXX: Assumes the requested Component has Object storage, if anything */
+  Object *component = ecs_get(lisp->world, FIRST, SECOND);
+  if (component != NULL) {
+    return *component;
+  } else {
+    return NIL;
+  }
+}
+
+static Object prim_ecs_alive(LispEnv *lisp, Object args) {
+  Object obj = FIRST;
+  return lisp_bool(lisp, ecs_alive(lisp->world, obj));
+}
+
+static Object prim_ecs_has(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp, ecs_has(lisp->world, FIRST, SECOND));
+}
+
+static Object prim_ecs_pair(LispEnv *lisp, Object args) {
+  IGNORE(lisp);
+  return ecs_pair(FIRST, SECOND);
+}
+
+static Object prim_ecs_pair_target(LispEnv *lisp, Object args) {
+  Object obj = FIRST;
+
+  return ecs_object_with_id(lisp->world, obj.entity);
+}
+
+static Object prim_ecs_pair_relation(LispEnv *lisp, Object args) {
+  Object obj = FIRST;
+
+  return ecs_object_with_id(lisp->world, (EntityID){obj.relation});
+}
+
+static Object prim_ecs_add(LispEnv *lisp, Object args) {
+  ecs_add(lisp->world, FIRST, SECOND);
+  return NIL;
+}
+
+static Object prim_ecs_remove(LispEnv *lisp, Object args) {
+  ecs_remove(lisp->world, FIRST, SECOND);
+  return NIL;
+}
+
+static Object prim_ecs_id(LispEnv *lisp, Object args) {
+  return OBJ_BOX(FIRST.id.val, INT);
+}
+
+static Object prim_ecs_gen(LispEnv *lisp, Object args) {
+  Object obj = FIRST;
+  return OBJ_BOX(obj.gen, INT);
+}
+
 /* READER MACROS */
 
 Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
@@ -844,6 +919,21 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("--struct-register", "(symbol)", prim_struct_register);
   DEFPRIMFUN("structp", "(t)", prim_is_struct);
   DEFPRIMFUN("struct-metadata", "(symbol)", prim_struct_metadata);
+
+  DEFPRIMFUN("ecs-new", "()", prim_ecs_new);
+  DEFPRIMFUN("make-entity", "(i32 i32)", prim_make_entity);
+  DEFPRIMFUN("ecs-destroy", "(entity)", prim_ecs_destroy);
+  DEFPRIMFUN("ecs-get", "(entity (or entity relation))", prim_ecs_get);
+  DEFPRIMFUN("ecs-has", "(entity (or entity relation))", prim_ecs_has);
+  DEFPRIMFUN("ecs-alive", "(entity)", prim_ecs_alive);
+  DEFPRIMFUN("ecs-add", "(entity (or entity relation))", prim_ecs_add);
+  DEFPRIMFUN("ecs-remove", "(entity (or entity relation))", prim_ecs_remove);
+  DEFPRIMFUN("ecs-id", "(entity)", prim_ecs_id);
+  DEFPRIMFUN("ecs-gen", "(entity)", prim_ecs_gen);
+  DEFPRIMFUN("make-relation", "(entity entity)", prim_ecs_pair);
+  DEFPRIMFUN("ecs-pair", "(entity entity)", prim_ecs_pair);
+  DEFPRIMFUN("ecs-relation", "(relation)", prim_ecs_pair_relation);
+  DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
 #undef DEFPRIMFUN
 #undef OBJSX
 }

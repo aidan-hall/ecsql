@@ -31,6 +31,8 @@
 (def-type-predicate integerp i32)
 (def-type-predicate floatp f32)
 (def-type-predicate symbolp symbol)
+(def-type-predicate relationp relation)
+(def-type-predicate entityp entity)
 
 (defun not (v)
   (eq v nil))
@@ -220,6 +222,12 @@
        (fputc #\# stream)
        (fputc #\\ stream)
        (fputc form stream))
+      ((entity)
+       (fputs "#*entity" stream)
+       (prin1-to stream (list (ecs-id form) (ecs-gen form))))
+      ((relation)
+       (fputs "#*relation" stream)
+       (prin1-to stream (list (ecs-relation form) (ecs-target form))))
       (t
        (prin1-to* stream form)))))
 

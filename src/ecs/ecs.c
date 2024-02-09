@@ -133,7 +133,7 @@ static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {
 
 /* Returns the generation for the given id stored in the generations hashmap.
  * The pointer is valid until the next update of the generations hashmap. */
-u16 *entity_generation(World *world, EntityID id) {
+u16 *ecs_generation(World *world, EntityID id) {
   khint_t iter = kh_get(gen, world->generations, id.val);
 
   int absent;
@@ -151,8 +151,8 @@ u16 *entity_generation(World *world, EntityID id) {
   return &kh_value(world->generations, iter);
 }
 
-bool entity_alive(World *world, Object entity) {
-  return *entity_generation(world, entity.id) == entity.gen;
+bool ecs_alive(World *world, Object entity) {
+  return *ecs_generation(world, entity.id) == entity.gen;
 }
 
 static inline Record *entity_record(World *world, EntityID id) {
@@ -196,7 +196,7 @@ static Object new_entity_id_partitioned(World *world, u32 *start, u32 low,
     exit(1);
   }
 
-  return ENT_BOX((EntityID){id}, *entity_generation(world, (EntityID){id}));
+  return ENT_BOX((EntityID){id}, *ecs_generation(world, (EntityID){id}));
 }
 
 /* Add the Entity to the Archetype.
@@ -238,7 +238,8 @@ Object ecs_new(World *world) {
 }
 
 /* Remove the Entity in the given row, and maintain packing. */
-static void archetype_remove_entity(World *world, Archetype *archetype, size row) {
+static void archetype_remove_entity(World *world, Archetype *archetype,
+                                    size row) {
   typeof(archetype->entities) *ids = &(archetype->entities);
   size end = kv_size(*ids) - 1;
   /* Packing is maintained by moving the Entity at the back into the given row.
@@ -268,7 +269,7 @@ static void archetype_remove_entity(World *world, Archetype *archetype, size row
   }
 }
 
-void destroy_entity(World *world, Object entity) {
+void ecs_destroy(World *world, Object entity) {
   u32 id = entity.id.val;
   khint_t live_iter = kh_get(live, world->live, id);
   if (live_iter == kh_end(world->live)) {
@@ -284,7 +285,7 @@ void destroy_entity(World *world, Object entity) {
   /* Remove the Entity from the live set */
   kh_del(live, world->live, live_iter);
   /* Update generation "lazily" when the Entity is destroyed. */
-  *entity_generation(world, entity.id) += 1;
+  *ecs_generation(world, entity.id) += 1;
 }
 
 static inline ArchetypeMap *component_archetypes(World *world,
