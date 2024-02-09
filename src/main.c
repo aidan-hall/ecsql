@@ -46,9 +46,6 @@ int main(int argc, char *argv[]) {
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);
 
-  if (setjmp(lisp.error_loc) != 0) {
-    fprintf(stderr, "Resuming from top level...\n");
-  }
 
   test_type_bsearch();
   struct World *world = init_world();
@@ -65,6 +62,9 @@ int main(int argc, char *argv[]) {
   ecs_remove(world, player, vel);
   ecs_remove(world, player, fooable);
 
+  if (setjmp(lisp.error_loc) != 0) {
+    fprintf(stderr, "Resuming from top level...\n");
+  }
   lisp_eval(&lisp, OBJS(&lisp, "(repl)"));
   return 0;
 }
