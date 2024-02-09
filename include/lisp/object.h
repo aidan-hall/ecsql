@@ -36,10 +36,6 @@ typedef union Object {
     u32 relation : 23;
     u32 id;
   };
-  struct {
-    u16 : OBJ_TAG_LENGTH + OBJ_FLAGS_LENGTH;
-    u64 sig : 64 - OBJ_TAG_LENGTH - OBJ_FLAGS_LENGTH;
-  };
 } Object;
 
 /* Object must fit within 64 bits. */

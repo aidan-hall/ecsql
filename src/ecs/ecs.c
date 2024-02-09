@@ -79,7 +79,7 @@ static inline bool types_match(Type a, Type b) {
   }
   /* Check that the Component vectors match. */
   for (size i = 0; i < kv_size(a); ++i) {
-    if (kv_A(a, i).sig != kv_A(b, i).sig)
+    if (ENT_SIG(kv_A(a, i)) != ENT_SIG(kv_A(b, i)))
       return false;
   }
   return true;
@@ -107,7 +107,7 @@ typedef khash_t(component_archetype_column) ArchetypeMap;
 /* Entity ID (32 bits) → Record
  * We don't use 64-bit keys because main ID is unique at any point in time. */
 KHASH_MAP_INIT_INT(entity_data, Record);
-/* Component (64 bits) → Component Metadata */
+/* Component *signature* (64 bits) → Component Metadata */
 KHASH_MAP_INIT_INT64(component_metadata, ArchetypeMap *);
 /* u8* name → Entity */
 KHASH_MAP_INIT_STR(names, Object);
@@ -295,7 +295,7 @@ void destroy_entity(World *world, Object entity) {
 
 static inline ArchetypeMap *component_archetypes(World *world,
                                                  Object component) {
-  u64 sig = component.sig;
+  u64 sig = ENT_SIG(component);
   khiter_t iter = kh_get(component_metadata, world->component_index, sig);
   if (iter == kh_end(world->component_index)) {
     int absent;
@@ -457,7 +457,7 @@ void *ecs_get(World *world, Object entity, Object component) {
  * and vice versa if 'archetype' doesn't have 'component'. */
 Archetype *toggle_component(World *world, Archetype *archetype,
                             Object component) {
-  u64 sig = component.sig;
+  u64 sig = ENT_SIG(component);
   khiter_t iter = kh_get(archetype_edge, archetype->neighbours, sig);
   /* A link to that Archetype has already been made. */
   if (iter != kh_end(archetype->neighbours)) {
@@ -507,11 +507,7 @@ void move_entity(World *world, Archetype *from, size from_row, Archetype *to) {
   /* Type vectors are sorted, so we can iterate forward through both, and copy
    * when they match. */
   for (size f = 0, t = 0; f < kv_size(from->type) && t < kv_size(to->type);) {
-    /* TODO: Should we use sig here? */
-    if (EQ(kv_A(from->type, f), kv_A(to->type, t))) {
-      /* TODO: Copy this Component's data over:
-       * Identify the Column in each Archetype storing its data, if it has data,
-       * Copy. */
+    if (COMP_EQUIV(kv_A(from->type, f), kv_A(to->type, t))) {
       Object component = kv_A(from->type, f);
       if (kv_A(from->component_columns, f) != NOT_PRESENT) {
         size from_col = kv_A(from->component_columns, f);

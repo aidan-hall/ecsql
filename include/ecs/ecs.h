@@ -40,7 +40,14 @@ static inline Object ENT_BOX(u32 id, u16 gen) {
   return ent;
 }
 
-#define COMP_LT(A, B) ((A).sig < (B).sig)
+static inline u64 ENT_SIG(Object ent) {
+  ent.flags = 0;
+  return ent.bits;
+}
+
+#define COMP_CMP(A, B, OP) (ENT_SIG(A) OP ENT_SIG(B))
+#define COMP_LT(A, B) COMP_CMP((A), (B), <)
+#define COMP_EQUIV(A, B) COMP_CMP((A), (B), ==)
 
 /**
  * Ranges of allowed IDs for Entities and Components.
@@ -55,6 +62,7 @@ static inline Object ENT_BOX(u32 id, u16 gen) {
 #define MAX_ENTITY ((1 << 23))
 
 static inline Object ecs_pair(Object relationship, Object entity) {
+  /* TODO: Distinguish from normal Entities? */
   Object obj = {0};
   obj.entity = entity.id;
   obj.relation = relationship.id;
@@ -85,9 +93,9 @@ static inline size type_pos(Type a, Object component) {
   while (lo < hi) {
     size med = (lo + hi) / 2;
     Object val = kv_A(a, med);
-    if (EQ(val, component)) {
+    if (COMP_EQUIV(val, component)) {
       return med;
-    } else if (val.bits < component.bits) {
+    } else if (COMP_LT(val, component)) {
       lo = med + 1;
     } else {
       hi = med;

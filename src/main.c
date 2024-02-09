@@ -12,8 +12,10 @@
 void test_type_bsearch() {
   Type a;
   kv_init(a);
-  Object foo = ENT_BOX(3, 0);
-  printf("foo: %lx\n", foo.bits);
+  Object foo = (Object){.bits = ~0};
+  printf("foo: %lx, ENT_SIG(foo): %lx\n", foo.bits, ENT_SIG(foo));
+  foo = ENT_BOX(3, 0);
+  printf("foo: %lx, ENT_SIG(foo): %lu\n", foo.bits, ENT_SIG(foo));
   kv_push(Object, a, foo);
   kv_push(Object, a, (ENT_BOX(49, 0)));
   kv_push(Object, a, (ENT_BOX(67, 0)));
