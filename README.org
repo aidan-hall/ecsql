@@ -541,7 +541,10 @@ Lisp Representation:
   3. Add "Component Storage" to itself, with the appropriate data values.
   4. For all Subsequent Components with storage, simply add the "Component Storage" Component and it will just work™.
 **** TODO Systems
-**** TODO [#C] Relationships
+**** DOING [#C] Relationships
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-09 Fri 19:19]
+:END:
 - Is this essential?
 - What is the simplest form of relationships I could implement?
 ***** Mertens' Roadmap, Culled
