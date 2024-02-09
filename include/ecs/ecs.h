@@ -40,6 +40,20 @@ static inline Object ENT_BOX(u32 id, u16 gen) {
   return ent;
 }
 
+#define OBJ_LT(A, B) ((A).sig < (B).sig)
+
+/**
+ * Ranges of allowed IDs for Entities and Components.
+ * For now, don't allow Entity IDs to exceed 2^23 - 1,
+ * so the 23 bits of the relation type in pairs is enough for any Entity.
+ *
+ * TODO: Implement a partitioning scheme to allow optimisations for small IDs,
+ * and to support bigger ones.  Probably unnecessary for this project though!
+ * @see new_entity_partitioned
+ */
+#define MIN_ENTITY (0)
+#define MAX_ENTITY ((1 << 23))
+
 static inline Object ecs_pair(Object relationship, Object entity) {
   Object obj = {0};
   obj.entity = entity.id;
@@ -55,6 +69,7 @@ void *ecs_get(struct World *world, Object entity, Object component);
 void ecs_add(struct World *world, Object entity, Object component);
 void ecs_remove(struct World *world, Object entity, Object component);
 Object ecs_new_component(struct World *world, struct Storage storage);
+Type ecs_type(struct World *world, Object entity);
 
 #define ECS_NEW_COMPONENT(WORLD, TYPE)                                         \
   (ecs_new_component(WORLD, (struct Storage){.size = sizeof(TYPE),             \

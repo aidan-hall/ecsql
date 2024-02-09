@@ -6,20 +6,7 @@
 #include <lisp/object.h>
 #include <stdlib.h>
 
-#define OBJ_LT(A, B) ((A).bits < (B).bits)
 KSORT_INIT(Object, Object, OBJ_LT)
-
-/**
- * Ranges of allowed IDs for Entities and Components.
- * For now, don't allow Entity IDs to exceed 2^23 - 1,
- * so the 23 bits of the relation type in pairs is enough for any Entity.
- *
- * TODO: Implement a partitioning scheme to allow optimisations for small IDs,
- * and to support bigger ones.  Probably unnecessary for this project though!
- * @see new_entity_partitioned
- */
-#define MIN_ENTITY (0)
-#define MAX_ENTITY ((1 << 23))
 
 /* Storage for a single Component type in an Archetype. */
 typedef struct Column {
@@ -169,6 +156,10 @@ bool entity_alive(World *world, Object entity) {
 static inline Record *entity_record(World *world, u32 id) {
   return &kh_value(world->entity_index,
                    kh_get(entity_data, world->entity_index, id));
+}
+
+Type ecs_type(World *world, Object entity) {
+  return entity_record(world, entity.id)->archetype->type;
 }
 
 static Object new_entity_id_partitioned(World *world, u32 *start, u32 low,
