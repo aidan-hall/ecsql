@@ -1,5 +1,5 @@
 #include <arena.h>
-#include <ecs.h>
+#include <ecs/ecs.h>
 #include <klib/khash.h>
 #include <klib/ksort.h>
 #include <klib/kvec.h>
