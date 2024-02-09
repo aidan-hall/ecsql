@@ -109,8 +109,6 @@ typedef khash_t(component_archetype_column) ArchetypeMap;
 KHASH_MAP_INIT_INT(entity_data, Record);
 /* Component *signature* (64 bits) → Component Metadata */
 KHASH_MAP_INIT_INT64(component_metadata, ArchetypeMap *);
-/* u8* name → Entity */
-KHASH_MAP_INIT_STR(names, Object);
 
 typedef struct World {
   khash_t(gen) * generations;
@@ -118,7 +116,6 @@ typedef struct World {
   u32 next_entity;
   u32 next_archetype;
 
-  khash_t(names) * entity_names;
   khash_t(entity_data) * entity_index;
   khash_t(component_metadata) * component_index;
   kvec_t(Archetype) archetypes;
@@ -238,21 +235,6 @@ Object ecs_new(World *world) {
   archetype_add_entity(world, get_archetype(world, world->empty_archetype),
                        entity.id);
   return entity;
-}
-
-void add_entity_name(World *world, Object entity, const char *name) {
-  khiter_t iter = kh_get(names, world->entity_names, (char *)name);
-  if (iter != kh_end(world->entity_names)) {
-    fprintf(stderr, "Attempted to reuse entity name '%s'\n", name);
-    exit(1);
-  }
-  int absent;
-  iter = kh_put(names, world->entity_names, (char *)name, &absent);
-  if (absent < 0) {
-    fprintf(stderr, "Failed to add entity name.\n");
-    exit(1);
-  }
-  kh_value(world->entity_names, iter) = entity;
 }
 
 /* Remove the Entity in the given row, and maintain packing. */
@@ -388,7 +370,6 @@ struct World *init_world() {
   world->next_entity = MIN_ENTITY;
   world->generations = kh_init(gen);
   world->live = kh_init(live);
-  world->entity_names = kh_init(names);
   world->component_index = kh_init(component_metadata);
   world->entity_index = kh_init(entity_data);
   kv_init(world->archetypes);
@@ -398,7 +379,6 @@ struct World *init_world() {
 
   /* Set up internal Components */
   world->comp.storage = ecs_new(world);
-  add_entity_name(world, world->comp.storage, "storage");
   kv_push(Object, some_type, world->comp.storage);
   Archetype *only_storage_archetype =
       get_archetype(world, type_archetype(world, some_type));
