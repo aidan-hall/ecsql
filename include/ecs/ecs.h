@@ -45,12 +45,6 @@ static inline Object ENT_BOX(u32 id, u16 gen) {
   ent.tag = OBJ_ENTITY_TAG;
   return ent;
 }
-/* Get the tag bits of the  */
-static inline u8 ENT_TAG(Object entity) { return entity.tag; }
-/* Mask out the Object type and tag bits.
- * What remains is the "signature":
- * It uniquely identifies a particular *Component* type. */
-static inline u64 ENT_SIG(Object entity) { return entity.sig; }
 
 struct World *init_world();
 Object ecs_new(struct World *world);

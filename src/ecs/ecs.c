@@ -473,7 +473,7 @@ void *ecs_get(World *world, Object entity, Object component) {
  * and vice versa if 'archetype' doesn't have 'component'. */
 Archetype *toggle_component(World *world, Archetype *archetype,
                             Object component) {
-  u64 sig = ENT_SIG(component);
+  u64 sig = component.sig;
   khiter_t iter = kh_get(archetype_edge, archetype->neighbours, sig);
   /* A link to that Archetype has already been made. */
   if (iter != kh_end(archetype->neighbours)) {
