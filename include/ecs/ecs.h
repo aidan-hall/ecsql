@@ -32,12 +32,6 @@ struct StructMember {
   size offset;
 };
 
-struct Vec3 {
-  float x;
-  float y;
-  float z;
-};
-
 static inline Object ENT_BOX(u32 id, u16 gen) {
   Object ent = {0};
   ent.id = id;

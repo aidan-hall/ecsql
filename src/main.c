@@ -36,6 +36,12 @@ void test_type_bsearch() {
   printf("t: %ld\n", type_pos(a, ENT_BOX(7680, 0)));
 }
 
+struct Vec3 {
+  float x;
+  float y;
+  float z;
+};
+
 int main(int argc, char *argv[]) {
   LispEnv lisp = new_lisp_environment();
   if (setjmp(lisp.error_loc) != 0) {
