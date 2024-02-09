@@ -6,7 +6,7 @@
 #include <lisp/object.h>
 #include <stdlib.h>
 
-KSORT_INIT(Object, Object, OBJ_LT)
+KSORT_INIT(component, Object, COMP_LT)
 
 /* Storage for a single Component type in an Archetype. */
 typedef struct Column {
@@ -486,7 +486,7 @@ Archetype *toggle_component(World *world, Archetype *archetype,
   } else {
     /* Adding the component */
     kv_push(Object, other, component);
-    ks_introsort(Object, kv_size(other), &kv_A(other, 0));
+    ks_introsort(component, kv_size(other), &kv_A(other, 0));
   }
 
   Archetype *res = get_archetype(world, other);
@@ -536,14 +536,14 @@ void move_entity(World *world, Archetype *from, size from_row, Archetype *to) {
     /* Move forward to the next potential match. */
     while (f < kv_size(from->type)) {
       /* Must perform bounds check before comparison */
-      if (OBJ_LT(kv_A(from->type, f), kv_A(to->type, t))) {
+      if (COMP_LT(kv_A(from->type, f), kv_A(to->type, t))) {
         f++;
       } else {
         break;
       }
     }
     while (t < kv_size(to->type)) {
-      if (OBJ_LT(kv_A(to->type, t), kv_A(from->type, f))) {
+      if (COMP_LT(kv_A(to->type, t), kv_A(from->type, f))) {
         t++;
       } else {
         break;

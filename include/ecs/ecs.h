@@ -40,7 +40,7 @@ static inline Object ENT_BOX(u32 id, u16 gen) {
   return ent;
 }
 
-#define OBJ_LT(A, B) ((A).sig < (B).sig)
+#define COMP_LT(A, B) ((A).sig < (B).sig)
 
 /**
  * Ranges of allowed IDs for Entities and Components.
