@@ -56,16 +56,16 @@ static inline void *column_at(Column *column, size row) {
   /* return col->data.begin + (col->element_size * record->row); */
 }
 
-KHASH_MAP_INIT_INT64(archetype_edge, struct Archetype *);
+KHASH_MAP_INIT_INT64(archetype_edge, ArchetypeID);
 
 typedef struct Archetype {
-  u32 id;
+  ArchetypeID id;
   Type type;
   /* Parallel with type: NOT_PRESENT if that Component does not have Storage,
    * otherwise, the Column where its data is stored in this Archetype. */
   kvec_t(size) component_columns;
   /* A special column for entity IDs. */
-  kvec_t(u32) entities;
+  kvec_t(EntityID) entities;
   kvec_t(Column) columns;
 
   /* Component ID → Archetype with that Component removed from/added to this
@@ -88,7 +88,7 @@ static inline bool types_match(Type a, Type b) {
 /* Information about where an Entity is stored */
 typedef struct Record {
   /* What archetype an Entity is in. */
-  struct Archetype *archetype;
+  ArchetypeID archetype;
   /* Index into the Archetype's component arrays where the Entity's data is
    * stored. */
   size row;
@@ -121,24 +121,29 @@ typedef struct World {
   khash_t(names) * entity_names;
   khash_t(entity_data) * entity_index;
   khash_t(component_metadata) * component_index;
-  kvec_t(Archetype *) archetypes;
-  Archetype *empty_archetype;
+  kvec_t(Archetype) archetypes;
+  ArchetypeID empty_archetype;
   struct {
     Object storage;
     Object struct_member;
   } comp;
 } World;
 
+static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {
+  assert(archetype.val < kv_size(world->archetypes));
+  return &kv_A(world->archetypes, archetype.val);
+}
+
 /* Returns the generation for the given id stored in the generations hashmap.
  * The pointer is valid until the next update of the generations hashmap. */
-u16 *entity_generation(World *world, u32 id) {
-  khint_t iter = kh_get(gen, world->generations, id);
+u16 *entity_generation(World *world, EntityID id) {
+  khint_t iter = kh_get(gen, world->generations, id.val);
 
   int absent;
 
   if (iter == kh_end(world->generations)) {
     /* This ID has never been used before: "start" at generation 0. */
-    iter = kh_put(gen, world->generations, id, &absent);
+    iter = kh_put(gen, world->generations, id.val, &absent);
     if (absent < 0) {
       fprintf(stderr, "Failed to add a new entity ID to the generation set.\n");
       exit(1);
@@ -153,13 +158,16 @@ bool entity_alive(World *world, Object entity) {
   return *entity_generation(world, entity.id) == entity.gen;
 }
 
-static inline Record *entity_record(World *world, u32 id) {
+static inline Record *entity_record(World *world, EntityID id) {
   return &kh_value(world->entity_index,
-                   kh_get(entity_data, world->entity_index, id));
+                   kh_get(entity_data, world->entity_index, id.val));
 }
 
 Type ecs_type(World *world, Object entity) {
-  return entity_record(world, entity.id)->archetype->type;
+  u32 aid = entity_record(world, entity.id)->archetype.val;
+  assert(aid < kv_size(world->archetypes));
+
+  return kv_A(world->archetypes, aid).type;
 }
 
 static Object new_entity_id_partitioned(World *world, u32 *start, u32 low,
@@ -191,13 +199,15 @@ static Object new_entity_id_partitioned(World *world, u32 *start, u32 low,
     exit(1);
   }
 
-  return ENT_BOX(id, *entity_generation(world, id));
+  return ENT_BOX((EntityID){id}, *entity_generation(world, (EntityID){id}));
 }
 
 /* Add the Entity to the Archetype.
  * Returns the row in the Archetype where the entity is stored. */
-size archetype_add_entity(World *world, Archetype *archetype, u32 eid) {
-  khiter_t iter = kh_get(entity_data, world->entity_index, eid);
+static size archetype_add_entity(World *world, Archetype *archetype,
+                                 EntityID eid) {
+  khiter_t iter = kh_get(entity_data, world->entity_index, eid.val);
+
   /* Add a new row of storage for the Entity in each Column. */
   for (size i = 0; i < kv_size(archetype->columns); ++i) {
     column_add(&(kv_A(archetype->columns, i)), 1);
@@ -206,15 +216,15 @@ size archetype_add_entity(World *world, Archetype *archetype, u32 eid) {
    * the 'entities' array before adding it to get the right index. */
   size row = kv_size(archetype->entities);
   kh_value(world->entity_index, iter) =
-      (Record){.archetype = archetype, .row = row};
-  kv_push(u32, archetype->entities, eid);
+      (Record){.archetype = archetype->id, .row = row};
+  kv_push(EntityID, archetype->entities, eid);
   return row;
 }
 
 Object ecs_new(World *world) {
   Object entity = new_entity_id_partitioned(world, &world->next_entity,
                                             MIN_ENTITY, MAX_ENTITY);
-  u32 eid = entity.id;
+  u32 eid = entity.id.val;
   /* Add the entity to the Entity index, if necessary */
   khiter_t iter = kh_get(entity_data, world->entity_index, eid);
   if (iter == kh_end(world->entity_index)) {
@@ -225,7 +235,8 @@ Object ecs_new(World *world) {
       exit(1);
     }
   }
-  archetype_add_entity(world, world->empty_archetype, eid);
+  archetype_add_entity(world, get_archetype(world, world->empty_archetype),
+                       entity.id);
   return entity;
 }
 
@@ -245,7 +256,7 @@ void add_entity_name(World *world, Object entity, const char *name) {
 }
 
 /* Remove the Entity in the given row, and maintain packing. */
-void archetype_remove_entity(World *world, Archetype *archetype, size row) {
+static void archetype_remove_entity(World *world, Archetype *archetype, size row) {
   typeof(archetype->entities) *ids = &(archetype->entities);
   size end = kv_size(*ids) - 1;
   /* Packing is maintained by moving the Entity at the back into the given row.
@@ -259,7 +270,7 @@ void archetype_remove_entity(World *world, Archetype *archetype, size row) {
     }
   } else {
     /* Move the Entity ID */
-    u32 moved_id = kv_A(*ids, row) = kv_pop(*ids);
+    EntityID moved_id = kv_A(*ids, row) = kv_pop(*ids);
 
     /* Move the data from the last row into the gap. */
     for (size i = 0; i < kv_size(archetype->columns); ++i) {
@@ -270,13 +281,13 @@ void archetype_remove_entity(World *world, Archetype *archetype, size row) {
 
     /* Update the moved Entity's stored row to the one it was moved into. */
     kh_value(world->entity_index,
-             kh_get(entity_data, world->entity_index, moved_id))
+             kh_get(entity_data, world->entity_index, moved_id.val))
         .row = row;
   }
 }
 
 void destroy_entity(World *world, Object entity) {
-  u32 id = entity.id;
+  u32 id = entity.id.val;
   khint_t live_iter = kh_get(live, world->live, id);
   if (live_iter == kh_end(world->live)) {
     fprintf(stderr, "Attempted to destroy an entity that was not alive.\n");
@@ -284,13 +295,14 @@ void destroy_entity(World *world, Object entity) {
   }
   /* Remove the Entity from its archetype. */
   Record *record = entity_record(world, entity.id);
-  archetype_remove_entity(world, record->archetype, record->row);
+  Archetype *archetype = get_archetype(world, record->archetype);
+  archetype_remove_entity(world, archetype, record->row);
   /* TODO: Do any necessary cleanup of its relations (e.g. cascade delete
    * children). */
   /* Remove the Entity from the live set */
   kh_del(live, world->live, live_iter);
   /* Update generation "lazily" when the Entity is destroyed. */
-  *entity_generation(world, id) += 1;
+  *entity_generation(world, entity.id) += 1;
 }
 
 static inline ArchetypeMap *component_archetypes(World *world,
@@ -312,12 +324,13 @@ static inline ArchetypeMap *component_archetypes(World *world,
   return kh_value(world->component_index, iter);
 }
 
-void init_archetype(World *world, Archetype *archetype, Type type) {
-  archetype->id = world->next_archetype++;
-  kv_init(archetype->entities);
-  kv_init(archetype->type);
-  kv_init(archetype->columns);
-  kv_init(archetype->component_columns);
+static Archetype init_archetype(World *world, Type type) {
+  Archetype archetype;
+  archetype.id = (ArchetypeID){world->next_archetype++};
+  kv_init(archetype.entities);
+  kv_init(archetype.type);
+  kv_init(archetype.columns);
+  kv_init(archetype.component_columns);
   for (size i = 0; i < kv_size(type); ++i) {
     /* Initialise Columns based on type: if a Component has Storage, register
      * this as an archetype that has that Component, stored at the next Column.
@@ -328,15 +341,15 @@ void init_archetype(World *world, Archetype *archetype, Type type) {
     size col;
     /* Only assign a Column if the Component requires storage. */
     if (storage != NULL) {
-      col = kv_size(archetype->columns);
-      kv_push(Column, archetype->columns, init_column(*storage));
+      col = kv_size(archetype.columns);
+      kv_push(Column, archetype.columns, init_column(*storage));
     } else {
       col = NOT_PRESENT;
     }
-    kv_push(size, archetype->component_columns, col);
+    kv_push(size, archetype.component_columns, col);
     int absent;
-    khiter_t iter =
-        kh_put(component_archetype_column, archetypes, archetype->id, &absent);
+    khiter_t iter = kh_put(component_archetype_column, archetypes,
+                           archetype.id.val, &absent);
     if (absent < 0) {
       fprintf(stderr,
               "Failed to add a new Archetype to a Component (%lx)'s set of "
@@ -346,25 +359,20 @@ void init_archetype(World *world, Archetype *archetype, Type type) {
     }
     kh_value(archetypes, iter) = (ArchetypeRecord){col};
   }
-  kv_copy(Object, archetype->type, type);
-  archetype->neighbours = kh_init(archetype_edge);
+  kv_copy(Object, archetype.type, type);
+  archetype.neighbours = kh_init(archetype_edge);
+  return archetype;
 }
 
-struct Archetype *get_archetype(World *world, Type type) {
+ArchetypeID type_archetype(World *world, Type type) {
   typeof(world->archetypes) as = world->archetypes;
   for (size i = 0; i < kv_size(as); ++i) {
-    if (types_match(kv_A(as, i)->type, type)) {
-      return kv_A(as, i);
+    if (types_match(kv_A(as, i).type, type)) {
+      return kv_A(as, i).id;
     }
   }
-  kv_push(Archetype *, world->archetypes, malloc(sizeof(struct Archetype)));
-  Archetype *a = kv_A(world->archetypes, kv_size(world->archetypes) - 1);
-  if (a == NULL) {
-    fprintf(stderr, "Failed to allocate memory for a new Archetype.\n");
-    exit(1);
-  }
-  init_archetype(world, a, type);
-  return a;
+  kv_push(Archetype, world->archetypes, init_archetype(world, type));
+  return kv_A(world->archetypes, kv_size(world->archetypes) - 1).id;
 }
 
 Object ecs_new_component(World *world, struct Storage storage) {
@@ -386,13 +394,14 @@ struct World *init_world() {
   kv_init(world->archetypes);
   Type some_type;
   kv_init(some_type);
-  world->empty_archetype = get_archetype(world, some_type);
+  world->empty_archetype = type_archetype(world, some_type);
 
   /* Set up internal Components */
   world->comp.storage = ecs_new(world);
   add_entity_name(world, world->comp.storage, "storage");
   kv_push(Object, some_type, world->comp.storage);
-  Archetype *only_storage_archetype = get_archetype(world, some_type);
+  Archetype *only_storage_archetype =
+      get_archetype(world, type_archetype(world, some_type));
   /* Create the Column to store Storage */
   struct Storage storage_storage = (struct Storage){
       .size = sizeof(struct Storage), .alignment = alignof(struct Storage)};
@@ -402,7 +411,7 @@ struct World *init_world() {
   ArchetypeMap *archetypes = component_archetypes(world, world->comp.storage);
   int absent;
   khiter_t iter = kh_put(component_archetype_column, archetypes,
-                         only_storage_archetype->id, &absent);
+                         only_storage_archetype->id.val, &absent);
   if (absent < 0) {
     fprintf(stderr, "Failed to register the [Storage] archetype for the "
                     "Storage Component.\n");
@@ -424,9 +433,9 @@ struct World *init_world() {
 
 bool ecs_has(World *world, Object entity, Object component) {
   Record *record = entity_record(world, entity.id);
-  Archetype *archetype = record->archetype;
+  Archetype *archetype = &kv_A(world->archetypes, record->archetype.val);
   ArchetypeMap *archetypes = component_archetypes(world, component);
-  return kh_get(component_archetype_column, archetypes, archetype->id) !=
+  return kh_get(component_archetype_column, archetypes, archetype->id.val) !=
          kh_end(archetypes);
 }
 
@@ -435,10 +444,11 @@ bool ecs_has(World *world, Object entity, Object component) {
  * Component. */
 void *ecs_get(World *world, Object entity, Object component) {
   Record *record = entity_record(world, entity.id);
-  Archetype *archetype = record->archetype;
+  Archetype *archetype = &kv_A(world->archetypes, record->archetype.val);
 
   ArchetypeMap *archetypes = component_archetypes(world, component);
-  khiter_t iter = kh_get(component_archetype_column, archetypes, archetype->id);
+  khiter_t iter =
+      kh_get(component_archetype_column, archetypes, archetype->id.val);
   if (iter == kh_end(archetypes)) {
     return NULL;
   }
@@ -455,8 +465,9 @@ void *ecs_get(World *world, Object entity, Object component) {
 
 /* Get the Archetype that doesn't have 'component' if 'archetype' has it,
  * and vice versa if 'archetype' doesn't have 'component'. */
-Archetype *toggle_component(World *world, Archetype *archetype,
-                            Object component) {
+ArchetypeID toggle_component(World *world, ArchetypeID archetype_id,
+                             Object component) {
+  Archetype *archetype = get_archetype(world, archetype_id);
   u64 sig = ENT_SIG(component);
   khiter_t iter = kh_get(archetype_edge, archetype->neighbours, sig);
   /* A link to that Archetype has already been made. */
@@ -482,27 +493,34 @@ Archetype *toggle_component(World *world, Archetype *archetype,
     ks_introsort(component, kv_size(other), &kv_A(other, 0));
   }
 
-  Archetype *res = get_archetype(world, other);
+  ArchetypeID res_id = type_archetype(world, other);
+  /* The original archetype poiner may have been invalidated if a new archetype
+   * was created. */
+  archetype = get_archetype(world, archetype_id);
   /* Add the archetypes as neighbours */
   int absent;
   iter = kh_put(archetype_edge, archetype->neighbours, sig, &absent);
   if (absent < 0) {
     exit(1);
   }
-  kh_value(archetype->neighbours, iter) = res;
+  kh_value(archetype->neighbours, iter) = res_id;
+  Archetype *res = get_archetype(world, res_id);
   iter = kh_put(archetype_edge, res->neighbours, sig, &absent);
   if (absent < 0) {
     exit(1);
   }
-  kh_value(res->neighbours, iter) = archetype;
+  kh_value(res->neighbours, iter) = archetype_id;
 
   kv_destroy(other);
-  return res;
+  return res_id;
 }
 
 /* TODO: Refactor to 'move_entities' */
-void move_entity(World *world, Archetype *from, size from_row, Archetype *to) {
-  u32 eid = kv_A(from->entities, from_row);
+static void move_entity(World *world, ArchetypeID from_id, size from_row,
+                        ArchetypeID to_id) {
+  Archetype *from = get_archetype(world, from_id);
+  Archetype *to = get_archetype(world, to_id);
+  EntityID eid = kv_A(from->entities, from_row);
   size to_row = archetype_add_entity(world, to, eid);
   /* Type vectors are sorted, so we can iterate forward through both, and copy
    * when they match. */
@@ -544,33 +562,29 @@ void move_entity(World *world, Archetype *from, size from_row, Archetype *to) {
 }
 
 void ecs_add(World *world, Object entity, Object component) {
-  u32 id = entity.id;
-  Record *record = entity_record(world, id);
-  Archetype *archetype = record->archetype;
+  Record *record = entity_record(world, entity.id);
   if (ecs_has(world, entity, component)) {
     fprintf(stderr,
             "BAD: Attempt to add a Component (%lx) that an Entity (%u) already "
             "has.\n",
-            component.bits, id);
+            component.bits, entity.id.val);
     return;
   }
 
-  Archetype *added = toggle_component(world, archetype, component);
-  move_entity(world, archetype, record->row, added);
+  move_entity(world, record->archetype, record->row,
+              toggle_component(world, record->archetype, component));
 }
 
 void ecs_remove(World *world, Object entity, Object component) {
-  u32 eid = entity.id;
-  Record *record = entity_record(world, eid);
-  Archetype *archetype = record->archetype;
+  Record *record = entity_record(world, entity.id);
   if (!ecs_has(world, entity, component)) {
     fprintf(stderr,
-            "BAD: Attempt to remove a Component (%u) that an Entity (%u) "
+            "BAD: Attempt to remove a Component (%lx) that an Entity (%u) "
             "didn't have.\n",
-            component.id, eid);
+            component.bits, entity.id.val);
     return;
   }
 
-  Archetype *removed = toggle_component(world, archetype, component);
-  move_entity(world, archetype, record->row, removed);
+  move_entity(world, record->archetype, record->row,
+              toggle_component(world, record->archetype, component));
 }

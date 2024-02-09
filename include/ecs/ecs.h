@@ -14,7 +14,6 @@ KHASH_MAP_INIT_INT(gen, u16);
 KHASH_SET_INIT_INT(live);
 
 struct World;
-struct Archetype;
 typedef kvec_t(Object) Type;
 
 #define ENT_ID_OFFSET (32 - OBJ_TAG_LENGTH)
@@ -32,7 +31,7 @@ struct StructMember {
   size offset;
 };
 
-static inline Object ENT_BOX(u32 id, u16 gen) {
+static inline Object ENT_BOX(EntityID id, u16 gen) {
   Object ent = {0};
   ent.id = id;
   ent.gen = gen;
@@ -65,7 +64,7 @@ static inline Object ecs_pair(Object relationship, Object entity) {
   /* TODO: Distinguish from normal Entities? */
   Object obj = {0};
   obj.entity = entity.id;
-  obj.relation = relationship.id;
+  obj.relation = relationship.id.val;
   obj.tag = OBJ_RELATION_TAG;
   return obj;
 }

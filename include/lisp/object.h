@@ -13,6 +13,13 @@
 #define LISP_INDEX_METADATA_MASK (0xffff << OBJ_TAG_LENGTH)
 #define LISP_MAX_STRING_LENGTH ((2 << LISP_INDEX_METADATA_LENGTH) - 2)
 
+#define DEF_TYPEID(NAME, REP)                                                  \
+  typedef struct NAME##ID {                                                    \
+    REP val;                                                                   \
+  } NAME##ID
+DEF_TYPEID(Archetype, u32);
+DEF_TYPEID(Entity, u32);
+
 typedef union Object {
   u64 bits;
   struct {
@@ -20,8 +27,7 @@ typedef union Object {
     u64 val : 59;
   };
   struct {
-    /* Would be an enum ObjectTag, but only integers can be bit fields. */
-    u8 : OBJ_TAG_LENGTH;
+    u8 : OBJ_TAG_LENGTH; /* enum ObjectTag */
     u32 metadata : 16;
     u64 index : 43;
   };
@@ -29,12 +35,12 @@ typedef union Object {
     u8 : OBJ_TAG_LENGTH;
     u8 flags : OBJ_FLAGS_LENGTH;
     u16 gen;
-    u32 entity;
+    EntityID entity;
   };
   struct {
     u16 : OBJ_TAG_LENGTH + OBJ_FLAGS_LENGTH;
-    u32 relation : 23;
-    u32 id;
+    u32 relation : 23; /* EntityID */
+    EntityID id;
   };
 } Object;
 
