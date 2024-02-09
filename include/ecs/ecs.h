@@ -46,6 +46,14 @@ static inline Object ENT_BOX(u32 id, u16 gen) {
   return ent;
 }
 
+static inline Object ecs_pair(Object relationship, Object entity) {
+  Object obj = {0};
+  obj.entity = entity.id;
+  obj.relation = relationship.id;
+  obj.tag = OBJ_RELATION_TAG;
+  return obj;
+}
+
 struct World *init_world();
 Object ecs_new(struct World *world);
 bool entity_live(struct World *world, Object entity);
