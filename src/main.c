@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   fputc('\n', stdout);
 
   test_type_bsearch();
-  struct World *world = init_world();
+  struct World *world = lisp.world;
   Object pos = ECS_NEW_COMPONENT(world, struct Vec3);
   Object vel = ECS_NEW_COMPONENT(world, struct Vec3);
   Object fooable = ecs_new(world);
