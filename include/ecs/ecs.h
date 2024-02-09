@@ -14,7 +14,6 @@ KHASH_MAP_INIT_INT(gen, u16);
 KHASH_SET_INIT_INT(live);
 
 struct World;
-typedef kvec_t(Object) Type;
 
 #define ENT_ID_OFFSET (32 - OBJ_TAG_LENGTH)
 #define ENT_GEN_OFFSET (16 - OBJ_TAG_LENGTH)
@@ -76,6 +75,8 @@ void *ecs_get(struct World *world, Object entity, Object component);
 void ecs_add(struct World *world, Object entity, Object component);
 void ecs_remove(struct World *world, Object entity, Object component);
 Object ecs_new_component(struct World *world, struct Storage storage);
+/* TODO: Remove from public API */
+typedef ObjectVector Type;
 Type ecs_type(struct World *world, Object entity);
 
 #define ECS_NEW_COMPONENT(WORLD, TYPE)                                         \

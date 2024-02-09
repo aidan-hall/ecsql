@@ -1,11 +1,12 @@
 #ifndef LISP_H
 #define LISP_H
 
+#include <assert.h>
 #include <common.h>
+#include <ecs/ecs.h>
 #include <klib/khash.h>
 #include <lisp/memory.h>
-#include <lisp/object.h>
-#include <assert.h>
+#include <lisp/types.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -76,6 +77,13 @@ typedef struct LispEnv {
     Object print_struct; /* prin1-struct-to */
   } keysyms;
   jmp_buf error_loc;
+
+  /* ECS Stuff */
+  struct World *world;
+  struct {
+    Object name;
+    Object struct_member;
+  } comp;
 } LispEnv;
 
 LispEnv new_lisp_environment();
@@ -105,9 +113,7 @@ static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
   return &((Object *)lisp->memory.space.begin)[index];
 }
 
-static inline bool lisp_true(Object value) {
-  return value.bits != NIL.bits;
-}
+static inline bool lisp_true(Object value) { return value.bits != NIL.bits; }
 
 static inline bool lisp_false(Object value) { return !lisp_true(value); }
 
@@ -142,6 +148,22 @@ static inline i32 lisp_length(LispEnv *lisp, Object list) {
   }
   LISP_ASSERT_TYPE(list, NIL);
   return length;
+}
+
+static inline Object *lisp_get_vector_item(LispEnv *lisp, Object vector,
+                                           i32 index) {
+  if (index < 0 || index >= (i16)OBJ_UNBOX_METADATA(vector)) {
+    WRONG("Index out of bounds", lisp_cons(lisp, vector, OBJ_BOX(index, INT)));
+    return NULL;
+  }
+  return lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector) + index);
+}
+
+static inline Object lisp_vector_from_kvec(LispEnv *lisp, ObjectVector objects) {
+  Object vector = lisp_make_vector(lisp, kv_size(objects));
+  memcpy(lisp_get_vector_item(lisp, vector, 0), &kv_A(objects, 0),
+         kv_size(objects) * sizeof(Object));
+  return vector;
 }
 
 Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream);

@@ -4,6 +4,7 @@
 #include <klib/ksort.h>
 #include <klib/kvec.h>
 #include <lisp/object.h>
+#include <lisp/lisp.h>
 #include <stdlib.h>
 
 KSORT_INIT(sort_type, Object, COMP_LT)
@@ -122,7 +123,6 @@ typedef struct World {
   ArchetypeID empty_archetype;
   struct {
     Object storage;
-    Object struct_member;
   } comp;
 } World;
 
@@ -407,7 +407,6 @@ struct World *init_world() {
   *(struct Storage *)ecs_get(world, world->comp.storage, world->comp.storage) =
       storage_storage;
 
-  world->comp.struct_member = ECS_NEW_COMPONENT(world, struct StructMember);
   return world;
 }
 

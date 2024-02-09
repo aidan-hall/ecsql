@@ -1,3 +1,4 @@
+#include "ecs/ecs.h"
 #include <lisp/lisp.h>
 #include <lisp/object.h>
 #include <lisp/primitives.h>
@@ -152,6 +153,10 @@ LispEnv new_lisp_environment() {
   lisp.keysyms.print_struct =
       lisp_lookup_function(&lisp, OBJS(&lisp, "prin1-struct-to"));
 
+  /* ECS Initialisation */
+  lisp.world = init_world();
+  lisp.comp.struct_member = ECS_NEW_COMPONENT(lisp.world, struct StructMember);
+  lisp.comp.name = ECS_NEW_COMPONENT(lisp.world, Object);
   return lisp;
 }
 

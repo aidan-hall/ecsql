@@ -451,14 +451,6 @@ static Object prim_vector(LispEnv *lisp, Object args) {
   return vector;
 }
 
-static Object *lisp_get_vector_item(LispEnv *lisp, Object vector, i32 index) {
-  if (index < 0 || index >= (i16)OBJ_UNBOX_METADATA(vector)) {
-    WRONG("Index out of bounds", lisp_cons(lisp, vector, OBJ_BOX(index, INT)));
-    return NULL;
-  }
-  return lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector) + index);
-}
-
 static Object prim_aset(LispEnv *lisp, Object args) {
   Object vector = LISP_CAR(lisp, args);
   args = LISP_CDR(lisp, args);

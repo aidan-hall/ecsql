@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include <stdlib.h>
+#include <klib/kvec.h>
 
 #define OBJ_MASK (0xffffffffffffffe0)
 #define OBJ_TAG_LENGTH (5)
@@ -46,6 +47,8 @@ typedef union Object {
 
 /* Object must fit within 64 bits. */
 static_assert(sizeof(Object) == sizeof(u64));
+
+typedef kvec_t(Object) ObjectVector;
 
 /* 5-bit object type tag: allows up to 32 built-in types */
 enum ObjectTag {
