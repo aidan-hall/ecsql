@@ -1,9 +1,10 @@
 /* Primitive Lisp functions, macros and reader macros. */
+#include <ecs/ecs.h>
 #include <klib/khash.h>
-#include <lisp/primitives.h>
 #include <lisp/lisp.h>
 #include <lisp/memory.h>
 #include <lisp/object.h>
+#include <lisp/primitives.h>
 #include <lisp/print.h>
 #include <lisp/reader.h>
 #include <lisp/types.h>
@@ -351,7 +352,7 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
     } else {                                                                   \
       WRONG("Invalidtypes of parameters to " #OP,                              \
             lisp_cons(lisp, lisp_type_of(lisp, a), lisp_type_of(lisp, b)));    \
-      return UNDEFINED;                                                \
+      return UNDEFINED;                                                        \
     }                                                                          \
   }
 
@@ -531,7 +532,6 @@ static Object prim_concat(LispEnv *lisp, Object args) {
   u16 length = 0;
   for (Object t = args, elem = LISP_CAR(lisp, t); OBJ_TYPE(t) == OBJ_PAIR_TAG;
        t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
-    LISP_ASSERT_TYPE(elem, STRING);
     length += (u16)OBJ_UNBOX_METADATA(elem);
   }
 
@@ -615,6 +615,8 @@ static Object prim_size_of(LispEnv *lisp, Object args) {
     return UNDEFINED;
   }
 }
+
+/* STRUCT API */
 
 static Object prim_is_struct(LispEnv *lisp, Object args) {
   /* We can't write this test in Lisp because type-of returns a struct's struct
@@ -788,16 +790,16 @@ void lisp_install_primitives(LispEnv *lisp) {
   lisp_add_primitive(lisp, OBJSX(NAME), OBJSX(SPEC), FUN,                      \
                      lisp->primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
-  DEFPRIMFUN("*", "t", prim_mul);
+  DEFPRIMFUN("*", "(* (or f32 i32))", prim_mul);
   DEFPRIMFUN("/", "(t . t)", prim_div);
-  DEFPRIMFUN("-", "t", prim_sub);
-  DEFPRIMFUN("+", "t", prim_add);
+  DEFPRIMFUN("-", "(* (or f32 i32))", prim_sub);
+  DEFPRIMFUN("+", "(* (or f32 i32))", prim_add);
   DEFPRIMFUN("quit", "()", prim_quit);
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
   DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
   DEFPRIMFUN("fputc", "(character file) ", prim_fputc_stream);
-  DEFPRIMFUN("concat", "t", prim_concat);
+  DEFPRIMFUN("concat", "(* string)", prim_concat);
   DEFPRIMFUN("make-string", "(i32 character)", prim_make_string);
   DEFPRIMFUN("symbol-name", "(symbol)", prim_symbol_name);
   DEFPRIMFUN("intern", "(string)", prim_intern);

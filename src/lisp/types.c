@@ -1,7 +1,7 @@
 #include <klib/khash.h>
-#include <lisp/types.h>
 #include <lisp/lisp.h>
 #include <lisp/object.h>
+#include <lisp/types.h>
 
 Object lisp_type_of(LispEnv *lisp, Object obj) {
   switch (OBJ_TYPE(obj)) {
@@ -44,6 +44,29 @@ Object lisp_type_of(LispEnv *lisp, Object obj) {
 }
 
 bool lisp_type_spec_matches(LispEnv *lisp, Object value, Object spec) {
+  if (OBJ_TYPE(spec) == OBJ_PAIR_TAG) {
+    /* Handle specs of the form (or type type type...) */
+    if (EQ(LISP_CAR(lisp, spec), lisp->keysyms.or)) {
+      while (OBJ_TYPE(spec) == OBJ_PAIR_TAG) {
+        if (lisp_type_spec_matches(lisp, value, LISP_CAR(lisp, spec))) {
+          return true;
+        }
+        spec = LISP_CDR(lisp, spec);
+      }
+      return false;
+    }
+    /* (* type) */
+    if (EQ(LISP_CAR(lisp, spec), lisp->keysyms.star_k)) {
+      Object type = LISP_CAR(lisp, LISP_CDR(lisp, spec));
+      while (OBJ_TYPE(value) == OBJ_PAIR_TAG) {
+        if (!lisp_type_spec_matches(lisp, LISP_CAR(lisp, value), type)) {
+          return false;
+        }
+        value = LISP_CDR(lisp, value);
+      }
+      return true;
+    }
+  }
 
   while (OBJ_TYPE(value) == OBJ_PAIR_TAG && OBJ_TYPE(spec) == OBJ_PAIR_TAG) {
     if (!lisp_type_spec_matches(lisp, LISP_CAR(lisp, value),
