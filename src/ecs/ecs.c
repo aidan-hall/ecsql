@@ -265,27 +265,30 @@ void archetype_remove_entity(World *world, Archetype *archetype, size row) {
   typeof(archetype->entities) *ids = &(archetype->entities);
   size end = kv_size(*ids) - 1;
   /* Packing is maintained by moving the Entity at the back into the given row.
-   * This is not necessary if the removed Entity is in the last row, but that is
-   * such a statistically rare case that it makes more sense to always perform
-   * the move, since it is not incorrect in any case.
-   */
+   * We can skip this step if the Entity removed was the last one in the
+   * Archetype. */
 
-  /* Move the Entity ID */
-  u32 moved_id = kv_A(*ids, row) = kv_pop(*ids);
+  if (row == end) {
+    /* We still need to reduce the size of each Column in this case. */
+    for (size i = 0; i < kv_size(archetype->columns); ++i) {
+      kv_A(archetype->columns, i).count -= 1;
+    }
+  } else {
+    /* Move the Entity ID */
+    u32 moved_id = kv_A(*ids, row) = kv_pop(*ids);
 
-  /* Move the Column data */
-  for (size i = 0; i < kv_size(archetype->columns); ++i) {
-    Column *col = &kv_A(archetype->columns, i);
-    /* The regions could overlap if we are operating on the last row,
-     * but in that case we're discarding the data anyway so we don't care. */
-    memcpy(column_at(col, row), column_at(col, end), col->element_size);
-    col->count -= 1;
+    /* Move the data from the last row into the gap. */
+    for (size i = 0; i < kv_size(archetype->columns); ++i) {
+      Column *col = &kv_A(archetype->columns, i);
+      memcpy(column_at(col, row), column_at(col, end), col->element_size);
+      col->count -= 1;
+    }
+
+    /* Update the moved Entity's stored row to the one it was moved into. */
+    kh_value(world->entity_index,
+             kh_get(entity_data, world->entity_index, moved_id))
+        .row = row;
   }
-
-  /* Update the row value for the moved Entity */
-  kh_value(world->entity_index,
-           kh_get(entity_data, world->entity_index, moved_id))
-      .row = row;
 }
 
 void destroy_entity(World *world, Object entity) {
