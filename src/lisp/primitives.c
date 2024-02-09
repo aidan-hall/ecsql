@@ -731,13 +731,33 @@ static Object prim_ecs_destroy(LispEnv *lisp, Object args) {
 }
 
 static Object prim_ecs_get(LispEnv *lisp, Object args) {
-  /* XXX: Assumes the requested Component has Object storage, if anything */
-  Object *component = ecs_get(lisp->world, FIRST, SECOND);
-  if (component != NULL) {
-    return *component;
-  } else {
-    return NIL;
+  Object component = SECOND;
+  Object entity = FIRST;
+  if (!ecs_has(lisp->world, component, lisp->comp.stores_object)) {
+    WRONG("Attempted to get data for a Component that does not store a Lisp Object", component);
+    return UNDEFINED;
   }
+  Object *obj = ecs_get(lisp->world, entity, component);
+  if (obj == NULL) {
+    WRONG("Attempted to get a Component with no storage, or that the Entity didn't have", args);
+    return UNDEFINED;
+  }
+  return *obj;
+}
+
+static Object prim_ecs_set(LispEnv *lisp, Object args) {
+  Object component = SECOND;
+  Object entity = FIRST;
+  if (!ecs_has(lisp->world, component, lisp->comp.stores_object)) {
+    WRONG("Attempted to set data for a Component that does not store a Lisp Object", component);
+    return UNDEFINED;
+  }
+  Object *obj = ecs_get(lisp->world, entity, component);
+  if (obj == NULL) {
+    WRONG("Attempted to set a Component with no storage, or that the Entity didn't have", args);
+    return UNDEFINED;
+  }
+  return *obj = THIRD;
 }
 
 static Object prim_ecs_alive(LispEnv *lisp, Object args) {
@@ -783,6 +803,13 @@ static Object prim_ecs_id(LispEnv *lisp, Object args) {
 static Object prim_ecs_gen(LispEnv *lisp, Object args) {
   Object obj = FIRST;
   return OBJ_BOX(obj.gen, INT);
+}
+
+static Object prim_ecs_new_object_component(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  Object obj = ECS_NEW_COMPONENT(lisp->world, Object);
+  ecs_add(lisp->world, obj, lisp->comp.stores_object);
+  return obj;
 }
 
 /* READER MACROS */
@@ -924,6 +951,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("make-entity", "(i32 i32)", prim_make_entity);
   DEFPRIMFUN("ecs-destroy", "(entity)", prim_ecs_destroy);
   DEFPRIMFUN("ecs-get", "(entity (or entity relation))", prim_ecs_get);
+  DEFPRIMFUN("ecs-set", "(entity entity t)", prim_ecs_set);
   DEFPRIMFUN("ecs-has", "(entity (or entity relation))", prim_ecs_has);
   DEFPRIMFUN("ecs-alive", "(entity)", prim_ecs_alive);
   DEFPRIMFUN("ecs-add", "(entity (or entity relation))", prim_ecs_add);
@@ -934,6 +962,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-pair", "(entity entity)", prim_ecs_pair);
   DEFPRIMFUN("ecs-relation", "(relation)", prim_ecs_pair_relation);
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
+  DEFPRIMFUN("ecs-new-object-component", "()", prim_ecs_new_object_component);
 #undef DEFPRIMFUN
 #undef OBJSX
 }

@@ -86,6 +86,7 @@ typedef struct LispEnv {
   struct {
     Object name;
     Object struct_member;
+    Object stores_object;
   } comp;
 } LispEnv;
 

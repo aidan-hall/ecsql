@@ -156,8 +156,9 @@ LispEnv new_lisp_environment() {
 
   /* ECS Initialisation */
   lisp.world = init_world();
+  lisp.comp.stores_object = ecs_new(lisp.world);
+
   lisp.comp.struct_member = ECS_NEW_COMPONENT(lisp.world, struct StructMember);
-  lisp.comp.name = ECS_NEW_COMPONENT(lisp.world, Object);
   return lisp;
 }
 
