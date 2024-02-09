@@ -74,7 +74,7 @@ KHASH_MAP_INIT_INT64(archetype_edge, struct Archetype *);
 typedef struct Archetype {
   u32 id;
   Type type;
-  /* Parallel with type: -1 if that Component does not have Storage,
+  /* Parallel with type: NOT_PRESENT if that Component does not have Storage,
    * otherwise, the Column where its data is stored in this Archetype. */
   kvec_t(size) component_columns;
   /* A special column for entity IDs. */
@@ -107,8 +107,9 @@ typedef struct Record {
   size row;
 } Record;
 
-/* At what column in an Archetype is data for a give Component type stored. */
 typedef struct ArchetypeRecord {
+  /* At what column in an Archetype is data for a give Component type stored,
+   * or NOT_PRESENT if the Component has no data storage. */
   size column;
 } ArchetypeRecord;
 
@@ -338,12 +339,12 @@ void init_archetype(World *world, Archetype *archetype, Type type) {
     struct Storage *storage = ecs_get(world, component, world->comp.storage);
     ArchetypeMap *archetypes = component_archetypes(world, component);
     size col;
-    /* Only assign a Column in the Archetype if the Component requires storage. */
+    /* Only assign a Column if the Component requires storage. */
     if (storage != NULL) {
       col = kv_size(archetype->columns);
       kv_push(Column, archetype->columns, init_column(*storage));
     } else {
-      col = -1;
+      col = NOT_PRESENT;
     }
     kv_push(size, archetype->component_columns, col);
     int absent;
@@ -456,10 +457,11 @@ void *ecs_get(World *world, Object entity, Object component) {
   }
   ArchetypeRecord *a_record = &kh_value(archetypes, iter);
   size col_idx = a_record->column;
-  /* -1: no data storage */
-  if (col_idx == -1) {
+
+  if (col_idx == NOT_PRESENT) {
     return NULL;
   }
+
   Column *col = &kv_A(archetype->columns, col_idx);
   return column_at(col, record->row);
 }
@@ -482,7 +484,7 @@ Archetype *toggle_component(World *world, Archetype *archetype,
   Type other;
   kv_init(other);
   kv_copy(Object, other, archetype->type);
-  if (pos != -1) {
+  if (pos != NOT_PRESENT) {
     /* Removing the component */
     memmove(&kv_A(other, pos), &kv_A(other, pos + 1),
             (kv_size(other) - pos - 1) * sizeof(Object));
@@ -524,8 +526,7 @@ void move_entity(World *world, Archetype *from, size from_row, Archetype *to) {
        * Identify the Column in each Archetype storing its data, if it has data,
        * Copy. */
       Object component = kv_A(from->type, f);
-      /* component_columns[f] != -1 iff type[f] has storage */
-      if (kv_A(from->component_columns, f) != -1) {
+      if (kv_A(from->component_columns, f) != NOT_PRESENT) {
         size from_col = kv_A(from->component_columns, f);
         size to_col = kv_A(to->component_columns, t);
 

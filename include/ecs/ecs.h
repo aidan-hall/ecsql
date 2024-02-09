@@ -64,8 +64,10 @@ Object ecs_new_component(struct World *world, struct Storage storage);
   (ecs_new_component(WORLD, (struct Storage){.size = sizeof(TYPE),             \
                                              .alignment = alignof(TYPE)}))
 
+#define NOT_PRESENT (-1)
+
 /* Obtain the position of 'component' in 'a'.
- * Returns -1 if absent. */
+ * Returns NOT_PRESENT (-1) if absent. */
 static inline size type_pos(Type a, Object component) {
   /* Type vectors are sorted, so binary search. */
   size lo = 0, hi = kv_size(a);
@@ -81,7 +83,7 @@ static inline size type_pos(Type a, Object component) {
     }
   }
 
-  return -1;
+  return NOT_PRESENT;
 }
 
 struct Partition {
