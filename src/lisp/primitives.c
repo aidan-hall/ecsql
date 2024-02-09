@@ -798,7 +798,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
   DEFPRIMFUN("fputc", "(character file) ", prim_fputc_stream);
   DEFPRIMFUN("concat", "t", prim_concat);
-  DEFPRIMFUN("make-string", "(i32 char)", prim_make_string);
+  DEFPRIMFUN("make-string", "(i32 character)", prim_make_string);
   DEFPRIMFUN("symbol-name", "(symbol)", prim_symbol_name);
   DEFPRIMFUN("intern", "(string)", prim_intern);
   DEFPRIMFUN("make-symbol", "(string)", prim_make_symbol);
