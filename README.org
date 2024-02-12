@@ -479,7 +479,7 @@ Lisp Representation:
   - Could be as simple as physically splicing in the struct member
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
-**** Not in the spirit of, or relevant to, what we are doing.
+  - Not in the spirit of, or relevant to, what we are doing.
 *** TODO ECS [2/6]
 **** DONE Entity IDs
 :LOGBOOK:
@@ -541,6 +541,9 @@ Lisp Representation:
   3. Add "Component Storage" to itself, with the appropriate data values.
   4. For all Subsequent Components with storage, simply add the "Component Storage" Component and it will just work™.
 **** TODO Systems
+- Iteration over Archetypes:
+  1. User supplies a function to the ECS.
+  2. The ECS calls that function once for each matched (set of) Archetype(s)
 **** DOING [#C] Relationships
 :LOGBOOK:
 - State "DOING"      from "TODO"       [2024-02-09 Fri 19:19]
@@ -556,10 +559,10 @@ implement of 16 weeks.
 1. [X] Components as entities
 2. [ ] Observers
 3. [X] Relationship pairs in archetype storage
-4. [ ] Relationship components: Flecs makes this highly complex with a
-   sequence of rules that are tried.  We can probably find a "worse"
-   compromise set of rules, or exclude this feature altogether.
-   Example compromise rules:
+4. [ ] Relationship component data storage: Flecs makes this highly
+   complex with a sequence of rules that are tried.  We can probably
+   find a "worse" compromise set of rules, or exclude this feature
+   altogether.  Example compromise rules:
    1. Never create storage for the first element.
    2. Create the storage for the second element iff it's a non-tag
       type:
@@ -598,6 +601,9 @@ implement of 16 weeks.
   feature.
 - How much could we hand off to a working Lisp implementation?
   - Notably, garbage collection?!
+- Value trade-off of allowing an Entity to have the same relation to
+  two distinct Entities?
+  - Better to allow it.
 **** TODO [#A] Lisp API
 - We should provide a flexible API, so new features/applications can
   be built entirely in Lisp.
@@ -616,6 +622,37 @@ implement of 16 weeks.
 - Trying to produce a nice API like one would have in C may be the
   wrong approach: Allow the C plumbing API to be awful, and build nice
   ones on top of that?
+***** TODO Accessing ECS Data from Lisp
+- The first, most basic problem is that ECS data isn't stored in, or
+  aligned to, Lisp memory.
+- Can't store Columns in Lisp memory since GC they need fairly
+  frequent, large allocations, which wouldn't be friendly to our
+  "garbage collection strategy".
+Options:
+1. Store pointers in Lisp memory and use double indirection
+   - Inefficient(?), but easy to implement.
+     - Possibly not so inefficient if we're iterating over arrays?
+   - Need to keep track of the type.
+   - Implicit assumption that structs are at least 64-bit aligned?
+     - Hopefully not necessary (appeal of double indirection)
+   - Can't store raw pointers for "a long time", since Columns (and
+     Archetypes) may get reallocated.
+   - Possible implementations:
+     - Add a flag bit to index boxes that
+       indicates extra indirection, or a small number (2-4 bits) to
+       indicate the number of times to indirect?
+     - Negative indices indicate 1 level of indirection.
+2. Store Columns next to Lisp memory, and just use indices that reach
+   out to them.
+   - Error prone, and won't work with data at less than 64
+     bits of alignment.
+3. Support LValues
+4. Custom addressing mode (not based on boxed indices) for Entities.
+   - E.g. boxed tuple: (ArchetypeID, Column, Row, Offset/B)
+     - Tight squeeze
+     - 16 + 16 + 16
+   - Greater complexity, and creates a hard distinction between
+     structs inside and outside Lisp memory.
 **** DOING Structs and Components
 :LOGBOOK:
 - State "DOING"      from "TODO"       [2024-02-07 Wed 17:38]
