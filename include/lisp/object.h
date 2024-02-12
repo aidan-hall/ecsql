@@ -2,8 +2,8 @@
 #define OBJECT_H
 
 #include "common.h"
-#include <stdlib.h>
 #include <klib/kvec.h>
+#include <stdlib.h>
 
 #define OBJ_MASK (0xffffffffffffffe0)
 #define OBJ_TAG_LENGTH (5)
@@ -30,7 +30,8 @@ typedef union Object {
   struct {
     u8 : OBJ_TAG_LENGTH; /* enum ObjectTag */
     u32 metadata : 16;
-    u64 index : 43;
+    /* Must be signed to support indirect addressing */
+    i64 index : 43;
   };
   struct {
     u8 : OBJ_TAG_LENGTH;
@@ -82,7 +83,7 @@ static inline Object OBJ_BOX_RAWTAG(u64 value, enum ObjectTag tag) {
   return obj;
 }
 #define OBJ_BOX(VALUE, TAG) OBJ_BOX_RAWTAG((VALUE), OBJ_TAG_NAME(TAG))
-static inline Object OBJ_BOX_INDEX_RAWTAG(u64 index, u16 metadata,
+static inline Object OBJ_BOX_INDEX_RAWTAG(i64 index, u16 metadata,
                                           enum ObjectTag tag) {
   Object obj = {0};
   obj.metadata = metadata;

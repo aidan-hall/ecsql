@@ -1,3 +1,5 @@
+#include "lisp/memory.h"
+#include "lisp/object.h"
 #include <common.h>
 #include <ecs/ecs.h>
 #include <lisp/lexer.h>
@@ -50,6 +52,16 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Error in a file loaded at startup: no good!\n");
     exit(1);
   }
+
+  {
+    /* Allocate an object outside Lisp memory, and insert a pointer to it. */
+    char outside[] = "fruitbar";
+    size idx = lisp_allocate_cells(&lisp, 1);
+    *(char **)lisp_cell_at(&lisp, idx) = outside;
+    lisp_add_to_namespace(&lisp, lisp.globals, OBJS(&lisp, "fruitptr"),
+                          OBJ_BOX_INDEX(-idx, strlen(outside), STRING));
+  }
+
   Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
   lisp_print(&lisp, l, stdout);
   fputc('\n', stdout);

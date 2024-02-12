@@ -112,9 +112,19 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
     }                                                                          \
   } while (0)
 
-/* Get the Lisp cell at the given index, with no error handling. */
+/* Get the Lisp cell at the given index, with no error handling.
+ * Negative indices indicate that the data at that cell is a *pointer* to the
+ * actual data.
+ */
 static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
-  return &((Object *)lisp->memory.space.begin)[index];
+  static_assert(sizeof(Object) == sizeof(Object *),
+                "Pointers must fit in exactly 1 cell");
+
+  if (index >= 0) {
+    return &((Object *)lisp->memory.space.begin)[index];
+  } else {
+    return ((Object **)lisp->memory.space.begin)[-index];
+  }
 }
 
 static inline bool lisp_true(Object value) { return value.bits != NIL.bits; }
