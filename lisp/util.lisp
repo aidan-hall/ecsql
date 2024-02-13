@@ -216,8 +216,14 @@
   (if (structp form)
       (prin1-struct-to stream form)
     (case (type-of form)
-      ((pair nil)
-       (prin1-list stream form))
+      ((pair)
+       (if (eq (car form) 'quote)
+        (progn
+          (fputc #\' stream)
+          (prin1-to stream (cadr form)))
+        (prin1-list stream form)))
+      ((nil)
+       (fputs "()" stream))
       ((character)                    ; #\c escape
        (fputc #\# stream)
        (fputc #\\ stream)
