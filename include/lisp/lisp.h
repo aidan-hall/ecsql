@@ -200,4 +200,10 @@ Object lisp_macroexpand_top(LispEnv *lisp, Object expression);
 Object lisp_macroexpand_list(LispEnv *lisp, Object list);
 Object lisp_macroexpand(LispEnv *lisp, Object expression);
 
+static inline size lisp_store_pointer(struct LispEnv *lisp, void *ptr) {
+  size idx = lisp_allocate_cells(lisp, 1);
+  *(void **)lisp_cell_at(lisp, idx) = ptr;
+  return -idx;
+}
+
 #endif
