@@ -14,6 +14,13 @@
 #define FIRST (LISP_CAR(lisp, args))
 #define SECOND (LISP_CAR(lisp, LISP_CDR(lisp, args)))
 #define THIRD (LISP_CAR(lisp, LISP_CDR(lisp, LISP_CDR(lisp, args))))
+/* Shift forward through the arguments N times. */
+#define SHIFT_ARGS(N)                                                          \
+  do {                                                                         \
+    for (int i = 0; i < (N); ++i) {                                            \
+      args = LISP_CDR(lisp, args);                                             \
+    }                                                                          \
+  } while (0)
 
 /* PRIMITIVE FUNCTIONS */
 
@@ -78,7 +85,7 @@ static Object prim_mul(LispEnv *lisp, Object args) {
   /* Integers */
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
     element = FIRST;
-    args = LISP_CDR(lisp, args);
+    SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
     case OBJ_INT_TAG:
       product_int *= (i32)OBJ_UNBOX(element);
@@ -103,7 +110,7 @@ static Object prim_mul(LispEnv *lisp, Object args) {
 
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
     element = FIRST;
-    args = LISP_CDR(lisp, args);
+    SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
     case OBJ_INT_TAG:
       product_float *= (float)(i32)OBJ_UNBOX(element);
@@ -147,7 +154,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
 
   /* Multiple arguments: treat first as difference. */
   element = FIRST;
-  args = LISP_CDR(lisp, args);
+  SHIFT_ARGS(1);
 
   if (OBJ_TYPE(element) == OBJ_INT_TAG) {
     difference_int = (i32)OBJ_UNBOX(element);
@@ -155,7 +162,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
     /* Integers */
     while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
       element = FIRST;
-      args = LISP_CDR(lisp, args);
+      SHIFT_ARGS(1);
       switch (OBJ_TYPE(element)) {
       case OBJ_INT_TAG:
         difference_int -= (i32)OBJ_UNBOX(element);
@@ -184,7 +191,7 @@ static Object prim_sub(LispEnv *lisp, Object args) {
 
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
     element = FIRST;
-    args = LISP_CDR(lisp, args);
+    SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
     case OBJ_INT_TAG:
       difference_float -= (float)(i32)OBJ_UNBOX(element);
@@ -224,7 +231,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
 
   /* Multiple arguments: treat first as numerator. */
   element = FIRST;
-  args = LISP_CDR(lisp, args);
+  SHIFT_ARGS(1);
 
   if (OBJ_TYPE(element) == OBJ_INT_TAG) {
     numerator_int = (i32)OBJ_UNBOX(element);
@@ -232,7 +239,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
     /* Integers */
     while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
       element = FIRST;
-      args = LISP_CDR(lisp, args);
+      SHIFT_ARGS(1);
       switch (OBJ_TYPE(element)) {
       case OBJ_INT_TAG:
         numerator_int /= (i32)OBJ_UNBOX(element);
@@ -261,7 +268,7 @@ static Object prim_div(LispEnv *lisp, Object args) {
 
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
     element = FIRST;
-    args = LISP_CDR(lisp, args);
+    SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
     case OBJ_INT_TAG:
       numerator_float /= (float)(i32)OBJ_UNBOX(element);
@@ -285,7 +292,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
   /* Integers */
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG && OBJ_TYPE(element) == OBJ_INT_TAG) {
     element = FIRST;
-    args = LISP_CDR(lisp, args);
+    SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
     case OBJ_INT_TAG:
       sum_int += (i32)OBJ_UNBOX(element);
@@ -310,7 +317,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
 
   while (OBJ_TYPE(args) == OBJ_PAIR_TAG) {
     element = FIRST;
-    args = LISP_CDR(lisp, args);
+    SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
     case OBJ_INT_TAG:
       sum_float += (float)(i32)OBJ_UNBOX(element);
@@ -330,7 +337,7 @@ static Object prim_add(LispEnv *lisp, Object args) {
 static Object prim_add2f(LispEnv *lisp, Object args) {
   Object first = FIRST;
   LISP_ASSERT_TYPE(first, FLOAT);
-  args = LISP_CDR(lisp, args);
+  SHIFT_ARGS(1);
   LISP_ASSERT_TYPE(args, PAIR);
   Object second = FIRST;
   LISP_ASSERT_TYPE(second, FLOAT);
@@ -340,7 +347,7 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
 #define LISP_CMP(NAME, OP)                                                     \
   static Object NAME(LispEnv *lisp, Object args) {                             \
     Object a = FIRST;                                                          \
-    args = LISP_CDR(lisp, args);                                               \
+    SHIFT_ARGS(1);                                                             \
     Object b = FIRST;                                                          \
     if (OBJ_TYPE(a) == OBJ_INT_TAG && OBJ_TYPE(b) == OBJ_INT_TAG) {            \
       return lisp_bool(lisp, (i32)OBJ_UNBOX(a) OP(i32) OBJ_UNBOX(b));          \
@@ -373,7 +380,7 @@ static Object prim_type_of(LispEnv *lisp, Object args) {
 
 static Object prim_funcall(LispEnv *lisp, Object args) {
   Object function = FIRST;
-  args = LISP_CDR(lisp, args);
+  SHIFT_ARGS(1);
 
   if (OBJ_TYPE(function) == OBJ_SYMBOL_TAG) {
     function = lisp_lookup_function(lisp, function);
@@ -394,7 +401,7 @@ static Object prim_macroexpand_1(LispEnv *lisp, Object args) {
 }
 
 static Object prim_car(LispEnv *lisp, Object args) {
-  Object pair = LISP_CAR(lisp, args);
+  Object pair = FIRST;
   if (EQ(pair, NIL))
     return NIL;
 
@@ -403,7 +410,7 @@ static Object prim_car(LispEnv *lisp, Object args) {
 }
 
 static Object prim_cdr(LispEnv *lisp, Object args) {
-  Object pair = LISP_CAR(lisp, args);
+  Object pair = FIRST;
   if (EQ(pair, NIL))
     return NIL;
 
@@ -446,33 +453,34 @@ static Object prim_vector(LispEnv *lisp, Object args) {
   Object vector = lisp_make_vector(lisp, length);
   Object *cells = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector));
 
-  for (i32 i = 0; i < length; i++, args = LISP_CDR(lisp, args)) {
-    cells[i] = LISP_CAR(lisp, args);
+  for (i32 i = 0; i < length; i++) {
+    cells[i] = FIRST;
+    SHIFT_ARGS(1);
   }
 
   return vector;
 }
 
 static Object prim_aset(LispEnv *lisp, Object args) {
-  Object vector = LISP_CAR(lisp, args);
-  args = LISP_CDR(lisp, args);
-  i32 index = (i32)OBJ_UNBOX(LISP_CAR(lisp, args));
-  args = LISP_CDR(lisp, args);
-  Object value = LISP_CAR(lisp, args);
+  Object vector = FIRST;
+  SHIFT_ARGS(1);
+  i32 index = (i32)OBJ_UNBOX(FIRST);
+  SHIFT_ARGS(1);
+  Object value = FIRST;
   return *lisp_get_vector_item(lisp, vector, index) = value;
 }
 
 static Object prim_aref(LispEnv *lisp, Object args) {
-  Object vector = LISP_CAR(lisp, args);
-  args = LISP_CDR(lisp, args);
-  i32 index = (i32)OBJ_UNBOX(LISP_CAR(lisp, args));
+  Object vector = FIRST;
+  SHIFT_ARGS(1);
+  i32 index = (i32)OBJ_UNBOX(FIRST);
   return *lisp_get_vector_item(lisp, vector, index);
 }
 
 static Object lisp_open_file(LispEnv *lisp, Object args) {
-  Object filename = LISP_CAR(lisp, args);
-  args = LISP_CDR(lisp, args);
-  Object mode = LISP_CAR(lisp, args);
+  Object filename = FIRST;
+  SHIFT_ARGS(1);
+  Object mode = FIRST;
   char *filename_s = (char *)lisp_string_to_null_terminated(lisp, filename);
   char *mode_s = (char *)lisp_string_to_null_terminated(lisp, mode);
   FILE *stream = fopen(filename_s, mode_s);
@@ -484,7 +492,7 @@ static Object lisp_open_file(LispEnv *lisp, Object args) {
 }
 
 static Object lisp_close_stream(LispEnv *lisp, Object args) {
-  args = LISP_CAR(lisp, args);
+  args = FIRST;
   size index = OBJ_UNBOX(args);
   fclose(lisp->open_streams[index]);
   /* Release the slot so we can store another open stream there. */
@@ -498,7 +506,7 @@ static Object prim_feof(LispEnv *lisp, Object args) {
 }
 
 static Object prim_getc_stream(LispEnv *lisp, Object args) {
-  args = LISP_CAR(lisp, args);
+  args = FIRST;
   char c = fgetc(lisp->open_streams[OBJ_UNBOX(args)]);
   return OBJ_BOX(c, CHAR);
 }
@@ -588,11 +596,11 @@ static Object prim_make_symbol(LispEnv *lisp, Object args) {
 }
 
 static Object prim_defname(LispEnv *lisp, Object args) {
-  Object ns = LISP_CAR(lisp, args);
-  args = LISP_CDR(lisp, args);
-  Object name = LISP_CAR(lisp, args);
-  args = LISP_CDR(lisp, args);
-  Object value = LISP_CAR(lisp, args);
+  Object ns = FIRST;
+  SHIFT_ARGS(1);
+  Object name = FIRST;
+  SHIFT_ARGS(1);
+  Object value = FIRST;
 
   return lisp_defname(lisp, ns, name, value);
 }
