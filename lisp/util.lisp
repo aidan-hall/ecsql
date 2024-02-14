@@ -160,6 +160,15 @@
                  clauses)))))
 
 ;;; Less Essential Utilities (Not Needed by any Common Macros)
+(defun max (a . as)
+  (let ((m a))
+    (while (consp as)
+      (let ((current (car as)))
+        (if (> current m)
+            (setq m current)))
+      (setq as (cdr as)))
+    m))
+
 (defvar gensym-counter 0)
 (defun gensym ()
   (setq gensym-counter (+ gensym-counter 1))
