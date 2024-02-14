@@ -85,12 +85,23 @@ typedef struct LispEnv {
   struct World *world;
   struct {
     Object name;
-    Object struct_member;
-    Object stores_object;
+    Object lisp_component_storage;
   } comp;
 } LispEnv;
 
 LispEnv new_lisp_environment();
+
+enum LispComponentStorageType { STORE_OBJECT, STORE_STRUCT, STORE_UNBOXED };
+
+struct LispComponentStorage {
+  enum LispComponentStorageType type;
+  u16 struct_id;
+  /* This is redundant with 'struct Storage', but having it here saves an
+   * access in prim_ecs_set. */
+  size size;
+  enum ObjectTag object_type;
+};
+
 
 /* Return the canonical symbol whose name is string 'name'. */
 Object lisp_intern(LispEnv *lisp, s8 name);
@@ -113,14 +124,16 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
   } while (0)
 #define LISP_ASSERT_TYPE(OBJ, TYPE) LISP_ASSERT_RAW_TYPE(OBJ, OBJ_##TYPE##_TAG)
 
-/* Get the Lisp cell at the given index, with no error handling.
+static_assert(sizeof(Object) == sizeof(Object *),
+              "Pointers must fit in exactly 1 cell");
+
+/**
+ * Get the Lisp cell at the given index, with no error handling.
  * Negative indices indicate that the data at that cell is a *pointer* to the
  * actual data.
+ * @param index Lisp memory index.
  */
 static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
-  static_assert(sizeof(Object) == sizeof(Object *),
-                "Pointers must fit in exactly 1 cell");
-
   if (index >= 0) {
     return &((Object *)lisp->memory.space.begin)[index];
   } else {
@@ -199,6 +212,8 @@ Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value);
 Object lisp_macroexpand_top(LispEnv *lisp, Object expression);
 Object lisp_macroexpand_list(LispEnv *lisp, Object list);
 Object lisp_macroexpand(LispEnv *lisp, Object expression);
+
+Object lisp_new_ecs_component(LispEnv *lisp, Object type);
 
 static inline size lisp_store_pointer(struct LispEnv *lisp, void *ptr) {
   size idx = lisp_allocate_cells(lisp, 1);

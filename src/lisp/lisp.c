@@ -157,9 +157,9 @@ LispEnv new_lisp_environment() {
 
   /* ECS Initialisation */
   lisp.world = init_world();
-  lisp.comp.stores_object = ecs_new(lisp.world);
+  lisp.comp.lisp_component_storage =
+      ECS_NEW_COMPONENT(lisp.world, struct LispComponentStorage);
 
-  lisp.comp.struct_member = ECS_NEW_COMPONENT(lisp.world, struct StructMember);
   return lisp;
 }
 
@@ -624,4 +624,60 @@ u8 *lisp_to_string(LispEnv *lisp, Object object) {
   fputc('\0', string_stream);
   fclose(string_stream);
   return buf;
+}
+
+Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
+  khiter_t iter = kh_get(var_syms, lisp->structs, type.bits);
+  struct Storage storage;
+  struct LispComponentStorage lisp_storage;
+
+  if (iter != kh_end(lisp->structs)) {
+    /* store a struct type */
+    lisp_storage.type = STORE_STRUCT;
+    Object metadata = kh_value(lisp->structs, iter);
+
+    lisp_storage = (struct LispComponentStorage){
+
+        .type = STORE_STRUCT,
+        /* struct-id stored at index 1 in struct metadata vector */
+        .struct_id = OBJ_UNBOX(*lisp_get_vector_item(lisp, metadata, 1)),
+        /* struct size stored at index 0 in struct metadata vector */
+        .size = lisp_storage.size =
+            OBJ_UNBOX(*lisp_get_vector_item(lisp, metadata, 0))};
+
+    /* TODO: Calculate Lisp struct alignment and include it here */
+    storage = (struct Storage){.size = lisp_storage.size,
+                               .alignment = alignof(Object)};
+
+  } else {
+    /* store an object type */
+    enum ObjectTag tag = lisp_type_tag(lisp, type);
+
+#define UNBOXED_CASE(TAG, TYPE)                                                \
+  case TAG:                                                                    \
+    lisp_storage = (struct LispComponentStorage){                              \
+        .type = STORE_UNBOXED, .size = sizeof(TYPE), .object_type = TAG};      \
+    storage =                                                                  \
+        (struct Storage){.size = sizeof(TYPE), .alignment = alignof(TYPE)};    \
+    break
+
+    switch (tag) {
+      UNBOXED_CASE(OBJ_INT_TAG, i32);
+      UNBOXED_CASE(OBJ_FLOAT_TAG, f32);
+      UNBOXED_CASE(OBJ_CHAR_TAG, u8);
+    default:
+      lisp_storage = (struct LispComponentStorage){.type = STORE_OBJECT,
+                                                   .object_type = tag};
+      storage = (struct Storage){.size = sizeof(Object),
+                                 .alignment = alignof(Object)};
+    }
+#undef UNBOXED_CASE
+  }
+
+  Object obj = ecs_new_component(lisp->world, storage);
+
+  ecs_add(lisp->world, obj, lisp->comp.lisp_component_storage);
+  *(struct LispComponentStorage *)ecs_get(
+      lisp->world, obj, lisp->comp.lisp_component_storage) = lisp_storage;
+  return obj;
 }

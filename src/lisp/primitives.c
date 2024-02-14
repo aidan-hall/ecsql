@@ -786,31 +786,90 @@ static Object prim_ecs_destroy(LispEnv *lisp, Object args) {
 static Object prim_ecs_get(LispEnv *lisp, Object args) {
   Object component = SECOND;
   Object entity = FIRST;
-  if (!ecs_has(lisp->world, component, lisp->comp.stores_object)) {
-    WRONG("Attempted to get data for a Component that does not store a Lisp Object", component);
+  struct LispComponentStorage *storage =
+      ecs_get(lisp->world, component, lisp->comp.lisp_component_storage);
+  if (storage == NULL) {
+    WRONG("No Lisp type storage metadata for the given component type",
+          component);
     return UNDEFINED;
   }
-  Object *obj = ecs_get(lisp->world, entity, component);
+  void *obj = ecs_get(lisp->world, entity, component);
   if (obj == NULL) {
-    WRONG("Attempted to get a Component with no storage, or that the Entity didn't have", args);
+    WRONG("Attempted to get a Component with no storage, or that the Entity "
+          "didn't have",
+          args);
     return UNDEFINED;
   }
-  return *obj;
+
+  switch (storage->type) {
+  case STORE_OBJECT:
+    return *(Object *)obj;
+  case STORE_STRUCT:
+    /* We want to be able to modify a struct's data in-place, so return a
+     * pointer to that. */
+    return OBJ_BOX_INDEX(lisp_store_pointer(lisp, obj), storage->struct_id,
+                         STRUCT);
+  case STORE_UNBOXED:
+    return OBJ_BOX_RAWTAG(*(u64 *)obj, storage->object_type);
+  }
+
+  WRONG("Invalid Lisp storage type", OBJ_BOX(storage->type, INT));
+  return UNDEFINED;
 }
 
 static Object prim_ecs_set(LispEnv *lisp, Object args) {
   Object component = SECOND;
   Object entity = FIRST;
-  if (!ecs_has(lisp->world, component, lisp->comp.stores_object)) {
-    WRONG("Attempted to set data for a Component that does not store a Lisp Object", component);
+  Object value = THIRD;
+  struct LispComponentStorage *lisp_storage =
+      ecs_get(lisp->world, component, lisp->comp.lisp_component_storage);
+  if (lisp_storage == NULL) {
+    WRONG("No Lisp type storage metadata for the given component type",
+          component);
     return UNDEFINED;
   }
-  Object *obj = ecs_get(lisp->world, entity, component);
-  if (obj == NULL) {
-    WRONG("Attempted to set a Component with no storage, or that the Entity didn't have", args);
+  void *loc = ecs_get(lisp->world, entity, component);
+  if (loc == NULL) {
+    WRONG("Attempted to set a Component with no storage, or that the Entity "
+          "didn't have",
+          args);
     return UNDEFINED;
   }
-  return *obj = THIRD;
+
+  switch (lisp_storage->type) {
+  case STORE_OBJECT:
+    /* Allow undefined type to let users store any Object in a Component */
+    if (lisp_storage->object_type != OBJ_TYPE(value) &&
+        lisp_storage->object_type != OBJ_UNDEFINED_TAG) {
+      WRONG("Attempt to store incorrect type of object in a Component "
+            "(expected . actual)",
+            lisp_cons(lisp, lisp_type_name(lisp, lisp_storage->object_type),
+                      lisp_type_of(lisp, component)));
+      return UNDEFINED;
+    }
+    *(Object *)loc = value;
+    break;
+  case STORE_STRUCT:
+    if (OBJ_TYPE(value) != OBJ_STRUCT_TAG) {
+      WRONG("Attempted to store non-struct in a struct Component", value);
+      return UNDEFINED;
+    }
+    if (lisp_storage->struct_id != OBJ_UNBOX_METADATA(value)) {
+      WRONG("Attempted to store incorrect type of struct in a Component "
+            "(expected . actual)",
+            lisp_cons(lisp, OBJ_BOX(lisp_storage->struct_id, INT),
+                      OBJ_BOX(OBJ_UNBOX_METADATA(value), INT)));
+      return UNDEFINED;
+    }
+    memcpy(loc, lisp_cell_at(lisp, OBJ_UNBOX_INDEX(value)),
+           lisp_storage->size);
+    break;
+  case STORE_UNBOXED: {
+    u64 data = value.val;
+    memcpy(loc, &data, lisp_storage->size);
+  } break;
+  }
+  return value;
 }
 
 static Object prim_ecs_alive(LispEnv *lisp, Object args) {
@@ -858,11 +917,9 @@ static Object prim_ecs_gen(LispEnv *lisp, Object args) {
   return OBJ_BOX(obj.gen, INT);
 }
 
-static Object prim_ecs_new_object_component(LispEnv *lisp, Object args) {
-  IGNORE(args);
-  Object obj = ECS_NEW_COMPONENT(lisp->world, Object);
-  ecs_add(lisp->world, obj, lisp->comp.stores_object);
-  return obj;
+/* (type-name) */
+static Object prim_ecs_new_component(LispEnv *lisp, Object args) {
+  return lisp_new_ecs_component(lisp, FIRST);
 }
 
 /* READER MACROS */
@@ -1019,7 +1076,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-pair", "(entity entity)", prim_ecs_pair);
   DEFPRIMFUN("ecs-relation", "(relation)", prim_ecs_pair_relation);
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
-  DEFPRIMFUN("ecs-new-object-component", "()", prim_ecs_new_object_component);
+  DEFPRIMFUN("ecs-new-component", "(symbol)", prim_ecs_new_component);
 #undef DEFPRIMFUN
 #undef OBJSX
 }
