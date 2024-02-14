@@ -24,7 +24,9 @@ KHASH_MAP_INIT_STR(sym_name, Object);
 KHASH_MAP_INIT_INT(struct_ids, Object);
 KHASH_MAP_INIT_INT(vtables, khash_t(sym_name));
 
+Object lisp_type_name(struct LispEnv *lisp, enum ObjectTag tag);
 Object lisp_type_of(struct LispEnv *lisp, Object obj);
+enum ObjectTag lisp_type_tag(struct LispEnv *lisp, Object obj);
 bool lisp_type_spec_matches(struct LispEnv *lisp, Object value, Object spec);
 
 #endif
