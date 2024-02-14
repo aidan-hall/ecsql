@@ -103,14 +103,15 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
 #define WRONG1(MESSAGE) WRONG2(MESSAGE, NIL)
 #define WRONGX(a, b, c, ...) c
 #define WRONG(...) WRONGX(__VA_ARGS__, WRONG2, WRONG1)(__VA_ARGS__)
-#define LISP_ASSERT_TYPE(OBJ, TYPE)                                            \
+#define LISP_ASSERT_RAW_TYPE(OBJ, TYPE)                                        \
   do {                                                                         \
-    if (OBJ_TYPE(OBJ) != OBJ_##TYPE##_TAG) {                                   \
+    if (OBJ_TYPE(OBJ) != TYPE) {                                               \
       WRONG("FATAL: Wrong type of " #OBJ ": expected " #TYPE ", got",          \
             lisp_type_of(lisp, OBJ));                                          \
       exit(1); /* Should be unreachable */                                     \
     }                                                                          \
   } while (0)
+#define LISP_ASSERT_TYPE(OBJ, TYPE) LISP_ASSERT_RAW_TYPE(OBJ, OBJ_##TYPE##_TAG)
 
 /* Get the Lisp cell at the given index, with no error handling.
  * Negative indices indicate that the data at that cell is a *pointer* to the
