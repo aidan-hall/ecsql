@@ -13,7 +13,7 @@ This is the source code for ECSQL.
 `Since we must rely on some piece of software for project management,
 we will use the most reliable one (in terms of longevity): Emacs.
 ** Design
-*** TODO Basic ECS Architecture [1/4]
+*** TODO Basic ECS Architecture [3/4]
 **** DONE Automatically generated Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-05 Mon 14:51]
@@ -22,7 +22,12 @@ we will use the most reliable one (in terms of longevity): Emacs.
 - Simple generational ID system.
 - Hash IDs to get indices so we don't have to aggressively collect
   them like in Tecs.
-**** TODO Component "Ownership"
+**** DONE Component "Ownership"
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-02-14 Wed 17:15] \\
+  Basically copied Mertens's blog post; this isn't an area of focus for
+  the project.
+:END:
 - What components does an Entity have?
   - Array of Component IDs per archetype(?)
   - Something like Flecs: Each Component has a hash set of the
@@ -32,8 +37,13 @@ we will use the most reliable one (in terms of longevity): Emacs.
 - Don't conflate data layout and Component type: Many Components may
   be a single number or vector, and it should be possible to treat
   them as such.
-**** DOING Component Storage
+**** DONE Component Storage
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-14 Wed 17:16] \\
+  We currently have a single dynamically allocated vector per Column,
+  rather than chunks as originally planned. Making the switch would be
+  moderately hard, and unlikely to have any apparent effect on
+  performance, so we probably won't bother.
 - State "DOING"      from "TODO"       [2024-02-05 Mon 14:52]
 :END:
 - Archetype tables: Entity=row, Component data=column.
@@ -439,6 +449,13 @@ Options:
   - Potential efficiency cost, especially for struct accessors.
 **** DONE Struct Types
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-14 Wed 17:11] \\
+  Lisp can now generate struct types that should have the same alignment
+  and padding as equivalent C structs (same member types, in the same
+  order).
+- State "DOING"      from "TODO"       [2024-02-12 Mon 15:54] \\
+  We need to amend this slightly so we can work with packed, C-style
+  struct data.
 - State "DONE"       from "DOING"      [2024-02-05 Mon 11:02] \\
   Implemented in Lisp as far as possible (only using C to manipulate
   internal representations), with simple 1-cell alignment/size for all
@@ -448,7 +465,7 @@ Options:
 - Use libgccjit's structs for reflection etc.
 Requirements:
 - [ ] Getters
-- [ ] *Setters*: Do we attempt "generalised variables"?
+- [ ] *Setters*: Do we attempt "generalised variables"? No.
 - [ ] Field types: All fundamental types, or struct types(?).
 Lisp Representation:
 - Storage :: Vector, each member (which *must* be of the provided
@@ -604,7 +621,12 @@ implement of 16 weeks.
 - Value trade-off of allowing an Entity to have the same relation to
   two distinct Entities?
   - Better to allow it.
-**** TODO [#A] Lisp API
+**** DOING [#A] Lisp API
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-14 Wed 17:13] \\
+  Current implementation:
+  ~(set-v3-x (ecs-get player Velocity) 3)~
+:END:
 - We should provide a flexible API, so new features/applications can
   be built entirely in Lisp.
 - Is a Lisp callback API ("for each Entity") sensible? Does a
@@ -622,7 +644,14 @@ implement of 16 weeks.
 - Trying to produce a nice API like one would have in C may be the
   wrong approach: Allow the C plumbing API to be awful, and build nice
   ones on top of that?
-***** TODO Accessing ECS Data from Lisp
+***** DONE Accessing ECS Data from Lisp
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-14 Wed 17:14] \\
+  We chose option 1, since it was so simple to implement. Since the
+  implementation exists just in the definition of Object and
+  lisp_cell_at, we can easily change it later if necessary.
+- State "DOING"      from "TODO"       [2024-02-14 Wed 17:14]
+:END:
 - The first, most basic problem is that ECS data isn't stored in, or
   aligned to, Lisp memory.
 - Can't store Columns in Lisp memory since GC they need fairly
@@ -642,6 +671,10 @@ Options:
        indicates extra indirection, or a small number (2-4 bits) to
        indicate the number of times to indirect?
      - Negative indices indicate 1 level of indirection.
+       - Breaks the assumption that we can simply add to an index to
+         get an index for data at that offset, "for free", but that
+         was probably incorrectly API use to begin with.  It was a
+         mechanical fix to handle these cases properly.
 2. Store Columns next to Lisp memory, and just use indices that reach
    out to them.
    - Error prone, and won't work with data at less than 64
