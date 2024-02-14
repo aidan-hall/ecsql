@@ -383,6 +383,10 @@ static Object prim_type_of(LispEnv *lisp, Object args) {
   return lisp_type_of(lisp, FIRST);
 }
 
+static Object prim_type_tag(LispEnv *lisp, Object args) {
+  return OBJ_BOX(lisp_type_tag(lisp, FIRST), INT);
+}
+
 static Object prim_funcall(LispEnv *lisp, Object args) {
   Object function = FIRST;
   SHIFT_ARGS(1);
@@ -943,6 +947,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("prin1-to*", "(file t)", prim_print);
   DEFPRIMFUN("to-string", "(t)", prim_to_string);
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
+  DEFPRIMFUN("type-tag", "(symbol)", prim_type_tag);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
   DEFPRIMFUN("eval", "(t)", prim_eval);
   DEFPRIMFUN("macroexpand-1", "(t)", prim_macroexpand_1);
