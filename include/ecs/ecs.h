@@ -38,9 +38,7 @@ static inline Object ENT_BOX(EntityID id, u16 gen) {
   return ent;
 }
 
-static inline u64 ENT_SIG(Object ent) {
-  return ent.bits;
-}
+static inline u64 ENT_SIG(Object ent) { return ent.bits; }
 
 #define COMP_CMP(A, B, OP) (ENT_SIG(A) OP ENT_SIG(B))
 #define COMP_LT(A, B) COMP_CMP((A), (B), <)
