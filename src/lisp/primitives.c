@@ -344,6 +344,11 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
   float result = lisp_unbox_float(first) + lisp_unbox_float(second);
   return OBJ_IMM(result);
 }
+
+static Object prim_mod(LispEnv *lisp, Object args) {
+  return OBJ_BOX(BIT_CAST(i32, OBJ_UNBOX(FIRST)) % BIT_CAST(i32, OBJ_UNBOX(SECOND)), INT);
+}
+
 #define LISP_CMP(NAME, OP)                                                     \
   static Object NAME(LispEnv *lisp, Object args) {                             \
     Object a = FIRST;                                                          \
@@ -901,6 +906,7 @@ void lisp_install_primitives(LispEnv *lisp) {
                      lisp->primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
   DEFPRIMFUN("*", "(* (or f32 i32))", prim_mul);
+  DEFPRIMFUN("%", "(i32 i32)", prim_mod);
   DEFPRIMFUN("/", "(t . t)", prim_div);
   DEFPRIMFUN("-", "(* (or f32 i32))", prim_sub);
   DEFPRIMFUN("+", "(* (or f32 i32))", prim_add);
