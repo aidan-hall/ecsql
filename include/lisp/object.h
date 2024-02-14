@@ -130,9 +130,9 @@ static inline bool EQ(Object x, Object y) { return x.bits == y.bits; }
 #define LISP_CAR_INDEX (0)
 #define LISP_CDR_INDEX (1)
 #define LISP_CAR_PLACE(LISP, PAIR)                                             \
-  (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CAR_INDEX))
+  (&lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR))[LISP_CAR_INDEX])
 #define LISP_CDR_PLACE(LISP, PAIR)                                             \
-  (lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR) + LISP_CDR_INDEX))
+  (&lisp_cell_at(LISP, OBJ_UNBOX_INDEX(PAIR))[LISP_CDR_INDEX])
 #define LISP_CAR(LISP, PAIR) (*LISP_CAR_PLACE(LISP, PAIR))
 #define LISP_CDR(LISP, PAIR) (*LISP_CDR_PLACE(LISP, PAIR))
 
