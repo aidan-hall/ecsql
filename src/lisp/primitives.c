@@ -614,24 +614,32 @@ static Object prim_defname(LispEnv *lisp, Object args) {
   return lisp_defname(lisp, ns, name, value);
 }
 
+/* Get the size, in Bytes, of objects with the supplied type. */
 static Object prim_size_of(LispEnv *lisp, Object args) {
   Object obj = FIRST;
-  if (EQ(obj, lisp->keysyms.i32) || EQ(obj, lisp->keysyms.f32) ||
-      EQ(obj, lisp->keysyms.character) || EQ(obj, lisp->keysyms.file) ||
-      EQ(obj, lisp->keysyms.vector) || EQ(obj, lisp->keysyms.pair) ||
-      EQ(obj, lisp->keysyms.primitive) || EQ(obj, lisp->keysyms.closure) ||
-      EQ(obj, lisp->keysyms.string) || EQ(obj, lisp->keysyms.symbol)) {
-    return OBJ_BOX(1, INT);
-  } else {
-    /* Get the size of a struct, stored in the first element of the struct
-     * metadata vector. */
-    khint_t iter = kh_get(var_syms, lisp->structs, obj.bits);
-    if (iter != kh_end(lisp->structs))
-      return *lisp_get_vector_item(lisp, kh_value(lisp->structs, iter), 0);
+  /* Get the size of a struct, stored in the first element of the struct
+   * metadata vector. */
+  khint_t iter = kh_get(var_syms, lisp->structs, obj.bits);
+  if (iter != kh_end(lisp->structs))
+    return *lisp_get_vector_item(lisp, kh_value(lisp->structs, iter), 0);
 
-    WRONG("Called size-of with a non-type argument", obj);
-    return UNDEFINED;
-  }
+#define SIZE_CASE(SYMBOL, TYPE)                                                \
+  if (EQ(obj, lisp->keysyms.SYMBOL))                                           \
+  return OBJ_BOX(sizeof(TYPE), INT)
+  SIZE_CASE(i32, int);
+  SIZE_CASE(f32, float);
+  SIZE_CASE(character, u8);
+  SIZE_CASE(symbol, Object);
+  SIZE_CASE(vector, Object);
+  SIZE_CASE(file, Object);
+  SIZE_CASE(pair, Object);
+  SIZE_CASE(closure, Object);
+  SIZE_CASE(string, Object);
+
+#undef SIZE_CASE
+
+  WRONG("Called size-of with a non-type argument", obj);
+  return UNDEFINED;
 }
 
 /* STRUCT API */
@@ -678,53 +686,81 @@ static Object prim_struct_metadata(LispEnv *lisp, Object args) {
   return kh_value(lisp->structs, iter);
 }
 
-/* (struct index dest-type) Access some sub-component of a struct as a given
- * type. This is only intended for use in generated code, so it does no safety
- * checks. */
-static Object prim_struct_get_vec(LispEnv *lisp, Object args) {
-  size base = OBJ_UNBOX_INDEX(FIRST);
-  args = LISP_CDR(lisp, args);
-  i32 index = (i32)OBJ_UNBOX(FIRST);
-  args = LISP_CDR(lisp, args);
-  u16 struct_type = (i32)OBJ_UNBOX(FIRST);
-  return OBJ_BOX_INDEX(base + index, struct_type, STRUCT);
+/* These functions allow somewhat arbitrary memory manipulation,
+ * and are primarily intended for use in implementing structs. */
+
+/* (struct offset/B) */
+static Object prim_mem_get_object(LispEnv *lisp, Object args) {
+  char *loc = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
+
+  Object value;
+  memcpy(&value.bits, loc, sizeof(Object));
+  return value;
 }
 
-/* (struct index) */
-static Object prim_struct_get_cell(LispEnv *lisp, Object args) {
-  return *lisp_cell_at(lisp, OBJ_UNBOX_INDEX(FIRST) + (i32)OBJ_UNBOX(SECOND));
+/* (struct offset/B value) */
+static Object prim_mem_set_object(LispEnv *lisp, Object args) {
+  char *loc = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
+  SHIFT_ARGS(2);
+
+  Object value = FIRST;
+  memcpy(loc, &value.bits, sizeof(Object));
+  return value;
 }
 
-/* (dest:struct index value:struct length) Copy the 'length' cells at value
- * (boxed, struct-typed index) into the indicated place in the struct. Private:
- * no safety.  Returns the newly-assigned member of the struct. */
-static Object prim_struct_set_vec(LispEnv *lisp, Object args) {
-  size dest_index = OBJ_UNBOX_INDEX(FIRST) + OBJ_UNBOX(SECOND);
-  Object *dest = lisp_cell_at(lisp, dest_index);
-  args = LISP_CDR(lisp, LISP_CDR(lisp, args));
-  Object source_object = FIRST;
-  Object *source = lisp_cell_at(lisp, OBJ_UNBOX_INDEX(source_object));
-  i32 length = OBJ_UNBOX(SECOND);
-  for (i32 i = 0; i < length; ++i) {
-    dest[i] = source[i];
-  }
+/* (struct offset/B type len/B) */
+static Object prim_mem_get_val(LispEnv *lisp, Object args) {
+  char *loc = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
+  SHIFT_ARGS(2);
 
-  return OBJ_BOX_INDEX(dest_index, OBJ_UNBOX_METADATA(source_object), STRUCT);
+  size len = SECOND.val;
+  /* If something takes up > 7 Bytes, it doesn't fit in an Object box. */
+  assert(len < sizeof(Object));
+  enum ObjectTag tag = FIRST.val;
+  u64 value = 0;
+  /* Store the data "at the back" of the value, where it gets stored in Lisp. */
+  memcpy(&value, loc, len);
+  return OBJ_BOX_RAWTAG(value, tag);
 }
 
-/* (struct index value) See prim_struct_set_vec. Same idea but just store the
- * value of 'source'. */
-static Object prim_struct_set_cell(LispEnv *lisp, Object args) {
-  size dest_index = OBJ_UNBOX_INDEX(FIRST) + OBJ_UNBOX(SECOND);
-  args = LISP_CDR(lisp, LISP_CDR(lisp, args));
-
-  return *lisp_cell_at(lisp, dest_index) = FIRST;
+/* (struct offset/B value len/B) */
+static Object prim_mem_set_val(LispEnv *lisp, Object args) {
+  char *dest_loc = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
+  SHIFT_ARGS(2);
+  size len = SECOND.val;
+  u64 val = FIRST.val;
+  /* Copy from the start of the data, which is stored "at the back" of val. */
+  memcpy(dest_loc, &val, len);
+  return FIRST;
 }
 
-/* (i32 i32): struct type ID, # cells */
+/* (struct offset/B struct-type len/B)
+ * Produces a copy. */
+static Object prim_mem_get_vec(LispEnv *lisp, Object args) {
+  /* TODO: Handle potentially misaligned pointers here? */
+  char *src = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
+  SHIFT_ARGS(2);
+  size len = SECOND.val;
+  size dest_idx = lisp_allocate_bytes(lisp, len);
+  char *dest = (char *)lisp_cell_at(lisp, dest_idx);
+  memcpy(dest, src, len);
+  return OBJ_BOX_INDEX(dest_idx, FIRST.val, STRUCT);
+}
+
+/* (struct offset/B value-reference len/B) */
+static Object prim_mem_set_vec(LispEnv *lisp, Object args) {
+  char *dest_loc = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
+  SHIFT_ARGS(2);
+  size len = SECOND.val;
+  char *src_loc = (char *)lisp_cell_at(lisp, FIRST.index);
+  memcpy(dest_loc, src_loc, len);
+  return FIRST;
+}
+
+/* (i32 i32): (struct type ID, # cells) */
 static Object prim_struct_allocate(LispEnv *lisp, Object args) {
-  i32 cells = (i32)OBJ_UNBOX(FIRST);
-  size data_index = lisp_allocate_cells(lisp, cells);
+  i32 bytes = (i32)OBJ_UNBOX(FIRST);
+  size data_index = lisp_allocate_bytes(lisp, bytes);
   return OBJ_BOX_INDEX(data_index, (u16)OBJ_UNBOX(SECOND), STRUCT);
 }
 
@@ -957,10 +993,12 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("size-of", "(symbol)", prim_size_of);
   /* TODO: These are private, and only called from generated code, so don't
    * waste time checking the type. */
-  DEFPRIMFUN("--struct-set-vec", "(t i32 t i32)", prim_struct_set_vec);
-  DEFPRIMFUN("--struct-set-cell", "(t i32 t)", prim_struct_set_cell);
-  DEFPRIMFUN("--struct-get-vec", "(t i32 i32)", prim_struct_get_vec);
-  DEFPRIMFUN("--struct-get-cell", "(t i32)", prim_struct_get_cell);
+  DEFPRIMFUN("--struct-set-vec", "(t i32 t i32)", prim_mem_set_vec);
+  DEFPRIMFUN("--struct-set-val", "(t i32 t i32)", prim_mem_set_val);
+  DEFPRIMFUN("--struct-get-vec", "(t i32 i32 i32)", prim_mem_get_vec);
+  DEFPRIMFUN("--struct-get-val", "(t i32 i32 i32)", prim_mem_get_val);
+  DEFPRIMFUN("--struct-get-object", "(t i32)", prim_mem_get_object);
+  DEFPRIMFUN("--struct-set-object", "(t i32 t)", prim_mem_set_object);
   DEFPRIMFUN("--struct-allocate", "(i32 i32)", prim_struct_allocate);
   DEFPRIMFUN("--struct-register", "(symbol)", prim_struct_register);
   DEFPRIMFUN("structp", "(t)", prim_is_struct);

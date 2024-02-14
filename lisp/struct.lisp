@@ -1,23 +1,53 @@
 ;;; Struct metadata vector layout:
-;;; vector(size struct-id members)
+;;; vector(size struct-id members printer alignment)
 ;;; Members:
-;;; list(offset name-string type-symbol)
+;;; list(offset name-string type-symbol size/B)
 
-;;; → (list total-size offsets)
+(defun struct-store-type-boxed-p (type)
+  ;; type: A primitive type name
+  (case type
+    ((nil character i32 f32)
+     nil)
+    ((file vector undefined symbol pair primitive closure entity relation)
+     t)
+    (t
+     (wrong "Invalid primitive type name" type))))
+
+(defun align-of (type)
+  (let ((metadata (struct-metadata type)))
+   (if metadata
+       (struct-metadata-alignment metadata)
+       ;; Primitives' alignment is the same as their size.
+       (size-of type))))
+
+;;; → (list total-size offsets alignment)
 (defun struct-generate-offsets (members prefix offset)
-  (let ((offsets nil))
+  ;; Generates unaligned offsets, but that doesn't matter with the current implementation.
+  (let ((offsets nil)
+        (alignment 1))
 
     (while members
       (let* ((elt (car members))
              (type (cadr elt))
              (member-size (size-of type))
+             (member-alignment (align-of type))
              (size 0)
              (name (concat prefix "-" (car elt))))
+
+        ;; A struct's alignment is the maximum of its members' alignments, probably.
+        (if (> member-alignment alignment)
+            (setq alignment member-alignment))
+
+        (let ((misalignment (% offset member-alignment)))
+          (if (> misalignment 0)
+              ;; Add padding so this member is aligned
+              (incq offset (- member-alignment misalignment))))
 
         (setq offsets (cons (list
                              offset
                              name
-                             type)
+                             type
+                             member-size)
                             offsets))
         (if (struct-metadata type)
             (setq offsets
@@ -30,7 +60,7 @@
 
         (setq members (cdr members))))
 
-    (list offset offsets)))
+    (list offset offsets alignment)))
 
 (defun struct-metadata-size (metadata)
   (aref metadata 0))
@@ -40,6 +70,8 @@
   (aref metadata 2))
 (defun struct-metadata-printer (metadata)
   (aref metadata 3))
+(defun struct-metadata-alignment (metadata)
+  (aref metadata 4))
 
 (defun struct-printer (struct-type name-string members)
   `(defun ,(intern (concat "print-" name-string "-to")) (stream obj)
@@ -65,7 +97,7 @@
          (let ((dest-type (type-of dest)))
            (assert (eq dest-type ',struct-type))
            (assert (eq dest-type (type-of src))))
-         (--struct-set-vec dest 0 src ,(struct-metadata-size my-metadata)))
+         (--struct-set-vec dest 0 ,my-size src))
        ;; Constructor
        (defun ,(intern (concat "make-" my-name))
            ;; Produce argument list
@@ -86,46 +118,57 @@
        ;; Getters and setters
        . ,(mapcar
            (lambda (entry)
-             ;; entry: (offset name-string type)
+             ;; entry: (offset name-string type size/B)
              (let ((offset (car entry))
                    (name (cadr entry))
-                   (type (caddr entry)))
+                   (type (caddr entry))
+                   (size (cadddr entry)))
                (let ((is-struct-type `(assert (eq (type-of structure) ',struct-type)))
                      (is-member-type `(assert (eq (type-of value) ',type)))
-                     (getter (intern (concat "get-" name)))
+                     (getter (intern (concat name)))
                      (setter (intern (concat "set-" name))))
                  (print (list "member type of " struct-type ": " type))
                  (let ((member-metadata (struct-metadata type)))
                    (if member-metadata
-                       (let ((size (struct-metadata-size member-metadata))
-                             (id (struct-metadata-id member-metadata)))
-                         (print "... it's a struct type")
+                       ;; Struct member
+                       (let ((id (struct-metadata-id member-metadata)))
                          `(progn
                             (defun ,getter (structure)
                               ,is-struct-type
-                              (--struct-get-vec structure ,offset ,id))
+                              (--struct-get-vec structure ,offset ,id ,size))
                             (defun ,setter (structure value)
                               ,is-struct-type
                               ,is-member-type
                               (--struct-set-vec structure ,offset value ,size))))
-                       (print "... it's a cell type")
-                       `(progn
-                          (defun ,getter (structure)
-                            ,is-struct-type
-                            (--struct-get-cell structure ,offset))
-                          (defun ,setter (structure value)
-                            ,is-struct-type
-                            ,is-member-type
-                            (--struct-set-cell structure ,offset value))))))))
+                       ;; Non-struct member
+                       (if (struct-store-type-boxed-p type)
+                           ;; Member stored as Object
+                           `(progn
+                              (defun ,getter (structure)
+                                ,is-struct-type
+                                (--struct-get-object structure ,offset))
+                              (defun ,setter (structure value)
+                                ,is-struct-type
+                                ,is-member-type
+                                (--struct-set-object structure ,offset value)))
+                           ;; Member stored as raw Bytes
+                           `(progn
+                              (defun ,getter (structure)
+                                ,is-struct-type
+                                (--struct-get-val structure ,offset ,(type-tag type) ,size))
+                              (defun ,setter (structure value)
+                                ,is-struct-type
+                                ,is-member-type
+                                (--struct-set-val structure ,offset value ,size)))))))))
            offsets))))
 
 (defun prin1-struct-to (stream obj)
   (assert (structp obj))
   (funcall (struct-metadata-printer (struct-metadata (type-of obj))) stream obj))
 
-(defun struct-install (name size offsets printer)
+(defun struct-install (name size offsets printer alignment)
   (let ((id (--struct-register name)))
-    (defname 'struct name (vector size id offsets printer))
+    (defname 'struct name (vector size id offsets printer alignment))
     id))
 
 (defmacro defstruct (name . members)
@@ -141,7 +184,7 @@
     (if (>= (length name-string) 128)
         (wrong "struct name is way too long" struct-type)
 
-        (struct-install name (car size-and-offsets) stringy-members nil)
+        (struct-install name (car size-and-offsets) stringy-members nil (caddr size-and-offsets))
         `(let ((printer-function ,printer-code))
            ,(struct-accessors name (cadr size-and-offsets))
            ;; printer-code is a defun form, so we can get the function name with cadr.
