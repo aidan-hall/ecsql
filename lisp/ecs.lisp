@@ -1,0 +1,7 @@
+(defmacro defcomponent (name type)
+  `(defvar ,name (ecs-new-component ',type)))
+(defcomponent Pos v3)
+(defcomponent Vel v3)
+(defcomponent Orientation v3)
+(defcomponent Health i32)
+(defcomponent Mass f32)
