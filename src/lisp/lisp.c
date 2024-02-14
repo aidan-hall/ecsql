@@ -151,6 +151,7 @@ LispEnv new_lisp_environment() {
 
   lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/util.lisp\")"));
   lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/struct.lisp\")"));
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/builtin-structs.lisp\")"));
   lisp.keysyms.print_struct =
       lisp_lookup_function(&lisp, OBJS(&lisp, "prin1-struct-to"));
 

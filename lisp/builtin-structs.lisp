@@ -1,0 +1,12 @@
+(defstruct v4
+  (x f32)
+  (y f32)
+  (z f32)
+  (a f32))
+(defstruct v3
+  (x f32)
+  (y f32)
+  (z f32))
+(defstruct v2
+  (x f32)
+  (y f32))
