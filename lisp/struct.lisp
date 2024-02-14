@@ -80,7 +80,7 @@
      (prin1-to stream
                (list . ,(mapcar
                          (lambda (member)
-                           `(,(intern (concat "get-" name-string "-" (car member))) obj))
+                           `(,(intern (concat name-string "-" (car member))) obj))
                          members)))))
 
 ;;; Generate getters and setters for a struct from a description of the offsets
