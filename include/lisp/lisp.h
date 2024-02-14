@@ -171,7 +171,7 @@ static inline Object *lisp_get_vector_item(LispEnv *lisp, Object vector,
     WRONG("Index out of bounds", lisp_cons(lisp, vector, OBJ_BOX(index, INT)));
     return NULL;
   }
-  return lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector) + index);
+  return &lisp_cell_at(lisp, OBJ_UNBOX_INDEX(vector))[index];
 }
 
 static inline Object lisp_vector_from_kvec(LispEnv *lisp,
