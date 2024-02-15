@@ -935,10 +935,6 @@ Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
   }
 }
 
-Object lisp_reader_question_mark(LispEnv *lisp, FILE *stream) {
-  return OBJ_BOX(fgetc(stream), CHAR);
-}
-
 /* Build a list of the form (quoter object) */
 static inline Object lisp_quotify(LispEnv *lisp, Object quoter, Object object) {
   return lisp_cons(lisp, quoter, lisp_cons(lisp, object, NIL));
@@ -994,7 +990,6 @@ void lisp_install_primitives(LispEnv *lisp) {
   lisp->reader_macros['\''] = lisp_reader_quote;
   lisp->reader_macros['`'] = lisp_reader_quasiquote;
   lisp->reader_macros[','] = lisp_reader_unquote;
-  lisp->reader_macros['?'] = lisp_reader_question_mark;
   lisp->reader_macros['#'] = lisp_reader_hash;
 
 #define OBJSX(S) OBJS(lisp, S)
