@@ -149,16 +149,23 @@ LispEnv new_lisp_environment() {
   lisp_eval(&lisp, lisp_read(&lisp, load_file));
   fclose(load_file);
 
-  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/util.lisp\")"));
-  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/struct.lisp\")"));
-  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/builtin-structs.lisp\")"));
-  lisp.keysyms.print_struct =
-      lisp_lookup_function(&lisp, OBJS(&lisp, "prin1-struct-to"));
-
   /* ECS Initialisation */
-  lisp.world = init_world();
+  lisp.world = init_world(OBJS(&lisp, "Storage"));
+  if (lisp.world == NULL) {
+    wrong(&lisp, "Failed to initialise ECS world.\n", NIL);
+  }
+
   lisp.comp.lisp_component_storage =
       ECS_NEW_COMPONENT(lisp.world, struct LispComponentStorage);
+  if (!ecs_set_name(lisp.world, lisp.comp.lisp_component_storage,
+                    OBJS(&lisp, "LispStorage"))) {
+    wrong(&lisp, "Failed to set name for LispStorage component", NIL);
+  }
+
+  /* Load the standard library */
+  lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/stdlib.lisp\")"));
+  lisp.keysyms.print_struct =
+      lisp_lookup_function(&lisp, OBJS(&lisp, "prin1-struct-to"));
 
   return lisp;
 }

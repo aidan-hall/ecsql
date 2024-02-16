@@ -110,10 +110,13 @@ typedef khash_t(component_archetype_column) ArchetypeMap;
 KHASH_MAP_INIT_INT(entity_data, Record);
 /* Component *signature* (64 bits) → Component Metadata */
 KHASH_MAP_INIT_INT64(component_metadata, ArchetypeMap *);
+/* symbol → Entity for live entities */
+KHASH_MAP_INIT_INT64(entity_name, Object);
 
 typedef struct World {
   khash_t(gen) * generations;
   khash_t(live) * live;
+  khash_t(entity_name) * entity_names;
   u32 next_entity;
   u32 next_archetype;
 
@@ -234,6 +237,42 @@ Object ecs_new(World *world) {
   }
   archetype_add_entity(world, get_archetype(world, world->empty_archetype),
                        entity.id);
+  return entity;
+}
+
+[[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
+                                Object name) {
+  khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
+  if (iter != kh_end(world->entity_names)) {
+    fprintf(stderr, "An Entity with the supplied name already exists.\n");
+    return false;
+  }
+  int absent;
+  iter = kh_put(entity_name, world->entity_names, name.bits, &absent);
+  if (absent < 0) {
+    fprintf(stderr, "Failed to add a name for the supplied entity.\n");
+    return false;
+  }
+
+  kh_value(world->entity_names, iter) = entity;
+  return true;
+}
+
+Object ecs_get_by_name(struct World *world, Object name) {
+  khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
+  if (iter == kh_end(world->entity_names)) {
+    fprintf(stderr, "Entity name not found.\n");
+    return NIL;
+  }
+  Object entity = kh_value(world->entity_names, iter);
+  iter = kh_get(live, world->live, entity.id.val);
+  if (iter == kh_end(world->live)) {
+    fprintf(stderr, "Entity not alive: removing name.\n");
+    kh_del(entity_name, world->entity_names,
+           kh_get(entity_name, world->entity_names, name.bits));
+    return NIL;
+  }
+
   return entity;
 }
 
@@ -365,12 +404,15 @@ Object ecs_new_component(World *world, struct Storage storage) {
   return obj;
 }
 
-struct World *init_world() {
+struct World *init_world(Object storage_name) {
   World *world = malloc(sizeof(World));
+  if (world == NULL)
+    return NULL;
   *world = (World){0};
   world->next_entity = MIN_ENTITY;
   world->generations = kh_init(gen);
   world->live = kh_init(live);
+  world->entity_names = kh_init(entity_name);
   world->component_index = kh_init(component_metadata);
   world->entity_index = kh_init(entity_data);
   kv_init(world->archetypes);
@@ -380,12 +422,16 @@ struct World *init_world() {
 
   /* Set up internal Components */
   world->comp.storage = ecs_new(world);
+  if (!ecs_set_name(world, world->comp.storage, storage_name)) {
+    fprintf(stderr, "Failed to set name for Storage Component.\n");
+    goto err;
+  }
+
   kv_push(Object, some_type, world->comp.storage);
   Archetype *only_storage_archetype =
       get_archetype(world, type_archetype(world, some_type));
   /* Create the Column to store Storage */
-  struct Storage storage_storage = (struct Storage){
-      .size = sizeof(struct Storage), .alignment = alignof(struct Storage)};
+  struct Storage storage_storage = TYPE_STORAGE(struct Storage);
   kv_push(Column, only_storage_archetype->columns,
           init_column(storage_storage));
   /* Register that as the Column to store Storage in this Archetype. */
@@ -396,7 +442,7 @@ struct World *init_world() {
   if (absent < 0) {
     fprintf(stderr, "Failed to register the [Storage] archetype for the "
                     "Storage Component.\n");
-    exit(1);
+    goto err;
   }
   /* We know Storage is the only (i.e. first) Column in the [Storage] archetype,
    * so we can hard-code column index 0. */
@@ -409,6 +455,10 @@ struct World *init_world() {
       storage_storage;
 
   return world;
+
+err:
+  free(world);
+  return NULL;
 }
 
 bool ecs_has(World *world, Object entity, Object component) {

@@ -65,8 +65,13 @@ static inline Object ecs_pair(Object relationship, Object entity) {
   return obj;
 }
 
-struct World *init_world();
+struct World *init_world(Object storage_name);
 Object ecs_new(struct World *world);
+/* Attempts to set a name for the given Entity.  Returns false if the operation
+ * failed. */
+[[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
+                                Object name);
+Object ecs_get_by_name(struct World *world, Object name);
 void ecs_destroy(struct World *world, Object entity);
 bool ecs_alive(struct World *world, Object entity);
 void *ecs_get(struct World *world, Object entity, Object component);
@@ -90,9 +95,10 @@ static inline Object ecs_object_with_id(struct World *world, EntityID id) {
 typedef ObjectVector Type;
 Type ecs_type(struct World *world, Object entity);
 
+#define TYPE_STORAGE(TYPE)                                                     \
+  ((struct Storage){.size = sizeof(TYPE), .alignment = alignof(TYPE)})
 #define ECS_NEW_COMPONENT(WORLD, TYPE)                                         \
-  (ecs_new_component(WORLD, (struct Storage){.size = sizeof(TYPE),             \
-                                             .alignment = alignof(TYPE)}))
+  (ecs_new_component(WORLD, TYPE_STORAGE(TYPE)))
 
 #define NOT_PRESENT (-1)
 

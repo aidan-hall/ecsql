@@ -872,6 +872,14 @@ static Object prim_ecs_set(LispEnv *lisp, Object args) {
   return value;
 }
 
+static Object prim_ecs_set_name(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp, ecs_set_name(lisp->world, FIRST, SECOND));
+}
+
+static Object prim_ecs_get_by_name(LispEnv *lisp, Object args) {
+  return ecs_get_by_name(lisp->world, FIRST);
+}
+
 static Object prim_ecs_alive(LispEnv *lisp, Object args) {
   Object obj = FIRST;
   return lisp_bool(lisp, ecs_alive(lisp->world, obj));
@@ -1061,6 +1069,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-destroy", "(entity)", prim_ecs_destroy);
   DEFPRIMFUN("ecs-get", "(entity (or entity relation))", prim_ecs_get);
   DEFPRIMFUN("ecs-set", "(entity entity t)", prim_ecs_set);
+  DEFPRIMFUN("ecs-set-name", "(entity symbol)", prim_ecs_set_name);
+  DEFPRIMFUN("ecs-get-by-name", "(symbol)", prim_ecs_get_by_name);
   DEFPRIMFUN("ecs-has", "(entity (or entity relation))", prim_ecs_has);
   DEFPRIMFUN("ecs-alive", "(entity)", prim_ecs_alive);
   DEFPRIMFUN("ecs-add", "(entity (or entity relation))", prim_ecs_add);
