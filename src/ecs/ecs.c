@@ -524,7 +524,7 @@ ArchetypeID toggle_component(World *world, ArchetypeID archetype_id,
   }
 
   ArchetypeID res_id = type_archetype(world, other);
-  /* The original archetype poiner may have been invalidated if a new archetype
+  /* The original archetype pointer may have been invalidated if a new archetype
    * was created. */
   archetype = get_archetype(world, archetype_id);
   /* Add the archetypes as neighbours */
