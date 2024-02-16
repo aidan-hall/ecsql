@@ -68,17 +68,26 @@ int main(int argc, char *argv[]) {
 
   test_type_bsearch();
   struct World *world = lisp.world;
-  Object pos = ECS_NEW_COMPONENT(world, struct Vec3);
-  Object vel = ECS_NEW_COMPONENT(world, struct Vec3);
+  Object storage_comp = ecs_get_by_name(world, OBJS(&lisp, "Storage"));
+  lisp_apply(&lisp, lisp_eval(&lisp, OBJS(&lisp, "(function print)")),
+             lisp_cons(&lisp, storage_comp, NIL));
+  Object pos = ecs_get_by_name(world, OBJS(&lisp, "Pos"));
+  {
+    struct Storage pos_storage =
+        *(struct Storage *)ecs_get(world, pos, storage_comp);
+    printf("pos_storage: .size = %lu, .alignment = %lu\n", pos_storage.size,
+           pos_storage.alignment);
+  }
+  Object vel = ecs_get_by_name(world, OBJS(&lisp, "Vel"));
   Object fooable = ecs_new(world);
   Object apple = ecs_new(world);
   Object player = ecs_new(world);
+  assert(ecs_set_name(world, player, OBJS(&lisp, "player")));
   ecs_add(world, player, pos);
-  *(struct Vec3 *)ecs_get(world, player, pos) = (struct Vec3){1, 2, 3};
+  *(struct Vec3 *)ecs_get(world, player, pos) = (struct Vec3){3, 2, 3};
   Object pear = ecs_new(world);
   ecs_add(world, player, vel);
   *(struct Vec3 *)ecs_get(world, player, vel) = (struct Vec3){0, 0, 2};
-  ecs_remove(world, player, pos);
   ecs_add(world, player, fooable);
   Object orange = ecs_new(world);
 
@@ -93,8 +102,6 @@ int main(int argc, char *argv[]) {
            kv_A(type, i).relation);
   }
 
-  ecs_remove(world, player, vel);
-  ecs_remove(world, player, fooable);
   if (setjmp(lisp.error_loc) != 0) {
     fprintf(stderr, "Resuming from top level...\n");
   }
