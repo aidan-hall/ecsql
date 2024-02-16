@@ -19,11 +19,11 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     /* Symbol tokens get interpreted as an integer, or a float, if possible. */
     u8 *endptr;
     errno = 0;
-    i32 int_value = strtol((char *)tok.lexeme.data, (char **)&endptr, 0);
+    i64 int_value = strtoll((char *)tok.lexeme.data, (char **)&endptr, 0);
     /* Only store as a 32-bit integer if its magnitude is small enough. */
     if (*endptr == '\0' && errno == 0 && int_value <= INT32_MAX &&
         int_value >= INT32_MIN) {
-      return OBJ_IMM(int_value);
+      return OBJ_BOX(int_value, INT);
     }
     float float_value = strtof((char *)tok.lexeme.data, (char **)&endptr);
     if (*endptr == '\0') {
