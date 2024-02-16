@@ -1,0 +1,24 @@
+#+title: Work Log
+Keeping track of what I'm doing without cluttering up README.org.
+* DONE Fix row allocation bug
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-02-16 Fri 10:21] \\
+  This bug is not real, only size: 0 is
+CLOCK: [2024-02-16 Fri 09:50]--[2024-02-16 Fri 10:15] =>  0:25
+:END:
+* DONE Fix "Size 0, Alignment 0" bug
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-02-16 Fri 10:58] \\
+  This was stupid, I was appending to the component_columns Vector for
+  the [Storage] archetype rather than setting the value at index 0, that
+  corresponds to the Storage Component.
+CLOCK: [2024-02-16 Fri 10:21]--[2024-02-16 Fri 10:46] =>  0:25
+:END:
+This is probably the same as the previous bug.
+* DONE Storage for Pairs
+:LOGBOOK:
+CLOCK: [2024-02-16 Fri 11:02]--[2024-02-16 Fri 11:27] =>  0:25
+:END:
+Our simplified mechanism for determining storage of a pair type:
+Inherit from the Relation type.
+This is implemented in ~ecs_get~.
