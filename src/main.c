@@ -91,8 +91,11 @@ int main(int argc, char *argv[]) {
   ecs_add(world, player, fooable);
   Object orange = ecs_new(world);
 
-  Object eats = ecs_new(world);
+  Object eats = lisp_new_ecs_component(&lisp, OBJS(&lisp, "i32"));
+  assert(ecs_set_name(world, eats, OBJS(&lisp, "Eats")));
   ecs_add(world, player, ecs_pair(eats, apple));
+  *(i32*)ecs_get(world, player, ecs_pair(eats, apple)) = -4;
+  assert(ecs_set_name(world, apple, OBJS(&lisp, "Apple")));
   ecs_add(world, player, ecs_pair(eats, orange));
   ecs_add(world, player, ecs_pair(eats, pear));
   Type type = ecs_type(world, player);
