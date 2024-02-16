@@ -653,8 +653,10 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
             OBJ_UNBOX(*lisp_get_vector_item(lisp, metadata, 0))};
 
     /* TODO: Calculate Lisp struct alignment and include it here */
-    storage = (struct Storage){.size = lisp_storage.size,
-                               .alignment = alignof(Object)};
+    storage = (struct Storage){
+        .size = lisp_storage.size,
+        .alignment =
+            BIT_CAST(i32, OBJ_UNBOX(*lisp_get_vector_item(lisp, metadata, 4)))};
 
   } else {
     /* store an object type */
