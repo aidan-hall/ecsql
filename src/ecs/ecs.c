@@ -473,7 +473,11 @@ bool ecs_has(World *world, Object entity, Object component) {
  * Returns NULL if that Entity doesn't have storage allocated for that
  * Component. */
 void *ecs_get(World *world, Object entity, Object component) {
-  Record *record = entity_record(world, entity.id);
+  /* Use the Relation Entity's Components when getting from a pair. */
+  EntityID id = OBJ_TYPE(entity) == OBJ_RELATION_TAG
+                    ? (EntityID){entity.relation}
+                    : entity.id;
+  Record *record = entity_record(world, id);
   Archetype *archetype = &kv_A(world->archetypes, record->archetype.val);
 
   ArchetypeMap *archetypes = component_archetypes(world, component);
