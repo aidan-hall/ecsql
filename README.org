@@ -738,3 +738,11 @@ Components to group them together.  That would probably be
 unnecessarily restrictive, and there are many plausible Components
 such as "Transform" that would contain multiple vectors/matrices for
 position and orientation.
+
+* Development Notes
+** Recurring Bugs
+*** Junk in unused bits of ~Object~
+- For consistency, unused bits of an Object should be zeroed.
+- This ensures that two Objects that store the same value are
+  bit-for-bit identical, so we can use the cheap C ~==~ operator to
+  implement ~(eq)~ in Lisp.
