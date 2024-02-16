@@ -346,7 +346,8 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
 }
 
 static Object prim_mod(LispEnv *lisp, Object args) {
-  return OBJ_BOX(BIT_CAST(i32, OBJ_UNBOX(FIRST)) % BIT_CAST(i32, OBJ_UNBOX(SECOND)), INT);
+  return OBJ_BOX(
+      BIT_CAST(i32, OBJ_UNBOX(FIRST)) % BIT_CAST(i32, OBJ_UNBOX(SECOND)), INT);
 }
 
 #define LISP_CMP(NAME, OP)                                                     \
@@ -861,8 +862,7 @@ static Object prim_ecs_set(LispEnv *lisp, Object args) {
                       OBJ_BOX(OBJ_UNBOX_METADATA(value), INT)));
       return UNDEFINED;
     }
-    memcpy(loc, lisp_cell_at(lisp, OBJ_UNBOX_INDEX(value)),
-           lisp_storage->size);
+    memcpy(loc, lisp_cell_at(lisp, OBJ_UNBOX_INDEX(value)), lisp_storage->size);
     break;
   case STORE_UNBOXED: {
     u64 data = value.val;
