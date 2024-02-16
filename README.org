@@ -497,7 +497,7 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
   - Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [2/6]
+*** TODO ECS [2/7]
 **** DONE Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-09 Fri 12:45] \\
@@ -557,6 +557,18 @@ Lisp Representation:
   2. Create the Archetype for Entities with only the "Component Storage" Component, manually specifying the storage parameters in its only Column (which contains the Component Storage data),
   3. Add "Component Storage" to itself, with the appropriate data values.
   4. For all Subsequent Components with storage, simply add the "Component Storage" Component and it will just work™.
+**** DOING Queries
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
+:END:
+The general API needs to be something like: ~Predicate → Archetype[]~
+***** DOING Query Representation
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
+:END:
+- Queries may reasonably take the form of Lisp list structure.
+- The syntax of queries is partially defined in design.org in the
+  cs310-project repository.
 **** TODO Systems
 - Iteration over Archetypes:
   1. User supplies a function to the ECS.
