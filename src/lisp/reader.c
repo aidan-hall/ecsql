@@ -23,7 +23,7 @@ static Object read_with_token(LispEnv *lisp, Token tok, FILE *stream) {
     /* Only store as a 32-bit integer if its magnitude is small enough. */
     if (*endptr == '\0' && errno == 0 && int_value <= INT32_MAX &&
         int_value >= INT32_MIN) {
-      return OBJ_BOX(int_value, INT);
+      return OBJ_IMM((i32)int_value);
     }
     float float_value = strtof((char *)tok.lexeme.data, (char **)&endptr);
     if (*endptr == '\0') {
