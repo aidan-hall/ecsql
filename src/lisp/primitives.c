@@ -810,8 +810,11 @@ static Object prim_ecs_get(LispEnv *lisp, Object args) {
      * pointer to that. */
     return OBJ_BOX_INDEX(lisp_store_pointer(lisp, obj), storage->struct_id,
                          STRUCT);
-  case STORE_UNBOXED:
-    return OBJ_BOX_RAWTAG(*(u64 *)obj, storage->object_type);
+  case STORE_UNBOXED: {
+    u64 val = 0;
+    memcpy(&val, obj, storage->size);
+    return OBJ_BOX_RAWTAG(val, storage->object_type);
+  }
   }
 
   WRONG("Invalid Lisp storage type", OBJ_BOX(storage->type, INT));
