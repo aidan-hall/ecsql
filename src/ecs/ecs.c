@@ -310,8 +310,8 @@ static void archetype_remove_entity(World *world, Archetype *archetype,
 
 void ecs_destroy(World *world, Object entity) {
   u32 id = entity.id.val;
-  khint_t live_iter = kh_get(live, world->live, id);
-  if (live_iter == kh_end(world->live)) {
+  khint_t iter = kh_get(live, world->live, id);
+  if (iter == kh_end(world->live)) {
     fprintf(stderr, "Attempted to destroy an entity that was not alive.\n");
     exit(1);
   }
@@ -322,7 +322,7 @@ void ecs_destroy(World *world, Object entity) {
   /* TODO: Do any necessary cleanup of its relations (e.g. cascade delete
    * children). */
   /* Remove the Entity from the live set */
-  kh_del(live, world->live, live_iter);
+  kh_del(live, world->live, iter);
   /* Update generation "lazily" when the Entity is destroyed. */
   *ecs_generation(world, entity.id) += 1;
 }
