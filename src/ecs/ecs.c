@@ -401,7 +401,7 @@ struct World *init_world() {
   /* We know Storage is the only (i.e. first) Column in the [Storage] archetype,
    * so we can hard-code column index 0. */
   kh_value(archetypes, iter) = (ArchetypeRecord){.column = 0};
-  kv_push(size, only_storage_archetype->component_columns, 0);
+  kv_A(only_storage_archetype->component_columns, 0) = 0;
   /* Add the Storage Component to itself, moving it into the [Storage]
    * archetype. */
   ecs_add(world, world->comp.storage, world->comp.storage);
