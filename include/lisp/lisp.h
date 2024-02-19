@@ -28,6 +28,7 @@
   F(or)                                                                        \
   F(cond)                                                                      \
   F(and)                                                                       \
+  F(not )                                                                      \
   F(progn)                                                                     \
   F(setq)                                                                      \
   F(lambda)                                                                    \
