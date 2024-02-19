@@ -203,27 +203,25 @@ Object lisp_intern(LispEnv *lisp, s8 string) {
 
   khint_t interned_key = kh_get(sym_name, lisp->symbols, (char *)string.data);
 
-  if (interned_key == kh_end(lisp->symbols)) {
-    /* Create a symbol object pointing to the symbol name in memory. */
-    if (EQ(symbol, UNDEFINED)) {
-      symbol = lisp_store_string(lisp, string);
-      string = lisp_string_to_s8(lisp, symbol);
-      symbol = OBJ_REINTERPRET(symbol, SYMBOL);
-    }
-
-    /* Add 'name' to the symbol table, "interning" it. */
-    int absent;
-    interned_key =
-        kh_put(sym_name, lisp->symbols, (char *)string.data, &absent);
-    if (absent < 0) {
-      WRONG("Failed to intern a symbol: couldn't add it to the symbol table.");
-      return UNDEFINED;
-    }
-    kh_value(lisp->symbols, interned_key) = symbol;
-    return symbol;
-  } else {
+  if (interned_key != kh_end(lisp->symbols)) {
     return kh_value(lisp->symbols, interned_key);
   }
+  /* Create a symbol object pointing to the symbol name in memory. */
+  if (EQ(symbol, UNDEFINED)) {
+    symbol = lisp_store_string(lisp, string);
+    string = lisp_string_to_s8(lisp, symbol);
+    symbol = OBJ_REINTERPRET(symbol, SYMBOL);
+  }
+
+  /* Add 'name' to the symbol table, "interning" it. */
+  int absent;
+  interned_key = kh_put(sym_name, lisp->symbols, (char *)string.data, &absent);
+  if (absent < 0) {
+    WRONG("Failed to intern a symbol: couldn't add it to the symbol table.");
+    return UNDEFINED;
+  }
+  kh_value(lisp->symbols, interned_key) = symbol;
+  return symbol;
 }
 
 static Object lisp_eval_argument_list(LispEnv *lisp, Object arguments,
