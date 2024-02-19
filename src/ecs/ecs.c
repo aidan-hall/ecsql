@@ -402,6 +402,27 @@ bool ecs_has(World *world, Object entity, Object component) {
   return ecs_archetype_has(world, archetype->id, component);
 }
 
+size ecs_archetype_component_column(struct World *world, Archetype *archetype,
+                                    Object component) {
+  ArchetypeMap *archetypes = component_archetypes(world, component);
+  khiter_t iter =
+      kh_get(component_archetype_column, archetypes, archetype->id.val);
+  if (iter == kh_end(archetypes)) {
+    return NOT_PRESENT;
+  }
+  ArchetypeRecord *a_record = &kh_value(archetypes, iter);
+  return a_record->column;
+}
+
+void *ecs_archetype_get(struct World *world, ArchetypeID archetype_id,
+                        size col) {
+  Archetype *archetype = get_archetype(world, archetype_id);
+  if (col == NOT_PRESENT) {
+    return NULL;
+  }
+  return kv_A(archetype->columns, col).elements;
+}
+
 /* Get the Component data of the given type for the given Entity.
  * Returns NULL if that Entity doesn't have storage allocated for that
  * Component. */
@@ -413,21 +434,12 @@ void *ecs_get(World *world, Object entity, Object component) {
   Record *record = entity_record(world, id);
   Archetype *archetype = &kv_A(world->archetypes, record->archetype.val);
 
-  ArchetypeMap *archetypes = component_archetypes(world, component);
-  khiter_t iter =
-      kh_get(component_archetype_column, archetypes, archetype->id.val);
-  if (iter == kh_end(archetypes)) {
-    return NULL;
-  }
-  ArchetypeRecord *a_record = &kh_value(archetypes, iter);
-  size col_idx = a_record->column;
-
-  if (col_idx == NOT_PRESENT) {
+  size col = ecs_archetype_component_column(world, archetype, component);
+  if (col == NOT_PRESENT) {
     return NULL;
   }
 
-  Column *col = &kv_A(archetype->columns, col_idx);
-  return column_at(col, record->row);
+  return column_at(&kv_A(archetype->columns, col), record->row);
 }
 
 /* Get the Archetype that doesn't have 'component' if 'archetype' has it,
