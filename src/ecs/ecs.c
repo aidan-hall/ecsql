@@ -398,7 +398,7 @@ bool ecs_archetype_has(World *world, ArchetypeID archetype_id,
 
 bool ecs_has(World *world, Object entity, Object component) {
   Record *record = entity_record(world, entity.id);
-  Archetype *archetype = &kv_A(world->archetypes, record->archetype.val);
+  Archetype *archetype = get_archetype(world, record->archetype);
   return ecs_archetype_has(world, archetype->id, component);
 }
 
