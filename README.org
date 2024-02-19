@@ -497,7 +497,7 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
   - Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [2/7]
+*** TODO ECS [3/7]
 **** DONE Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-09 Fri 12:45] \\
@@ -562,13 +562,44 @@ Lisp Representation:
 - State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
 :END:
 The general API needs to be something like: ~Predicate → Archetype[]~
+***** TODO Archetype Iteration Mechanism
+We need to be able to efficiently iterate over all the Entities in an
+Archetype.
 ***** DOING Query Representation
 :LOGBOOK:
 - State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
 :END:
 - Queries may reasonably take the form of Lisp list structure.
-- The syntax of queries is partially defined in design.org in the
+- The syntax of Queries is partially defined in design.org in the
   cs310-project repository.
+***** DOING Query Result Representation
+:LOGBOOK:
+CLOCK: [2024-02-16 Fri 15:57]--[2024-02-16 Fri 16:57] =>  1:00
+- State "DOING"      from "TODO"       [2024-02-16 Fri 15:57]
+:END:
+- This informs the capabilities of the query system.
+- Generality vs Efficiency?
+- How do results and generated Lisp code (with bindings) match up?
+Single-archetype queries:
+#+begin_src c
+struct QueryEntry {
+  ArchetypeID archetype;
+  /* What column each matched Component with storage is in.
+   ,* The alternative is doing a lookup per Component per Archetype,
+   ,* which could be alright if fragmentation is low. */
+  size columns[];
+};
+#+end_src
+Multiple-archetype Queries:
+#+begin_src c
+struct QueryEntry {
+  ArchetypeID archetypes[];
+  /* The Lisp macro or C system author should statically know what archetype to
+   * use for each column index lookup. */
+  size columns[];
+};
+#+end_src
+***** TODO Lisp Interface
 **** TODO Systems
 - Iteration over Archetypes:
   1. User supplies a function to the ECS.
@@ -624,7 +655,7 @@ implement of 16 weeks.
 18. [ ] Rule engine
 19. [ ] Exclusive relationships
 20. [ ] Inheritance
-21. [ ] Query DSL
+21. [X] Query DSL
 ***** My Approach
 - For starters, relationship components seem like a mostly unnecessary
   feature.
@@ -698,8 +729,10 @@ Options:
      - 16 + 16 + 16
    - Greater complexity, and creates a hard distinction between
      structs inside and outside Lisp memory.
-**** DOING Structs and Components
+**** DONE Structs and Components
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-19 Mon 14:33] \\
+  Just used existing Lisp struct reflection mechanism.
 - State "DOING"      from "TODO"       [2024-02-07 Wed 17:38]
 :END:
 - It should be possible to implement Lisp structs in such a way that
