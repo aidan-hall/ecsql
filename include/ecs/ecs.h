@@ -71,7 +71,7 @@ Object ecs_new(struct World *world);
  * failed. */
 [[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
                                 Object name);
-Object ecs_get_by_name(struct World *world, Object name);
+Object ecs_lookup_by_name(struct World *world, Object name);
 void ecs_destroy(struct World *world, Object entity);
 bool ecs_alive(struct World *world, Object entity);
 void *ecs_get(struct World *world, Object entity, Object component);

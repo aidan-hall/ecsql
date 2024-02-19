@@ -68,17 +68,17 @@ int main(int argc, char *argv[]) {
 
   test_type_bsearch();
   struct World *world = lisp.world;
-  Object storage_comp = ecs_get_by_name(world, OBJS(&lisp, "Storage"));
+  Object storage_comp = ecs_lookup_by_name(world, OBJS(&lisp, "Storage"));
   lisp_apply(&lisp, lisp_eval(&lisp, OBJS(&lisp, "(function print)")),
              lisp_cons(&lisp, storage_comp, NIL));
-  Object pos = ecs_get_by_name(world, OBJS(&lisp, "Pos"));
+  Object pos = ecs_lookup_by_name(world, OBJS(&lisp, "Pos"));
   {
     struct Storage pos_storage =
         *(struct Storage *)ecs_get(world, pos, storage_comp);
     printf("pos_storage: .size = %lu, .alignment = %lu\n", pos_storage.size,
            pos_storage.alignment);
   }
-  Object vel = ecs_get_by_name(world, OBJS(&lisp, "Vel"));
+  Object vel = ecs_lookup_by_name(world, OBJS(&lisp, "Vel"));
   Object fooable = ecs_new(world);
   Object apple = ecs_new(world);
   Object player = ecs_new(world);
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
   Object eats = lisp_new_ecs_component(&lisp, OBJS(&lisp, "i32"));
   assert(ecs_set_name(world, eats, OBJS(&lisp, "Eats")));
   ecs_add(world, player, ecs_pair(eats, apple));
-  *(i32*)ecs_get(world, player, ecs_pair(eats, apple)) = -4;
+  *(i32 *)ecs_get(world, player, ecs_pair(eats, apple)) = -4;
   assert(ecs_set_name(world, apple, OBJS(&lisp, "Apple")));
   ecs_add(world, player, ecs_pair(eats, orange));
   ecs_add(world, player, ecs_pair(eats, pear));

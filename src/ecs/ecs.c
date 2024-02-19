@@ -215,7 +215,7 @@ Object ecs_new(World *world) {
   return true;
 }
 
-Object ecs_get_by_name(struct World *world, Object name) {
+Object ecs_lookup_by_name(struct World *world, Object name) {
   khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
   if (iter == kh_end(world->entity_names)) {
     fprintf(stderr, "Entity name not found.\n");
