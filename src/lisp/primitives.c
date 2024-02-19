@@ -1026,8 +1026,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("getc", "(file)", prim_getc_stream);
   DEFPRIMFUN("feof", "(file) ", prim_feof);
   DEFPRIMFUN("read-stream", "(file)", prim_read);
-  DEFPRIMFUN("car", "(pair)", prim_car);
-  DEFPRIMFUN("cdr", "(pair)", prim_cdr);
+  DEFPRIMFUN("car", "((or pair nil))", prim_car);
+  DEFPRIMFUN("cdr", "((or pair nil))", prim_cdr);
   DEFPRIMFUN("setcar", "(pair t)", prim_setcar);
   DEFPRIMFUN("setcdr", "(pair t)", prim_setcdr);
   DEFPRIMFUN("cons", "(t t)", prim_cons);
