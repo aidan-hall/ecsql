@@ -50,4 +50,41 @@ typedef struct Archetype {
   khash_t(archetype_edge) * neighbours;
 } Archetype;
 
+/* Entity ID (32 bits) → Record
+ * We don't use 64-bit keys because main ID is unique at any point in time. */
+KHASH_MAP_INIT_INT(entity_data, Record);
+/* Component *signature* (64 bits) → Component Metadata */
+KHASH_MAP_INIT_INT64(component_metadata, ArchetypeMap *);
+/* symbol → Entity for live entities */
+KHASH_MAP_INIT_INT64(entity_name, Object);
+
+typedef struct World {
+  khash_t(gen) * generations;
+  khash_t(live) * live;
+  khash_t(entity_name) * entity_names;
+  u32 next_entity;
+  u32 next_archetype;
+
+  khash_t(entity_data) * entity_index;
+  khash_t(component_metadata) * component_index;
+  kvec_t(Archetype) archetypes;
+  ArchetypeID empty_archetype;
+  struct {
+    Object storage;
+  } comp;
+} World;
+
+static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {
+  assert(archetype.val < kv_size(world->archetypes));
+  return &kv_A(world->archetypes, archetype.val);
+}
+
+size ecs_archetype_component_column(struct World *world, Archetype *archetype,
+                                    Object component);
+
+static inline size ecs_archetype_size(struct World *world,
+                                      Archetype *archetype) {
+  return kv_size(archetype->entities);
+}
+
 #endif

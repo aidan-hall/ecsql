@@ -62,35 +62,6 @@ static inline bool types_match(Type a, Type b) {
   return true;
 }
 
-/* Entity ID (32 bits) → Record
- * We don't use 64-bit keys because main ID is unique at any point in time. */
-KHASH_MAP_INIT_INT(entity_data, Record);
-/* Component *signature* (64 bits) → Component Metadata */
-KHASH_MAP_INIT_INT64(component_metadata, ArchetypeMap *);
-/* symbol → Entity for live entities */
-KHASH_MAP_INIT_INT64(entity_name, Object);
-
-typedef struct World {
-  khash_t(gen) * generations;
-  khash_t(live) * live;
-  khash_t(entity_name) * entity_names;
-  u32 next_entity;
-  u32 next_archetype;
-
-  khash_t(entity_data) * entity_index;
-  khash_t(component_metadata) * component_index;
-  kvec_t(Archetype) archetypes;
-  ArchetypeID empty_archetype;
-  struct {
-    Object storage;
-  } comp;
-} World;
-
-static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {
-  assert(archetype.val < kv_size(world->archetypes));
-  return &kv_A(world->archetypes, archetype.val);
-}
-
 /* Returns the generation for the given id stored in the generations hashmap.
  * The pointer is valid until the next update of the generations hashmap. */
 u16 *ecs_generation(World *world, EntityID id) {
