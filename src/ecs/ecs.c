@@ -1,5 +1,6 @@
 #include <arena.h>
 #include <ecs/ecs.h>
+#include <ecs/ecs_internal.h>
 #include <klib/khash.h>
 #include <klib/ksort.h>
 #include <klib/kvec.h>
@@ -8,14 +9,6 @@
 #include <stdlib.h>
 
 KSORT_INIT(sort_type, Object, COMP_LT)
-
-/* Storage for a single Component type in an Archetype. */
-typedef struct Column {
-  u8 *elements;
-  size element_size;
-  size capacity;
-  size count;
-} Column;
 
 #define INITIAL_ARCHETYPE_CAPACITY (16)
 
@@ -57,23 +50,6 @@ static inline void *column_at(Column *column, size row) {
   /* return col->data.begin + (col->element_size * record->row); */
 }
 
-KHASH_MAP_INIT_INT64(archetype_edge, ArchetypeID);
-
-typedef struct Archetype {
-  ArchetypeID id;
-  Type type;
-  /* Parallel with type: NOT_PRESENT if that Component does not have Storage,
-   * otherwise, the Column where its data is stored in this Archetype. */
-  kvec_t(size) component_columns;
-  /* A special column for entity IDs. */
-  kvec_t(EntityID) entities;
-  kvec_t(Column) columns;
-
-  /* Component ID → Archetype with that Component removed from/added to this
-   * one. */
-  khash_t(archetype_edge) * neighbours;
-} Archetype;
-
 static inline bool types_match(Type a, Type b) {
   if (kv_size(a) != kv_size(b)) {
     return false;
@@ -85,25 +61,6 @@ static inline bool types_match(Type a, Type b) {
   }
   return true;
 }
-
-/* Information about where an Entity is stored */
-typedef struct Record {
-  /* What archetype an Entity is in. */
-  ArchetypeID archetype;
-  /* Index into the Archetype's component arrays where the Entity's data is
-   * stored. */
-  size row;
-} Record;
-
-typedef struct ArchetypeRecord {
-  /* At what column in an Archetype is data for a give Component type stored,
-   * or NOT_PRESENT if the Component has no data storage. */
-  size column;
-} ArchetypeRecord;
-
-/* Archetype ID (u32) → ArchetypeRecord */
-KHASH_MAP_INIT_INT(component_archetype_column, ArchetypeRecord);
-typedef khash_t(component_archetype_column) ArchetypeMap;
 
 /* Entity ID (32 bits) → Record
  * We don't use 64-bit keys because main ID is unique at any point in time. */
