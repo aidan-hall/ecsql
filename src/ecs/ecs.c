@@ -461,12 +461,17 @@ err:
   return NULL;
 }
 
+bool ecs_archetype_has(World *world, ArchetypeID archetype_id,
+                       Object component) {
+  ArchetypeMap *archetypes = component_archetypes(world, component);
+  return kh_get(component_archetype_column, archetypes, archetype_id.val) !=
+         kh_end(archetypes);
+}
+
 bool ecs_has(World *world, Object entity, Object component) {
   Record *record = entity_record(world, entity.id);
   Archetype *archetype = &kv_A(world->archetypes, record->archetype.val);
-  ArchetypeMap *archetypes = component_archetypes(world, component);
-  return kh_get(component_archetype_column, archetypes, archetype->id.val) !=
-         kh_end(archetypes);
+  return ecs_archetype_has(world, archetype->id, component);
 }
 
 /* Get the Component data of the given type for the given Entity.

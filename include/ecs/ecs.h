@@ -75,6 +75,7 @@ Object ecs_get_by_name(struct World *world, Object name);
 void ecs_destroy(struct World *world, Object entity);
 bool ecs_alive(struct World *world, Object entity);
 void *ecs_get(struct World *world, Object entity, Object component);
+bool ecs_archetype_has(struct World *world, ArchetypeID archetype_id, Object component);
 bool ecs_has(struct World *world, Object entity, Object component);
 void ecs_add(struct World *world, Object entity, Object component);
 void ecs_remove(struct World *world, Object entity, Object component);
