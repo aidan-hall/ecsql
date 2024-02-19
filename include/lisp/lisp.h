@@ -105,6 +105,7 @@ struct LispComponentStorage {
 
 /* Return the canonical symbol whose name is string 'name'. */
 Object lisp_intern(LispEnv *lisp, s8 name);
+#define SYM(LISP, NAME) (lisp_intern(LISP, s8(NAME)))
 
 void wrong(struct LispEnv *lisp, const char *message, Object arg);
 #define WRONG2(MESSAGE, ARG)                                                   \

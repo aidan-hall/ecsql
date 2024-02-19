@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     char outside[] = "fruitbar";
     size idx = lisp_allocate_cells(&lisp, 1);
     *(char **)lisp_cell_at(&lisp, idx) = outside;
-    lisp_add_to_namespace(&lisp, lisp.globals, OBJS(&lisp, "fruitptr"),
+    lisp_add_to_namespace(&lisp, lisp.globals, SYM(&lisp, "fruitptr"),
                           OBJ_BOX_INDEX(-idx, strlen(outside), STRING));
   }
 
@@ -68,21 +68,21 @@ int main(int argc, char *argv[]) {
 
   test_type_bsearch();
   struct World *world = lisp.world;
-  Object storage_comp = ecs_lookup_by_name(world, OBJS(&lisp, "Storage"));
+  Object storage_comp = ecs_lookup_by_name(world, SYM(&lisp, "Storage"));
   lisp_apply(&lisp, lisp_eval(&lisp, OBJS(&lisp, "(function print)")),
              lisp_cons(&lisp, storage_comp, NIL));
-  Object pos = ecs_lookup_by_name(world, OBJS(&lisp, "Pos"));
+  Object pos = ecs_lookup_by_name(world, SYM(&lisp, "Pos"));
   {
     struct Storage pos_storage =
         *(struct Storage *)ecs_get(world, pos, storage_comp);
     printf("pos_storage: .size = %lu, .alignment = %lu\n", pos_storage.size,
            pos_storage.alignment);
   }
-  Object vel = ecs_lookup_by_name(world, OBJS(&lisp, "Vel"));
+  Object vel = ecs_lookup_by_name(world, SYM(&lisp, "Vel"));
   Object fooable = ecs_new(world);
   Object apple = ecs_new(world);
   Object player = ecs_new(world);
-  assert(ecs_set_name(world, player, OBJS(&lisp, "player")));
+  assert(ecs_set_name(world, player, SYM(&lisp, "player")));
   ecs_add(world, player, pos);
   *(struct Vec3 *)ecs_get(world, player, pos) = (struct Vec3){3, 2, 3};
   Object pear = ecs_new(world);
@@ -91,11 +91,11 @@ int main(int argc, char *argv[]) {
   ecs_add(world, player, fooable);
   Object orange = ecs_new(world);
 
-  Object eats = lisp_new_ecs_component(&lisp, OBJS(&lisp, "i32"));
-  assert(ecs_set_name(world, eats, OBJS(&lisp, "Eats")));
+  Object eats = lisp_new_ecs_component(&lisp, SYM(&lisp, "i32"));
+  assert(ecs_set_name(world, eats, SYM(&lisp, "Eats")));
   ecs_add(world, player, ecs_pair(eats, apple));
   *(i32 *)ecs_get(world, player, ecs_pair(eats, apple)) = -4;
-  assert(ecs_set_name(world, apple, OBJS(&lisp, "Apple")));
+  assert(ecs_set_name(world, apple, SYM(&lisp, "Apple")));
   ecs_add(world, player, ecs_pair(eats, orange));
   ecs_add(world, player, ecs_pair(eats, pear));
   Type type = ecs_type(world, player);

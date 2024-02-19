@@ -1005,7 +1005,7 @@ void lisp_install_primitives(LispEnv *lisp) {
 
 #define OBJSX(S) OBJS(lisp, S)
 #define DEFPRIMFUN(NAME, SPEC, FUN)                                            \
-  lisp_add_primitive(lisp, OBJSX(NAME), OBJSX(SPEC), FUN,                      \
+  lisp_add_primitive(lisp, SYM(lisp, NAME), OBJSX(SPEC), FUN,                  \
                      lisp->primitive_functions)
   DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
   DEFPRIMFUN("*", "(* (or f32 i32))", prim_mul);
