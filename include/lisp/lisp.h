@@ -102,7 +102,6 @@ struct LispComponentStorage {
   enum ObjectTag object_type;
 };
 
-
 /* Return the canonical symbol whose name is string 'name'. */
 Object lisp_intern(LispEnv *lisp, s8 name);
 
