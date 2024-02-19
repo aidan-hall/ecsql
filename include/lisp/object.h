@@ -125,6 +125,10 @@ static inline float lisp_unbox_float(Object box) {
   }
 }
 
+static inline size lisp_vector_length(Object vector) {
+  return OBJ_UNBOX_METADATA(vector);
+}
+
 static inline bool EQ(Object x, Object y) { return x.bits == y.bits; }
 
 #define LISP_CAR_INDEX (0)
