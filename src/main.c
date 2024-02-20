@@ -141,10 +141,8 @@ int main(int argc, char *argv[]) {
       *(struct Vec3 *)ecs_get(world, e, pos) = (struct Vec3){i, -i, 2 * i};
       *(struct Vec3 *)ecs_get(world, e, vel) = (struct Vec3){3 * i, 0, 69.0};
     }
-    Object mover_query = lisp_eval(
-        lisp,
-        lisp_macroexpand(
-            lisp, OBJS(lisp, "(cons (vector Pos Vel) `(and ,Pos ,Vel))")));
+    Object mover_query =
+        lisp_eval(lisp, lisp_macroexpand(lisp, OBJS(lisp, "(select Pos Vel)")));
     struct CachedQuery *cached_mover_query = ecs_query(lisp, mover_query);
     ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL);
     ecs_do_cached_query(lisp, cached_mover_query, apply_velocity, NULL);
