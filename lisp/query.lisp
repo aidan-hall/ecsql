@@ -15,7 +15,6 @@
         (let ((children
                (mapcar (function translate-predicate)
                        (cdr predicate))))
-          (print (list "Children: " children))
           (cons
            (reduce
             (function union)
