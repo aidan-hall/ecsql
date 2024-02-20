@@ -185,7 +185,7 @@
     nil))
 
 (defun reduce (f start elements)
-  (while elements
+  (while (consp elements)
     (setq start (funcall f start (car elements)))
     (setq elements (cdr elements)))
   start)
