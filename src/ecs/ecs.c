@@ -218,6 +218,8 @@ static void archetype_remove_entity(World *world, Archetype *archetype,
     for (size i = 0; i < kv_size(archetype->columns); ++i) {
       kv_A(archetype->columns, i).count -= 1;
     }
+    /* Remove it from the list of Entities in this archetype */
+    IGNORE(kv_pop(*ids));
   } else {
     /* Move the Entity ID */
     EntityID moved_id = kv_A(*ids, row) = kv_pop(*ids);
