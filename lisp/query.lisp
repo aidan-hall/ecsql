@@ -43,8 +43,8 @@
 
 (defmacro select predicate
   ;; Implicit and form at top level.
-  (let ((g (gensym)))
-    `(let ((,g (translate-predicate ',(cons 'and predicate))))
-       (cons (funcall (function vector) (car ,g)) (cdr ,g)))))
+  (let ((res (translate-predicate (cons 'and predicate))))
+    `(cons ',(cons 'vector (car res))
+           ',(cdr res))))
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
