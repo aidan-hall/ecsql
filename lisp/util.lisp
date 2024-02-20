@@ -20,6 +20,8 @@
 
 (defun cadddr (x)
   (car (cdr (cdr (cdr x)))))
+(defun cddr (x)
+  (cdr (cdr x)))
 
 ;;; Type Predicates
 
