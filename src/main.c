@@ -2,6 +2,7 @@
 #include "lisp/object.h"
 #include <common.h>
 #include <ecs/ecs.h>
+#include <ecs/query.h>
 #include <lisp/lexer.h>
 #include <lisp/lisp.h>
 #include <lisp/print.h>
@@ -46,9 +47,34 @@ struct Vec3 {
   float z;
 };
 
+void apply_velocity(LispEnv *lisp, EcsIter *iter, void *data) {
+  printf("Applying velocity... (archetype: %u)\n", iter->archetype.val);
+  IGNORE(data);
+  struct Vec3 *poss = ecs_iter_get(lisp, iter, 0);
+  struct Vec3 *vels = ecs_iter_get(lisp, iter, 1);
+  for (size i = 0; i < iter->count; ++i) {
+    poss[i].x += vels[i].x;
+    poss[i].y += vels[i].y;
+    poss[i].z += vels[i].z;
+  }
+}
+
+void print_mover(LispEnv *lisp, EcsIter *iter, void *data) {
+  printf("Printing some movers... (archetype: %u)\n", iter->archetype.val);
+  IGNORE(data);
+  EntityID *ids = ecs_iter_ids(lisp, iter);
+  struct Vec3 *poss = ecs_iter_get(lisp, iter, 0);
+  struct Vec3 *vels = ecs_iter_get(lisp, iter, 1);
+  for (size i = 0; i < iter->count; ++i) {
+    printf("Entity %u: pos: (%f, %f, %f), vel: (%f, %f, %f)\n", ids[i].val,
+           poss[i].x, poss[i].y, poss[i].z, vels[i].x, vels[i].y, vels[i].z);
+  }
+}
+
 int main(int argc, char *argv[]) {
-  LispEnv lisp = new_lisp_environment();
-  if (setjmp(lisp.error_loc) != 0) {
+  LispEnv lisp_env = new_lisp_environment();
+  LispEnv *lisp = &lisp_env;
+  if (setjmp(lisp->error_loc) != 0) {
     fprintf(stderr, "Error in a file loaded at startup: no good!\n");
     exit(1);
   }
@@ -56,33 +82,33 @@ int main(int argc, char *argv[]) {
   {
     /* Allocate an object outside Lisp memory, and insert a pointer to it. */
     char outside[] = "fruitbar";
-    size idx = lisp_allocate_cells(&lisp, 1);
-    *(char **)lisp_cell_at(&lisp, idx) = outside;
-    lisp_add_to_namespace(&lisp, lisp.globals, SYM(&lisp, "fruitptr"),
+    size idx = lisp_allocate_cells(lisp, 1);
+    *(char **)lisp_cell_at(lisp, idx) = outside;
+    lisp_add_to_namespace(lisp, lisp->globals, SYM(lisp, "fruitptr"),
                           OBJ_BOX_INDEX(-idx, strlen(outside), STRING));
   }
 
-  Object l = lisp_list(&lisp, lisp.keysyms.quote, lisp.keysyms.t, OBJ_NIL_TAG);
-  lisp_print(&lisp, l, stdout);
+  Object l = lisp_list(lisp, lisp->keysyms.quote, lisp->keysyms.t, OBJ_NIL_TAG);
+  lisp_print(lisp, l, stdout);
   fputc('\n', stdout);
 
   test_type_bsearch();
-  struct World *world = lisp.world;
-  Object storage_comp = ecs_lookup_by_name(world, SYM(&lisp, "Storage"));
-  lisp_apply(&lisp, lisp_eval(&lisp, OBJS(&lisp, "(function print)")),
-             lisp_cons(&lisp, storage_comp, NIL));
-  Object pos = ecs_lookup_by_name(world, SYM(&lisp, "Pos"));
+  struct World *world = lisp->world;
+  Object storage_comp = ecs_lookup_by_name(world, SYM(lisp, "Storage"));
+  lisp_apply(lisp, lisp_eval(lisp, OBJS(lisp, "(function print)")),
+             lisp_cons(lisp, storage_comp, NIL));
+  Object pos = ecs_lookup_by_name(world, SYM(lisp, "Pos"));
   {
     struct Storage pos_storage =
         *(struct Storage *)ecs_get(world, pos, storage_comp);
     printf("pos_storage: .size = %lu, .alignment = %lu\n", pos_storage.size,
            pos_storage.alignment);
   }
-  Object vel = ecs_lookup_by_name(world, SYM(&lisp, "Vel"));
+  Object vel = ecs_lookup_by_name(world, SYM(lisp, "Vel"));
   Object fooable = ecs_new(world);
   Object apple = ecs_new(world);
   Object player = ecs_new(world);
-  assert(ecs_set_name(world, player, SYM(&lisp, "player")));
+  assert(ecs_set_name(world, player, SYM(lisp, "player")));
   ecs_add(world, player, pos);
   *(struct Vec3 *)ecs_get(world, player, pos) = (struct Vec3){3, 2, 3};
   Object pear = ecs_new(world);
@@ -91,11 +117,11 @@ int main(int argc, char *argv[]) {
   ecs_add(world, player, fooable);
   Object orange = ecs_new(world);
 
-  Object eats = lisp_new_ecs_component(&lisp, SYM(&lisp, "i32"));
-  assert(ecs_set_name(world, eats, SYM(&lisp, "Eats")));
+  Object eats = lisp_new_ecs_component(lisp, SYM(lisp, "i32"));
+  assert(ecs_set_name(world, eats, SYM(lisp, "Eats")));
   ecs_add(world, player, ecs_pair(eats, apple));
   *(i32 *)ecs_get(world, player, ecs_pair(eats, apple)) = -4;
-  assert(ecs_set_name(world, apple, SYM(&lisp, "Apple")));
+  assert(ecs_set_name(world, apple, SYM(lisp, "Apple")));
   ecs_add(world, player, ecs_pair(eats, orange));
   ecs_add(world, player, ecs_pair(eats, pear));
   Type type = ecs_type(world, player);
@@ -105,10 +131,27 @@ int main(int argc, char *argv[]) {
            kv_A(type, i).relation);
   }
 
-  if (setjmp(lisp.error_loc) != 0) {
+  {
+    for (int i = 0; i < 10; ++i) {
+      Object e = ecs_new(world);
+      ecs_add(world, e, pos);
+      ecs_add(world, e, vel);
+      *(struct Vec3 *)ecs_get(world, e, pos) = (struct Vec3){i, -i, 2 * i};
+      *(struct Vec3 *)ecs_get(world, e, vel) = (struct Vec3){3 * i, 0, 69.0};
+    }
+    Object mover_query = lisp_eval(
+        lisp,
+        lisp_macroexpand(
+            lisp, OBJS(lisp, "(cons (vector Pos Vel) `(and ,Pos ,Vel))")));
+    ecs_do_query(lisp, mover_query, print_mover, NULL);
+    ecs_do_query(lisp, mover_query, apply_velocity, NULL);
+    ecs_do_query(lisp, mover_query, print_mover, NULL);
+  }
+
+  if (setjmp(lisp->error_loc) != 0) {
     fprintf(stderr, "Resuming from top level...\n");
   }
-  lisp_eval(&lisp, OBJS(&lisp, "(repl)"));
+  lisp_eval(lisp, OBJS(lisp, "(repl)"));
 
   return 0;
 }
