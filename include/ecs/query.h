@@ -22,7 +22,7 @@ static inline void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index
 EntityID* ecs_iter_ids(LispEnv *lisp, struct EcsIter *iter);
 
 typedef void (SystemFunc)(LispEnv *lisp, struct EcsIter *iter, void *data);
-void ecs_run(LispEnv *lisp, Object query, SystemFunc *func, void *data);
+void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data);
 
 typedef struct CachedQuery {
   kvec_t(struct EcsIter) matches;
