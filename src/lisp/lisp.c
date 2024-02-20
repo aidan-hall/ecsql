@@ -236,7 +236,7 @@ static Object lisp_eval_argument_list(LispEnv *lisp, Object arguments,
   }
 }
 
-static Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
+Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
   while (OBJ_TYPE(alist) == OBJ_PAIR_TAG) {
     Object element = LISP_CAR(lisp, alist);
     if (OBJ_TYPE(element) == OBJ_PAIR_TAG)
