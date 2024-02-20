@@ -81,10 +81,4 @@ static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {
 
 size ecs_archetype_component_column(struct World *world, Archetype *archetype,
                                     Object component);
-
-static inline size ecs_archetype_size(struct World *world,
-                                      Archetype *archetype) {
-  return kv_size(archetype->entities);
-}
-
 #endif

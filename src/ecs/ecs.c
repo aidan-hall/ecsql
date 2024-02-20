@@ -569,3 +569,7 @@ void ecs_remove(World *world, Object entity, Object component) {
   move_entity(world, record->archetype, record->row,
               toggle_component(world, record->archetype, component));
 }
+
+size ecs_archetype_size(struct World *world, ArchetypeID archetype) {
+  return kv_size(get_archetype(world, archetype)->entities);
+}
