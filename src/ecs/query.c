@@ -20,6 +20,8 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
         if (!ecs_query_matches(lisp, archetype, LISP_CAR(lisp, predicate))) {
           return false;
         }
+
+        predicate = LISP_CDR(lisp, predicate);
       }
       return true;
     } else if (EQ(car, lisp->keysyms.not )) {
@@ -30,6 +32,8 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
         if (ecs_query_matches(lisp, archetype, LISP_CAR(lisp, predicate))) {
           return true;
         }
+
+        predicate = LISP_CDR(lisp, predicate);
       }
       return false;
     }
