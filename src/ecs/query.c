@@ -90,3 +90,8 @@ CachedQuery ecs_query(LispEnv *lisp, Object query) {
   ecs_do_query(lisp, query, add_archetype_to_cache, &q);
   return q;
 }
+
+EntityID* ecs_iter_ids(LispEnv *lisp, struct EcsIter *iter) {
+  Archetype *archetype = get_archetype(lisp->world, iter->archetype);
+  return &kv_A(archetype->entities, 0);
+}
