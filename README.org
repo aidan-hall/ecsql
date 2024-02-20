@@ -152,6 +152,72 @@ the conditional and switch instructions.
    - Maximum stack depth in each function is known statically (deepest
      expression nesting level).
 3. Evaluator: libgccjit or simple interpreter.
+*** DOING Demo Application
+:LOGBOOK:
+- State "DOING"      from "TODO"       [2024-02-20 Tue 10:39]
+:END:
+- 2D Raylib game
+*** TODO Asynchronous REPL
+:LOGBOOK:
+CLOCK: [2024-02-20 Tue 11:28]--[2024-02-20 Tue 11:53] =>  0:25
+CLOCK: [2024-02-20 Tue 10:57]--[2024-02-20 Tue 11:22] =>  0:25
+:END:
+We want the game to progress and have the REPL available
+simultaneously, without blocking either.
+
+Problems:
+- Lexer uses a global, static buffer for reading in lexemes, which is
+  not thread-safe (easy).
+- Lisp memory allocation (medium).
+- Namespace/environment access etc (hard-ish: what is "etc"?).
+- ECS, in general, is not thread-safe.
+
+Goal:
+- Main game loop is mostly normal, running a set of Systems and
+  refreshing the screen each frame.
+  - Can call into Lisp(?), perhaps only via a special Lisp callback
+    System.
+- REPL available simultaneously. Once a complete sexp is read, the
+  input Lisp form is evaluated, perhaps on the next frame, and
+  the result is printed out.
+
+Options:
+- [ ] Single threaded with non-blocking I/O.
+  - Use non-blocking stdio for the reader (unlocked_stdio(3)), and
+    dispatch to Lisp as soon as a complete sexp is read.
+  - Relies on non-standard (POSIX) functions
+  - Potentially unpredictable
+  - Complex to structure(?) since we need to repeatedly call the
+    reader polling function.
+- [ ] Basic locking: Allow simultaneous threads, but acquire a
+  lock to allocate memory, add to a namespace etc.
+  - Extreme false dependencies and high contention, since current Lisp
+    implementation conses continously to evaluate code, leading to
+    slower, serial execution regardless.
+  - Hard to be sure all thread-unsafe operations are locked properly.
+  - Could be viable if we replace the evaluator with a bytecode VM
+    that conses less during execution, but we don't have time for that
+    now (<2024-02-20 Tue>).
+- [ ] Lisp command event queue (cite:
+  http://gameprogrammingpatterns.com/event-queue.html)
+  - Game code and REPL send Lisp expressions to the event queue to
+    evaluate, with a single thread receiving events and executing
+    them.
+  - Problematic since generating expressions (e.g. while parsing)
+    requires consing, so we may need locked cons.
+  - Callers often want the result of the expression, so they would
+    need to block until their expression was evaluated.
+- [X] Global Lisp lock: Public expression evaluation API acquires a
+  lock stored in the LispEnv for the duration of evaluation, then
+  releases it.
+  - Could greatly increase complexity of existing code if all public
+    APIs must include locking.
+  - A fixed, finite number of places where locking happens (Lisp System
+    wrapper System, REPL) makes this feasible.
+  - REPL must be written in C.
+- [ ] Pause the game to run the REPL, or any Lisp code (giving up):
+  - Possibly suitable if I spin it right.
+  - Main viable option for evaluation day (<2024-02-21 Wed>).
 ** Implementation
 *** DONE Lisp Interpreter [14/14]
 :LOGBOOK:
@@ -559,10 +625,15 @@ Lisp Representation:
   4. For all Subsequent Components with storage, simply add the "Component Storage" Component and it will just work™.
 **** DOING Queries
 :LOGBOOK:
+CLOCK: [2024-02-20 Tue 12:09]--[2024-02-20 Tue 12:34] =>  0:25
 - State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
 :END:
 The general API needs to be something like: ~Predicate → Archetype[]~
-***** TODO Archetype Iteration Mechanism
+***** DONE Archetype Iteration Mechanism
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-20 Tue 12:10]
+- State "DOING"      from "TODO"       [2024-02-20 Tue 12:10]
+:END:
 We need to be able to efficiently iterate over all the Entities in an
 Archetype.
 ***** DOING Query Representation
