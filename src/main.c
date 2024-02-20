@@ -47,12 +47,12 @@ struct Vec3 {
   float z;
 };
 
-void apply_velocity(LispEnv *lisp, EcsIter *iter, void *data) {
-  printf("Applying velocity... (archetype: %u)\n", iter->archetype.val);
+void apply_velocity(LispEnv *lisp, struct EcsIter *iter, void *data) {
+  printf("Applying velocity...\n");
   IGNORE(data);
   struct Vec3 *poss = ecs_iter_get(lisp, iter, 0);
   struct Vec3 *vels = ecs_iter_get(lisp, iter, 1);
-  size N = ecs_archetype_size(lisp->world, iter->archetype);
+  size N = ecs_iter_count(iter);
   for (size i = 0; i < N; ++i) {
     poss[i].x += vels[i].x;
     poss[i].y += vels[i].y;
@@ -60,13 +60,13 @@ void apply_velocity(LispEnv *lisp, EcsIter *iter, void *data) {
   }
 }
 
-void print_mover(LispEnv *lisp, EcsIter *iter, void *data) {
-  printf("Printing some movers... (archetype: %u)\n", iter->archetype.val);
+void print_mover(LispEnv *lisp, struct EcsIter *iter, void *data) {
+  printf("Printing some movers...\n");
   IGNORE(data);
   EntityID *ids = ecs_iter_ids(lisp, iter);
   struct Vec3 *poss = ecs_iter_get(lisp, iter, 0);
   struct Vec3 *vels = ecs_iter_get(lisp, iter, 1);
-  size N = ecs_archetype_size(lisp->world, iter->archetype);
+  size N = ecs_iter_count(iter);
   for (size i = 0; i < N; ++i) {
     printf("Entity %u: pos: (%f, %f, %f), vel: (%f, %f, %f)\n", ids[i].val,
            poss[i].x, poss[i].y, poss[i].z, vels[i].x, vels[i].y, vels[i].z);
@@ -145,10 +145,10 @@ int main(int argc, char *argv[]) {
         lisp,
         lisp_macroexpand(
             lisp, OBJS(lisp, "(cons (vector Pos Vel) `(and ,Pos ,Vel))")));
-    CachedQuery cached_mover_query = ecs_query(lisp, mover_query);
-    ecs_do_cached_query(lisp, &cached_mover_query, print_mover, NULL);
-    ecs_do_cached_query(lisp, &cached_mover_query, apply_velocity, NULL);
-    ecs_do_cached_query(lisp, &cached_mover_query, print_mover, NULL);
+    struct CachedQuery *cached_mover_query = ecs_query(lisp, mover_query);
+    ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL);
+    ecs_do_cached_query(lisp, cached_mover_query, apply_velocity, NULL);
+    ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL);
   }
 
   if (setjmp(lisp->error_loc) != 0) {
