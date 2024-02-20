@@ -21,11 +21,14 @@ Memory new_lisp_memory(size capacity) {
 
 size lisp_allocate_cells(struct LispEnv *lisp, size cells) {
   if (cells <= 0) {
-    WRONG("Attempt to allocate a non-positive number of cells.", OBJ_BOX(cells, INT));
+    WRONG("Attempt to allocate a non-positive number of cells.",
+          OBJ_BOX(cells, INT));
     return -1;
   }
-  
+
+  mtx_lock(&lisp->memory_lock);
   Object *start = ALLOC(&lisp->memory.active, Object, cells);
+  mtx_unlock(&lisp->memory_lock);
 
   if (start == NULL) {
     WRONG("allocation failure");

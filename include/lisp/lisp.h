@@ -10,6 +10,7 @@
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <threads.h>
 
 /* (Arbitrary constant) */
 #define LISP_MAX_OPEN_STREAMS (16)
@@ -88,6 +89,7 @@ typedef struct LispEnv {
     Object name;
     Object lisp_component_storage;
   } comp;
+  mtx_t memory_lock;
 } LispEnv;
 
 LispEnv new_lisp_environment();

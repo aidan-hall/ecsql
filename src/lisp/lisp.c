@@ -5,6 +5,7 @@
 #include <lisp/print.h>
 #include <lisp/reader.h>
 #include <stdarg.h>
+#include <threads.h>
 
 void wrong(LispEnv *lisp, const char *message, Object arg) {
   fputs(message, stderr);
@@ -101,6 +102,10 @@ Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
 }
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
+  if(mtx_init(&lisp.memory_lock, mtx_plain) != thrd_success) {
+    fprintf(stderr, "Failed to initialise memory lock.\n");
+    exit(1);
+  }
 
   if (setjmp(lisp.error_loc) != 0) {
     fprintf(stderr, "VERY BAD: longjmp called on error_loc before a proper "
