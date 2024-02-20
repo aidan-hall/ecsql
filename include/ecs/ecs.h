@@ -18,8 +18,6 @@ struct World;
 #define ENT_ID_OFFSET (32 - OBJ_TAG_LENGTH)
 #define ENT_GEN_OFFSET (16 - OBJ_TAG_LENGTH)
 
-void initialise_core_components(struct World *world);
-
 /* Information about the data storage for a Component. */
 struct Storage {
   size size;
