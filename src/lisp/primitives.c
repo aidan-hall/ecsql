@@ -59,6 +59,10 @@ static Object prim_eql(LispEnv *lisp, Object args) {
   return lisp_bool(lisp, EQ(a, b));
 }
 
+static Object prim_assoc(LispEnv *lisp, Object args) {
+  return lisp_assoc(lisp, FIRST, SECOND);
+}
+
 static Object prim_length(LispEnv *lisp, Object args) {
   Object obj = FIRST;
   switch (OBJ_TYPE(obj)) {
@@ -1039,6 +1043,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("aset", "(vector i32 t)", prim_aset);
   DEFPRIMFUN("eq", "(t t)", prim_eq);
   DEFPRIMFUN("eql", "(t t)", prim_eql);
+  DEFPRIMFUN("assoc", "(t (or pair nil))", prim_assoc);
   DEFPRIMFUN("<", "(t t)", prim_less);
   DEFPRIMFUN("<=", "(t t)", prim_less_equal);
   DEFPRIMFUN(">", "(t t)", prim_greater);
