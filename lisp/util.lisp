@@ -210,6 +210,15 @@
   (lambda (x)
     (not (funcall f x))))
 
+(defun union (a b)
+  (reduce
+   (lambda (acc elem)
+     (if (memql elem acc)
+         acc
+         (cons elem acc)))
+   a
+   b))
+
 (defun prin1-list (file list)
   (fputc #\( file)
   (while (and (consp list) (consp (cdr list)))
