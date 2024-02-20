@@ -53,14 +53,14 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
       }
       return false;
     }
-    WRONG("Malformed query", predicate);
+    WRONG("Malformed query: unrecognised pair form", predicate);
     return false;
   }
   case OBJ_ENTITY_TAG:
   case OBJ_RELATION_TAG:
     return ecs_archetype_has(world, archetype, predicate);
   default:
-    WRONG("Malformed query", predicate);
+    WRONG("Malformed query: invalid object type", predicate);
     return false;
   }
 
