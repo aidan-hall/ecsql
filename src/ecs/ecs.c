@@ -346,6 +346,7 @@ struct World *init_world(Object storage_name) {
   world->component_index = kh_init(component_metadata);
   world->entity_index = kh_init(entity_data);
   kv_init(world->archetypes);
+  kv_init(world->cached_queries);
   Type some_type;
   kv_init(some_type);
   world->empty_archetype = type_archetype(world, some_type);

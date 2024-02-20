@@ -5,21 +5,6 @@
 #include <ecs/ecs_internal.h>
 #include <ecs/query.h>
 
-typedef struct EcsIter {
-  Archetype *archetype;
-  /* The number of Columns of each Archetype accessed */
-  size n_columns;
-  /* Column in 'archetype' where each relevant Component can be found. */
-  size *columns;
-} EcsIter;
-
-typedef struct CachedQuery {
-  kvec_t(ArchetypeID) archetypes;
-  size n_columns;
-  /* The column indices for all Archetypes, in one contiguous allocation. */
-  kvec_t(size) columns;
-} CachedQuery;
-
 /* Query: (components-to-get . predicate)
  * Predicate: Component | Relation | (and ...) | (or ...) | (not Predicate)
  */
@@ -93,8 +78,9 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
   free(foo.columns);
 }
 
-void ecs_do_cached_query(LispEnv *lisp, CachedQuery *query, SystemFunc *func,
+void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query_id, SystemFunc *func,
                          void *data) {
+  CachedQuery *query = &kv_A(lisp->world->cached_queries, query_id.val);
   typeof(query->archetypes) archetypes = query->archetypes;
   World *world = lisp->world;
   EcsIter iter = {.n_columns = query->n_columns};
@@ -119,13 +105,15 @@ static void add_archetype_to_cache(LispEnv *lisp, EcsIter *iter, void *data) {
   }
 }
 
-struct CachedQuery *ecs_query(LispEnv *lisp, Object query) {
-  CachedQuery *q = malloc(sizeof(CachedQuery));
-  kv_init(q->archetypes);
-  kv_init(q->columns);
-  q->n_columns = lisp_vector_length(LISP_CAR(lisp, query));
-  ecs_do_query(lisp, query, add_archetype_to_cache, q);
-  return q;
+CachedQueryID ecs_query(LispEnv *lisp, Object query) {
+  CachedQuery q;
+  q.id = (CachedQueryID){kv_size(lisp->world->cached_queries)};
+  kv_init(q.archetypes);
+  kv_init(q.columns);
+  q.n_columns = lisp_vector_length(LISP_CAR(lisp, query));
+  ecs_do_query(lisp, query, add_archetype_to_cache, &q);
+  kv_push(CachedQuery, lisp->world->cached_queries, q);
+  return q.id;
 }
 
 void ecs_destroy_cached_query(struct CachedQuery *query) {

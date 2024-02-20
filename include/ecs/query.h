@@ -7,7 +7,6 @@
 #include <lisp/object.h>
 
 struct EcsIter;
-struct CachedQuery;
 
 void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index);
 
@@ -17,9 +16,8 @@ size ecs_iter_count(struct EcsIter *iter);
 typedef void(SystemFunc)(LispEnv *lisp, struct EcsIter *iter, void *data);
 void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data);
 
-struct CachedQuery *ecs_query(LispEnv *lisp, Object query);
-void ecs_destroy_cached_query(struct CachedQuery *query);
+CachedQueryID ecs_query(LispEnv *lisp, Object query);
 
-void ecs_do_cached_query(LispEnv *lisp, struct CachedQuery *query,
-                         SystemFunc *func, void *data);
+void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query, SystemFunc *func,
+                         void *data);
 #endif

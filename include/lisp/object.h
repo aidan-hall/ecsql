@@ -18,6 +18,7 @@
   typedef struct NAME##ID {                                                    \
     REP val;                                                                   \
   } NAME##ID
+DEF_TYPEID(CachedQuery, u32);
 DEF_TYPEID(Archetype, u32);
 DEF_TYPEID(Entity, u32);
 

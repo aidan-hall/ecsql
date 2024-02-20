@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
     }
     Object mover_query =
         lisp_eval(lisp, lisp_macroexpand(lisp, OBJS(lisp, "(select Pos Vel)")));
-    struct CachedQuery *cached_mover_query = ecs_query(lisp, mover_query);
+    CachedQueryID cached_mover_query = ecs_query(lisp, mover_query);
     ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL);
     ecs_do_cached_query(lisp, cached_mover_query, apply_velocity, NULL);
     ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL);

@@ -1,6 +1,7 @@
 #ifndef ECS_INTERNAL_H
 #define ECS_INTERNAL_H
 
+#include "ecs/query.h"
 #include <ecs/ecs.h>
 #include <klib/khash.h>
 #include <klib/ksort.h>
@@ -58,6 +59,22 @@ KHASH_MAP_INIT_INT64(component_metadata, ArchetypeMap *);
 /* symbol → Entity for live entities */
 KHASH_MAP_INIT_INT64(entity_name, Object);
 
+typedef struct EcsIter {
+  Archetype *archetype;
+  /* The number of Columns of each Archetype accessed */
+  size n_columns;
+  /* Column in 'archetype' where each relevant Component can be found. */
+  size *columns;
+} EcsIter;
+
+typedef struct CachedQuery {
+  kvec_t(ArchetypeID) archetypes;
+  size n_columns;
+  /* The column indices for all Archetypes, in one contiguous allocation. */
+  kvec_t(size) columns;
+  CachedQueryID id;
+} CachedQuery;
+
 typedef struct World {
   khash_t(gen) * generations;
   khash_t(live) * live;
@@ -68,6 +85,7 @@ typedef struct World {
   khash_t(entity_data) * entity_index;
   khash_t(component_metadata) * component_index;
   kvec_t(Archetype) archetypes;
+  kvec_t(CachedQuery) cached_queries;
   ArchetypeID empty_archetype;
   struct {
     Object storage;
