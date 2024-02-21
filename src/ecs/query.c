@@ -63,15 +63,17 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
   foo.columns = calloc(foo.n_columns, sizeof(foo.columns[0]));
 
   for (size i = 0; i < kv_size(world->archetypes); ++i) {
+    Object traversal_components = components;
     ArchetypeID id = kv_A(world->archetypes, i).id;
     if (ecs_query_matches(lisp, id, predicate)) {
       Archetype *archetype = get_archetype(world, id);
       foo.archetype = archetype;
       /* Produce the array of Component columns */
       for (size j = 0; j < foo.n_columns; ++j) {
-        foo.columns[j] = ecs_archetype_component_column(
-            world, archetype, LISP_CAR(lisp, components));
-        components = LISP_CDR(lisp, components);
+        Object the_component = LISP_CAR(lisp, traversal_components);
+        foo.columns[j] =
+            ecs_archetype_component_column(world, archetype, the_component);
+        traversal_components = LISP_CDR(lisp, traversal_components);
       }
       func(lisp, &foo, data);
     }
@@ -136,7 +138,7 @@ void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index) {
   if (index == NOT_PRESENT) {
     return NULL;
   }
-  return kv_A(iter->archetype->columns, index).elements;
+  return kv_A(iter->archetype->columns, iter->columns[index]).elements;
 }
 
 bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component) {

@@ -41,14 +41,19 @@
     ((entity relation)
      (cons (list predicate) predicate))
     ((t) (wrong "Invalid form of query" predicate))))
+(defun reverse (l)
+  (reduce (lambda (acc elem) (cons elem acc)) nil l))
+(defun fixup-predicate (predicate)
+  (let ((res (translate-predicate predicate)))
+    (cons (reverse (car res)) (cdr res))))
 
 (defmacro select predicate
   ;; Implicit and form at top level.
-  (let ((res (translate-predicate (cons 'and predicate))))
+  (let ((res (fixup-predicate (cons 'and predicate))))
     `',res))
 
 (defmacro ecsql (predicate names . body)
-  (let* ((query (translate-predicate predicate))
+  (let* ((query (fixup-predicate predicate))
          (components (car query)))
     `(ecs-do-query ',query
                    (lambda (entity)
