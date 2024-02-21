@@ -58,7 +58,7 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
   Object components = LISP_CAR(lisp, query);
   Object predicate = LISP_CDR(lisp, query);
   EcsIter foo;
-  foo.n_columns = lisp_vector_length(components);
+  foo.n_columns = lisp_length(lisp, components);
   foo.columns = calloc(foo.n_columns, sizeof(foo.columns[0]));
 
   for (size i = 0; i < kv_size(world->archetypes); ++i) {
@@ -69,7 +69,8 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
       /* Produce the array of Component columns */
       for (size j = 0; j < foo.n_columns; ++j) {
         foo.columns[j] = ecs_archetype_component_column(
-            world, archetype, *lisp_get_vector_item(lisp, components, j));
+            world, archetype, LISP_CAR(lisp, components));
+        components = LISP_CDR(lisp, components);
       }
       func(lisp, &foo, data);
     }
@@ -110,7 +111,7 @@ CachedQueryID ecs_query(LispEnv *lisp, Object query) {
   q.id = (CachedQueryID){kv_size(lisp->world->cached_queries)};
   kv_init(q.archetypes);
   kv_init(q.columns);
-  q.n_columns = lisp_vector_length(LISP_CAR(lisp, query));
+  q.n_columns = lisp_length(lisp, LISP_CAR(lisp, query));
   ecs_do_query(lisp, query, add_archetype_to_cache, &q);
   kv_push(CachedQuery, lisp->world->cached_queries, q);
   return q.id;

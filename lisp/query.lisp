@@ -43,7 +43,6 @@
 (defmacro select predicate
   ;; Implicit and form at top level.
   (let ((res (translate-predicate (cons 'and predicate))))
-    `(cons ',(cons 'vector (car res))
-           ',(cdr res))))
+    `',res))
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
