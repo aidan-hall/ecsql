@@ -132,6 +132,7 @@ LispEnv new_lisp_environment() {
   lisp.keysyms.if_k = lisp_intern(&lisp, s8("if"));
   lisp.keysyms.while_k = lisp_intern(&lisp, s8("while"));
   lisp.keysyms.struct_k = lisp_intern(&lisp, s8("struct"));
+  lisp.keysyms.not_k = lisp_intern(&lisp, s8("not"));
   lisp.keysyms.star_k = lisp_intern(&lisp, s8("*"));
 
   lisp_define_global(&lisp, lisp.keysyms.nil, NIL);

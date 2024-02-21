@@ -29,7 +29,6 @@
   F(or)                                                                        \
   F(cond)                                                                      \
   F(and)                                                                       \
-  F(not )                                                                      \
   F(progn)                                                                     \
   F(setq)                                                                      \
   F(lambda)                                                                    \
@@ -80,6 +79,7 @@ typedef struct LispEnv {
     Object struct_k;     /* struct */
     Object print_struct; /* prin1-struct-to */
     Object star_k;       /* * */
+    Object not_k;        /* not */
   } keysyms;
   jmp_buf error_loc;
 

@@ -25,8 +25,8 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
         predicate = LISP_CDR(lisp, predicate);
       }
       return true;
-    } else if (EQ(car, lisp->keysyms.not )) {
       return !ecs_query_matches(lisp, archetype, LISP_CAR(lisp, predicate));
+    } else if (EQ(car, lisp->keysyms.not_k)) {
     } else if (EQ(car, lisp->keysyms.or)) {
       predicate = LISP_CDR(lisp, predicate);
       while (OBJ_TYPE(predicate) == OBJ_PAIR_TAG) {
