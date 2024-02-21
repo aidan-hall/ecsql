@@ -6,3 +6,4 @@
 /.cache/
 /graphs/*.svg
 /graphs/*.txt
+/cmake/
