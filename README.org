@@ -54,6 +54,7 @@ we will use the most reliable one (in terms of longevity): Emacs.
 - Fairly tangential to the premise of ECSQL, so either:
   - Manual :: User code to specify the order of execution.
   - Ordering Relation Tree :: As in Flecs.
+  - Order of creation :: Fine for non-rendering Systems.
 *** TODO ECSQL Language Specification [0/11]
 - [ ] Create and delete entities
 - [ ] Add and remove Components
@@ -218,6 +219,20 @@ Options:
 - [ ] Pause the game to run the REPL, or any Lisp code (giving up):
   - Possibly suitable if I spin it right.
   - Main viable option for evaluation day (<2024-02-21 Wed>).
+*** CANCELLED "Safe" Component +/- in Systems
+:LOGBOOK:
+- State "CANCELLED"  from "DOING"      [2024-02-20 Tue 23:23] \\
+  Definitely a distraction
+- State "DOING"      from "TODO"       [2024-02-20 Tue 23:19]
+:END:
+- Deferred change queue
+- Due to the way (cached) queries work, we can probably /add/ an
+  Entity to an archetype immediately, and put the new Component data
+  in the storage allocated for it there.
+- Removals are what could lead to "dangling" references, so we can get
+  mostly correct behaviour by immediately updating everything so the
+  Entity "is in" the new Archetype, but not removing it from the old
+  archetype until, for example, the System finished executing.
 ** Implementation
 *** DONE Lisp Interpreter [14/14]
 :LOGBOOK:
@@ -636,15 +651,19 @@ The general API needs to be something like: ~Predicate → Archetype[]~
 :END:
 We need to be able to efficiently iterate over all the Entities in an
 Archetype.
-***** DOING Query Representation
+***** DONE Query Representation
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-20 Tue 22:42] \\
+  See [[*Query Result Representation]]
 - State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
 :END:
 - Queries may reasonably take the form of Lisp list structure.
 - The syntax of Queries is partially defined in design.org in the
   cs310-project repository.
-***** DOING Query Result Representation
+***** DONE Query Result Representation
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-20 Tue 22:42] \\
+  Straightforwardish, kept abstract to make future changes easy.
 CLOCK: [2024-02-16 Fri 15:57]--[2024-02-16 Fri 16:57] =>  1:00
 - State "DOING"      from "TODO"       [2024-02-16 Fri 15:57]
 :END:
