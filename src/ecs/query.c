@@ -138,3 +138,7 @@ void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index) {
   }
   return kv_A(iter->archetype->columns, index).elements;
 }
+
+bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component) {
+  return ecs_archetype_has(lisp->world, iter->archetype->id, component);
+}
