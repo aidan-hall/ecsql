@@ -46,5 +46,15 @@
   ;; Implicit and form at top level.
   (let ((res (translate-predicate (cons 'and predicate))))
     `',res))
+
+(defmacro ecsql (predicate names . body)
+  (let* ((query (translate-predicate predicate))
+         (components (car query)))
+    `(ecs-do-query ',query
+                   (lambda (entity)
+                     ((lambda ,names . ,body)
+                      . ,(mapcar (lambda (component)
+                                   `(ecs-get entity ',component))
+                                 components))))))
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
