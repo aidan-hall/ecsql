@@ -7,6 +7,7 @@
 #include <lisp/primitives.h>
 #include <lisp/print.h>
 #include <lisp/reader.h>
+#include <lisp/systems.h>
 #include <lisp/types.h>
 #include <stdio.h>
 #include <string.h>
@@ -942,6 +943,13 @@ static Object prim_ecs_new_component(LispEnv *lisp, Object args) {
   return lisp_new_ecs_component(lisp, FIRST);
 }
 
+static Object prim_ecs_do_query(LispEnv *lisp, Object args) {
+  Object query = FIRST;
+  Object function = SECOND;
+  ecs_do_query(lisp, query, lisp_run_system, &function);
+  return NIL;
+}
+
 /* READER MACROS */
 
 Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
@@ -1095,6 +1103,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-relation", "(relation)", prim_ecs_pair_relation);
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
   DEFPRIMFUN("ecs-new-component", "(symbol)", prim_ecs_new_component);
+  DEFPRIMFUN("ecs-do-query", "(t t)", prim_ecs_do_query);
 #undef DEFPRIMFUN
 #undef OBJSX
 }
