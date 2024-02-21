@@ -124,7 +124,7 @@ void ecs_destroy_cached_query(struct CachedQuery *query) {
   free(query);
 }
 
-EntityID *ecs_iter_ids(LispEnv *lisp, struct EcsIter *iter) {
+EntityID *ecs_iter_ids(struct EcsIter *iter) {
   return &kv_A(iter->archetype->entities, 0);
 }
 

@@ -10,7 +10,7 @@ struct EcsIter;
 
 void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index);
 
-EntityID *ecs_iter_ids(LispEnv *lisp, struct EcsIter *iter);
+EntityID *ecs_iter_ids(struct EcsIter *iter);
 size ecs_iter_count(struct EcsIter *iter);
 
 typedef void(SystemFunc)(LispEnv *lisp, struct EcsIter *iter, void *data);
