@@ -15,6 +15,12 @@
 (defcomponent Health i32)
 (defcomponent Mass f32)
 (defcomponent Bounce nil)
+(defstruct colour
+  (r i32)
+  (g i32)
+  (b i32)
+  (a i32))
+(defcomponent Colour colour)
 
 (let ((delta (/ 1.0 120)))
   (defun move-system (e)
