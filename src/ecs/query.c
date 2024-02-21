@@ -80,8 +80,8 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
   free(foo.columns);
 }
 
-void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query_id, SystemFunc *func,
-                         void *data) {
+void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query_id,
+                         SystemFunc *func, void *data) {
   CachedQuery *query = &kv_A(lisp->world->cached_queries, query_id.val);
   typeof(query->archetypes) archetypes = query->archetypes;
   World *world = lisp->world;
