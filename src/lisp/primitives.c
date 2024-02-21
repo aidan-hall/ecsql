@@ -788,6 +788,27 @@ static Object prim_ecs_destroy(LispEnv *lisp, Object args) {
   return NIL;
 }
 
+static Object get_ecs_data(LispEnv *lisp, struct LispComponentStorage *storage,
+                           void *obj) {
+  switch (storage->type) {
+  case STORE_OBJECT:
+    return *(Object *)obj;
+  case STORE_STRUCT:
+    /* We want to be able to modify a struct's data in-place, so return a
+     * pointer to that. */
+    return OBJ_BOX_INDEX(lisp_store_pointer(lisp, obj), storage->struct_id,
+                         STRUCT);
+  case STORE_UNBOXED: {
+    u64 val = 0;
+    memcpy(&val, obj, storage->size);
+    return OBJ_BOX_RAWTAG(val, storage->object_type);
+  }
+  }
+
+  WRONG("Invalid Lisp storage type", OBJ_BOX(storage->type, INT));
+  return UNDEFINED;
+}
+
 static Object prim_ecs_get(LispEnv *lisp, Object args) {
   Object component = SECOND;
   Object entity = FIRST;
@@ -806,23 +827,7 @@ static Object prim_ecs_get(LispEnv *lisp, Object args) {
     return UNDEFINED;
   }
 
-  switch (storage->type) {
-  case STORE_OBJECT:
-    return *(Object *)obj;
-  case STORE_STRUCT:
-    /* We want to be able to modify a struct's data in-place, so return a
-     * pointer to that. */
-    return OBJ_BOX_INDEX(lisp_store_pointer(lisp, obj), storage->struct_id,
-                         STRUCT);
-  case STORE_UNBOXED: {
-    u64 val = 0;
-    memcpy(&val, obj, storage->size);
-    return OBJ_BOX_RAWTAG(val, storage->object_type);
-  }
-  }
-
-  WRONG("Invalid Lisp storage type", OBJ_BOX(storage->type, INT));
-  return UNDEFINED;
+  return get_ecs_data(lisp, storage, obj);
 }
 
 static Object prim_ecs_set(LispEnv *lisp, Object args) {
