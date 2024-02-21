@@ -11,7 +11,7 @@ add_executable(Ecsql
   arena.c main.c
   ecs/ecs.c ecs/query.c
   lisp/lexer.c lisp/lisp.c lisp/memory.c lisp/primitives.c
-  lisp/print.c lisp/reader.c lisp/types.c
+  lisp/print.c lisp/reader.c lisp/types.c lisp/systems.c
 )
 
 set_property(TARGET Ecsql PROPERTY C_STANDARD 23)
