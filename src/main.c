@@ -169,7 +169,9 @@ int main(int argc, char *argv[]) {
 
   test_type_bsearch();
   struct World *world = lisp->world;
-  Object storage_comp = ecs_lookup_by_name(world, SYM(lisp, "Storage"));
+  WorldComponents *world_components = ecs_world_components(lisp->world);
+  Object storage_comp = world_components->storage;
+
   lisp_apply(lisp, lisp_lookup_function(lisp, SYM(lisp, "print")),
              lisp_cons(lisp, storage_comp, NIL));
   Object pos = ecs_lookup_by_name(world, SYM(lisp, "Pos"));
