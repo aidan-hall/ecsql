@@ -113,8 +113,8 @@ LispEnv new_lisp_environment() {
     exit(1);
   }
 
-  /* 4 Gigabytes of RAM should do the trick. */
-  lisp.memory = new_lisp_memory(4L * 1024 * 1024 * 1024);
+  /* 8 Gigabytes of RAM should do the trick. */
+  lisp.memory = new_lisp_memory(8L * 1024 * 1024 * 1024);
 
   static_assert(sizeof(void *) == sizeof(Object), "Can't use clibs/hash.");
   lisp.symbols = kh_init(sym_name);
