@@ -171,6 +171,13 @@
       (setq as (cdr as)))
     m))
 
+(defmacro dotimes (iterator . body)
+  (let ((varname (car iterator)))
+    `(let ((,varname 0))
+       (while (< ,varname ,(cadr iterator))
+         (progn . ,body)
+         (incq ,varname)))))
+
 (defvar gensym-counter 0)
 (defun gensym ()
   (setq gensym-counter (+ gensym-counter 1))
