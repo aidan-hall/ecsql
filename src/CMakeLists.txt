@@ -14,6 +14,8 @@ add_executable(Ecsql
   lisp/print.c lisp/reader.c lisp/types.c lisp/systems.c
 )
 
+target_compile_options(Ecsql PRIVATE -Wall -g)
+
 set_property(TARGET Ecsql PROPERTY C_STANDARD 23)
 
 # Dependencies
