@@ -1,8 +1,7 @@
 #include <lisp/systems.h>
 
-
 void lisp_run_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
-  Object system = *(Object *)data;
+  Object system = BIT_CAST(Object, data);
   Object args_form = lisp_cons(lisp, NIL, NIL);
   EntityID *ids = ecs_iter_ids(iter);
   size N = ecs_iter_count(iter);
