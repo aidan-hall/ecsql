@@ -4,6 +4,7 @@
 #include <lisp/primitives.h>
 #include <lisp/print.h>
 #include <lisp/reader.h>
+#include <lisp/systems.h>
 #include <stdarg.h>
 #include <threads.h>
 
