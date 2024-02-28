@@ -49,7 +49,9 @@
   F(eof)                                                                       \
   F(vector)                                                                    \
   F(entity)                                                                    \
-  F(relation)
+  F(relation)                                                                  \
+  F(left)                                                                      \
+  F(right)
 
 typedef struct LispEnv {
   Memory memory;
