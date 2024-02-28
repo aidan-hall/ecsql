@@ -1191,6 +1191,7 @@ void lisp_install_primitives(LispEnv *lisp) {
 
   DEFPRIMFUN("ecs-new", "()", prim_ecs_new);
   DEFPRIMFUN("make-entity", "(i32 i32)", prim_make_entity);
+  DEFPRIMFUN("ecs-entity", "(i32)", prim_entity_with_id);
   DEFPRIMFUN("ecs-destroy", "(entity)", prim_ecs_destroy);
   DEFPRIMFUN("ecs-get", "(entity (or entity relation))", prim_ecs_get);
   DEFPRIMFUN("ecs-set", "(entity (or entity relation) t)", prim_ecs_set);
