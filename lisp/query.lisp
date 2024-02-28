@@ -52,14 +52,17 @@
   (let ((res (fixup-predicate (cons 'and predicate))))
     `',res))
 
+(defun create-system-function (names body components)
+  `(lambda (entity)
+     ((lambda ,names
+        . ,body)
+      . ,(mapcar (lambda (component)
+                   `(ecs-get entity ',component))
+                 components))))
+
 (defmacro ecsql (predicate names . body)
   (let* ((query (fixup-predicate predicate))
-         (components (car query)))
-    `(ecs-do-query ',query
-                   (lambda (entity)
-                     ((lambda ,names . ,body)
-                      . ,(mapcar (lambda (component)
-                                   `(ecs-get entity ',component))
-                                 components))))))
+         (code (create-system-function names body (car query))))
+    `(ecs-do-query ',query ,code)))
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
