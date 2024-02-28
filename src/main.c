@@ -73,9 +73,34 @@ void test_type_bsearch() {
   printf("t: %ld\n", type_pos(a, ENT_BOX((EntityID){7680}, 0)));
 }
 
+#define GRAVITY (200.0)
 
-void bounce_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
+void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
   IGNORE(data);
+
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    Vec2 mouse_pos = (Vec2){GetMouseX(), GetMouseY()};
+    size N = ecs_iter_count(iter);
+    struct Vec2 *poss = ecs_iter_get(iter, 0);
+    struct Vec2 *vels = ecs_iter_get(iter, 1);
+
+    for (size i = 0; i < N; ++i) {
+      Vec2 to_centre = v2sub(mouse_pos, poss[i]);
+      /* It would be more realistic to normalise, but this produces a more
+       * visible effect */
+      /* Vec2 dir_to_centre = v2norm(to_centre); */
+      float dist_to_centre2 = v2len2(to_centre);
+      /* Prevent badness at the centre. TODO: Bounce off the mouse or something.
+       */
+      if (dist_to_centre2 <= 25.0)
+        continue;
+      vels[i].x += to_centre.x * GRAVITY / dist_to_centre2;
+      vels[i].y += to_centre.y * GRAVITY / dist_to_centre2;
+    }
+  }
+}
+
+void do_bounce(LispEnv *lisp, struct EcsIter *iter, void *data) {
   size N = ecs_iter_count(iter);
   struct Vec2 *poss = ecs_iter_get(iter, 0);
   struct Vec2 *vels = ecs_iter_get(iter, 1);
