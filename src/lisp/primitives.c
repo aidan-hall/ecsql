@@ -1001,6 +1001,36 @@ static Object prim_ecs_do_query(LispEnv *lisp, Object args) {
   return NIL;
 }
 
+static Object prim_get_mouse_y(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  float y = GetMouseY();
+  return OBJ_IMM(y);
+}
+
+static Object prim_get_mouse_x(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  float x = GetMouseX();
+  return OBJ_IMM(x);
+}
+
+static Object prim_get_delta(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  return OBJ_IMM(GetFrameTime());
+}
+
+static Object prim_draw_text(LispEnv *lisp, Object args) {
+  const char *text = (char *)lisp_string_to_null_terminated(lisp, FIRST);
+  SHIFT_ARGS(1);
+  float x = lisp_unbox_float(FIRST);
+  SHIFT_ARGS(1);
+  float y = lisp_unbox_float(FIRST);
+  SHIFT_ARGS(1);
+  float font_size = lisp_unbox_float(FIRST);
+
+  DrawText(text, x, y, font_size, WHITE);
+  return NIL;
+}
+
 static MouseButton symbol_to_mouse_button(LispEnv *lisp, Object sym) {
   if (EQ(sym, lisp->keysyms.left)) {
     return MOUSE_BUTTON_LEFT;
@@ -1180,6 +1210,11 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-do-query", "(t t)", prim_ecs_do_query);
   DEFPRIMFUN("ecs-storage-type", "((or entity relation))",
              prim_ecs_storage_type);
+
+  DEFPRIMFUN("get-mouse-y", "()", prim_get_mouse_y);
+  DEFPRIMFUN("get-mouse-x", "()", prim_get_mouse_x);
+  DEFPRIMFUN("get-delta", "()", prim_get_delta);
+  DEFPRIMFUN("draw-text", "(string f32 f32 i32)", prim_draw_text);
   DEFPRIMFUN("is-mouse-down", "(symbol)", prim_mouse_down);
   DEFPRIMFUN("is-mouse-pressed", "(symbol)", prim_mouse_pressed);
 #undef DEFPRIMFUN
