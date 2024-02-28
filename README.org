@@ -10,7 +10,7 @@ This is the source code for ECSQL.
 :PROPERTIES:
 :COLUMNS:  %ITEM %PRIORITY %TODO
 :END:
-`Since we must rely on some piece of software for project management,
+Since we must rely on some piece of software for project management,
 we will use the most reliable one (in terms of longevity): Emacs.
 ** Design
 *** TODO Basic ECS Architecture [3/4]
