@@ -181,70 +181,9 @@ int main(int argc, char *argv[]) {
     printf("pos_storage: .size = %lu, .alignment = %lu\n", pos_storage.size,
            pos_storage.alignment);
   }
-  Object vel = ecs_lookup_by_name(world, SYM(lisp, "Vel"));
-  Object bounce = ecs_lookup_by_name(world, SYM(lisp, "Bounce"));
-  Object fooable = ecs_new(world);
-  Object apple = ecs_new(world);
-  Object player = ecs_new(world);
-  assert(ecs_set_name(world, player, SYM(lisp, "player")));
-  ecs_add(world, player, bounce);
-  ecs_add(world, player, pos);
-  *(struct Vec2 *)ecs_get(world, player, pos) = (struct Vec2){300, 200};
-  Object pear = ecs_new(world);
-  ecs_add(world, player, vel);
-  *(struct Vec2 *)ecs_get(world, player, vel) = (struct Vec2){0, 0};
-  ecs_add(world, player, fooable);
-  Object orange = ecs_new(world);
 
-  Object colour = ecs_lookup_by_name(world, SYM(lisp, "Colour"));
 
-  ecs_add(world, player, colour);
-  *(struct Vec4i *)ecs_get(world, player, colour) = (struct Vec4i){
-      .x = YELLOW.r, .y = YELLOW.g, .z = YELLOW.b, .w = YELLOW.a};
-  Object with_colour = ecs_new(world);
-  assert(ecs_set_name(world, with_colour, SYM(lisp, "WithColour")));
-  {
-    Object yellow_tag = ecs_new(world);
-    assert(ecs_set_name(world, yellow_tag, SYM(lisp, "Yellow")));
-    ecs_add(world, player, ecs_pair(with_colour, yellow_tag));
-  }
 
-  Object eats = lisp_new_ecs_component(lisp, SYM(lisp, "i32"));
-  assert(ecs_set_name(world, eats, SYM(lisp, "Eats")));
-  Object eat_apple = ecs_pair(eats, apple);
-  ecs_add(world, player, eat_apple);
-  *(i32 *)ecs_get(world, player, ecs_pair(eats, apple)) = -4;
-  assert(ecs_set_name(world, apple, SYM(lisp, "Apple")));
-  ecs_add(world, player, ecs_pair(eats, orange));
-  ecs_add(world, player, ecs_pair(eats, pear));
-  Type type = ecs_type(world, player);
-  printf("eats: %lx, eats.id: %d\n", eats.bits, eats.id.val);
-  for (size i = 0; i < kv_size(type); ++i) {
-    printf("type[%ld] = %lx, .relation = %d\n", i, kv_A(type, i).bits,
-           kv_A(type, i).relation);
-  }
-
-  Color colours[] = {RED, BLUE, GREEN};
-  Object colour_tags[] = {ecs_new(world), ecs_new(world), ecs_new(world)};
-  assert(ecs_set_name(world, colour_tags[0], SYM(lisp, "Red")));
-  assert(ecs_set_name(world, colour_tags[1], SYM(lisp, "Blue")));
-  assert(ecs_set_name(world, colour_tags[2], SYM(lisp, "Green")));
-  for (int i = 0; i < 20; ++i) {
-    Object e = ecs_new(world);
-    ecs_add(world, e, pos);
-    ecs_add(world, e, vel);
-    ecs_add(world, e, bounce);
-    ecs_add(world, e, colour);
-    *(struct Vec2 *)ecs_get(world, e, pos) = (struct Vec2){50 * i, 20 * i};
-    *(struct Vec2 *)ecs_get(world, e, vel) =
-        (struct Vec2){20.0 * (1 + i), 15.0 * (1 + i)};
-
-    Color picked = colours[i % countof(colours)];
-    *(struct Vec4i *)ecs_get(world, e, colour) = (struct Vec4i){
-        .x = picked.r, .y = picked.g, .z = picked.b, .w = picked.a};
-    ecs_add(world, e,
-            ecs_pair(with_colour, colour_tags[i % countof(colour_tags)]));
-  }
   Object mover_query = lisp_eval(
       lisp, lisp_macroexpand(lisp, OBJS(lisp, "(select Pos Vel Colour)")));
   Object bouncer_query = lisp_eval(
