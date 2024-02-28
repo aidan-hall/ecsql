@@ -707,8 +707,8 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
       /* NIL type means no storage is required: can just use a normal Entity. */
       return ecs_new(lisp->world);
     default:
-      lisp_storage = (struct LispComponentStorage){.type = STORE_OBJECT,
-                                                   .object_type = tag};
+      lisp_storage = (struct LispComponentStorage){
+          .type = STORE_OBJECT, .object_type = tag, .size = sizeof(Object)};
       storage = (struct Storage){.size = sizeof(Object),
                                  .alignment = alignof(Object)};
     }
