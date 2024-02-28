@@ -786,6 +786,14 @@ static Object prim_make_entity(LispEnv *lisp, Object args) {
   return ENT_BOX((EntityID){BIT_CAST(u32, OBJ_UNBOX(FIRST))},
                  BIT_CAST(u32, OBJ_UNBOX(SECOND)));
 }
+/* Obtain the live Entity with the supplied ID, otherwise NIL. */
+static Object prim_entity_with_id(LispEnv *lisp, Object args) {
+  EntityID id = (EntityID){OBJ_UNBOX(FIRST)};
+  u16 *gen = ecs_generation(lisp->world, id);
+  Object entity = ENT_BOX(id, *gen);
+  return ecs_alive(lisp->world, entity) ? entity : NIL;
+}
+
 static Object prim_ecs_new(LispEnv *lisp, Object args) {
   return ecs_new(lisp->world);
 }
