@@ -30,7 +30,7 @@
         (let ((component (ecs-pair (ecs-lookup (cadr predicate))
                                    (ecs-lookup (caddr predicate)))))
           (cons (list component) component)))
-       ((t)
+       (t
         (wrong "Invalid predicate form" predicate))))
     ;; Resolve Component names
     ((symbol)
