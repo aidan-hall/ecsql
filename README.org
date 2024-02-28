@@ -602,7 +602,7 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
   - Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [3/7]
+*** TODO ECS [4/7]
 **** DONE Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-09 Fri 12:45] \\
@@ -718,8 +718,12 @@ struct QueryEntry {
 - Iteration over Archetypes:
   1. User supplies a function to the ECS.
   2. The ECS calls that function once for each matched (set of) Archetype(s)
-**** DOING [#C] Relationships
+**** DONE [#C] Relationships
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-28 Wed 11:31] \\
+  We have a very dumb form of relationships, e.g. no wildcards, but
+  we're at the point of dimishing returns for this feature that is
+  tangential to the focus of this project.
 - State "DOING"      from "TODO"       [2024-02-09 Fri 19:19]
 :END:
 - Is this essential?
