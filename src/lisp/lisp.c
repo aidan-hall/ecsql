@@ -721,3 +721,10 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
       lisp->world, obj, lisp->comp.lisp_component_storage) = lisp_storage;
   return obj;
 }
+
+Object lisp_make_system(LispEnv *lisp, Object query, Object func) {
+  Object system =
+      ecs_new_system(lisp, query, lisp_run_system, BIT_CAST(void *, func));
+  ecs_add(lisp->world, system, lisp->comp.lisp_system);
+  return system;
+}
