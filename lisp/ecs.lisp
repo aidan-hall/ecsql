@@ -21,6 +21,89 @@
               (wrong "Failed to resolve list form to Entity or Relation" thing))))))
     (t (wrong "Unable to resolve to an Entity or Relation" thing))))
 
+(defmacro ecs-add* (entity . components)
+  ;; For each form in Components, generate code to add an appropriate Component, possibly
+  ;; initialised, to the supplied Entity.
+  ;;
+  ;; Each form of components may take one of the following forms, with the following effects:
+  ;;   symbol or (symbol) → Adds (ecs-lookup symbol).
+  ;;   (name symbol) → (ecs-set-name entity symbol).
+  ;;   (rel *1 *2) → Adds Relation (*1 . *2), after evaluating *1 and *2
+  ;;   (* . *) → Adds (ecs-resolve form), almost certainly a Relation.
+  ;;   (* ...) → Adds the Component specified in the car (derived with ecs-resolve),
+  ;;             and initialises it using the remaining arguments.
+  ;;             If the Component is stored as a struct, the constructor is called.
+  ;;   (* = *) → Adds the Component specified in the car,
+  ;;             and assigns it the value of the expression after the = sign.
+  ;;   (* : *) → Adds the Component specified in the car,
+  ;;             and copies the value of that Component from the Entity after the = sign.
+  ;;
+  ;; E.g. (ecs-add* entity (Pos 12. 13.) (Bounce : Dwarf) Vel (Colour = red) (Species . Wizard))
+
+  ;; Use a gensym to ensure the entity argument is only evaluated once.
+  ;; A common pattern is (ecs-add* (ecs-new) ...), so this is essential.
+  (let ((esym (gensym)))
+    `(let ((,esym ,entity))
+       . ,(mapcar
+           (lambda (component-form)
+             (if (or (not (eq (type-of component-form) 'pair))
+                     ;; (Component): Treat this the same as a plain Component by unwrapping it.
+                     (and (not (cdr component-form))
+                          (setq component-form (car component-form))
+                          component-form))
+                 ;; If there's no sub-structure, defer to ecs-resolve.
+                 `(ecs-add ,esym ',(ecs-resolve component-form))
+
+                 (case (car component-form)
+                   ((name)
+                    ;; Set the name of an Entity.
+                    `(ecs-set-name ,esym ,(cadr component-form)))
+                   ((rel)
+                    ;; Add a Relation, evaluating the pair members & resolving at runtime.
+                    `(ecs-add ,esym (ecs-resolve (cons ,(cadr component-form)
+                                                       ,(caddr component-form)))))
+                   ;; Add a Component.
+                   (t (if (not (consp (cdr component-form)))
+                          `(ecs-add ,esym
+                                    ;; component-form is a cons pair with a non-pair cdr:
+                                    ;; (something . something)
+                                    ;; attempt to resolve it (as a Relation).
+                                    ',(ecs-resolve component-form))
+                          (let ((component
+                                 ;; Resolve the Component to add.
+                                 (ecs-resolve (car component-form))))
+                            `(progn
+                               ;; Add the Component.
+                               (ecs-add ,esym ',component)
+                               ;; Additional elements in the list hold initial values for Components.
+                               ,(let ((rest (cdr component-form)))
+                                  ;; We know `rest' is a pair, so we can safely take its car.
+                                  (let ((type (ecs-storage-type component)))
+                                    `(ecs-set ,esym ',component
+                                              ;; Produce the initial value for the Component.
+                                              ,(case (car rest)
+                                                 ;; '= means the cadr is an expression that will
+                                                 ;; evaluate to the Component value.
+                                                 ((=) (cadr rest))
+                                                 ;; ': means inherit from the specified Entity.
+                                                 ((:) `(ecs-get ,(cadr rest) ',component))
+                                                 (t
+                                                  (if (struct-metadata type)
+                                                      ;; If the Component is represented by a struct,
+                                                      ;; use its constructor.
+                                                      (cons (intern
+                                                             (concat "make-"
+                                                                     (symbol-name type)))
+                                                            (cdr component-form))
+                                                      (case type
+                                                        ((vector)
+                                                         ;; Store the cdr elements in a vector.
+                                                         (cons 'vector (cdr component-form)))
+                                                        (t
+                                                         ;; Other types just need the one value.
+                                                         (car rest))))))))))))))))
+           components))))
+
 (defmacro defcomponent (name type)
   `(if (ecs-lookup ',name)
        (wrong "An entity with the given name already exists" ',name)
