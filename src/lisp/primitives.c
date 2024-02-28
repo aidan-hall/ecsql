@@ -958,6 +958,27 @@ static Object prim_ecs_do_query(LispEnv *lisp, Object args) {
   return NIL;
 }
 
+static MouseButton symbol_to_mouse_button(LispEnv *lisp, Object sym) {
+  if (EQ(sym, lisp->keysyms.left)) {
+    return MOUSE_BUTTON_LEFT;
+  } else if (EQ(sym, lisp->keysyms.right)) {
+    return MOUSE_BUTTON_RIGHT;
+  } else {
+    WRONG("Invalid mouse button name", sym);
+    exit(1);
+  }
+}
+
+static Object prim_mouse_pressed(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp,
+                   IsMouseButtonPressed(symbol_to_mouse_button(lisp, FIRST)));
+}
+
+static Object prim_mouse_down(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp,
+                   IsMouseButtonDown(symbol_to_mouse_button(lisp, FIRST)));
+}
+
 /* READER MACROS */
 
 Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
@@ -1114,6 +1135,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
   DEFPRIMFUN("ecs-new-component", "(symbol)", prim_ecs_new_component);
   DEFPRIMFUN("ecs-do-query", "(t t)", prim_ecs_do_query);
+  DEFPRIMFUN("is-mouse-down", "(symbol)", prim_mouse_down);
+  DEFPRIMFUN("is-mouse-pressed", "(symbol)", prim_mouse_pressed);
 #undef DEFPRIMFUN
 #undef OBJSX
 }
