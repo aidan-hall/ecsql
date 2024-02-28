@@ -30,7 +30,7 @@ int repl_thread_function(void *_lisp) {
   if (setjmp(lisp->error_loc) != 0) {
     fprintf(stderr, "Resuming from top level...\n");
   }
-  Object print_function = lisp_eval(lisp, OBJS(lisp, "(function prin1)"));
+  Object print_function = LISP_EVAL_STR(lisp, "(function prin1)");
   Object print_args = lisp_cons(lisp, NIL, NIL);
   Object *form_place = LISP_CAR_PLACE(lisp, print_args);
   while (!feof(stdin)) {
