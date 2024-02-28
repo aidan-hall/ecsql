@@ -13,6 +13,7 @@ bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component);
 
 EntityID *ecs_iter_ids(struct EcsIter *iter);
 size ecs_iter_count(struct EcsIter *iter);
+bool ecs_iter_same_archetype(struct EcsIter *a, struct EcsIter *b);
 
 typedef void(SystemFunc)(LispEnv *lisp, struct EcsIter *iter, void *data);
 void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data);

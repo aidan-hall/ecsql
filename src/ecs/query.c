@@ -134,6 +134,10 @@ size ecs_iter_count(struct EcsIter *iter) {
   return kv_size(iter->archetype->entities);
 }
 
+bool ecs_iter_same_archetype(struct EcsIter *a, struct EcsIter *b) {
+  return a->archetype == b->archetype;
+}
+
 void *ecs_iter_get(struct EcsIter *iter, size index) {
   if (index == NOT_PRESENT) {
     return NULL;
