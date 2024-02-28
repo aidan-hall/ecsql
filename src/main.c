@@ -3,6 +3,7 @@
 #include <common.h>
 #include <ecs/ecs.h>
 #include <ecs/query.h>
+#include <linalg.h>
 #include <lisp/lexer.h>
 #include <lisp/lisp.h>
 #include <lisp/print.h>
@@ -68,17 +69,6 @@ void test_type_bsearch() {
   printf("t: %ld\n", type_pos(a, ENT_BOX((EntityID){7680}, 0)));
 }
 
-struct Vec2 {
-  float x;
-  float y;
-};
-
-struct Vec4i {
-  i32 x;
-  i32 y;
-  i32 z;
-  i32 w;
-};
 
 void bounce_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
   IGNORE(data);
