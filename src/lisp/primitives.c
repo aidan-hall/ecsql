@@ -903,6 +903,39 @@ static Object prim_ecs_set(LispEnv *lisp, Object args) {
   return value;
 }
 
+/* Returns nil for Entities with no Storage or LispComponentStorage. */
+static Object prim_ecs_storage_type(LispEnv *lisp, Object args) {
+  Object entity = FIRST;
+  struct World *world = lisp->world;
+  WorldComponents *world_components = ecs_world_components(world);
+
+  if (OBJ_TYPE(entity) == OBJ_RELATION_TAG) {
+    Object original = entity;
+    entity = ecs_object_with_id(world, (EntityID){entity.relation});
+    if (EQ(entity, NIL)) {
+      WRONG("Failed to get storage type of a relation", original);
+      return UNDEFINED;
+    }
+  }
+
+  if (!ecs_has(world, entity, world_components->storage) ||
+      !ecs_has(world, entity, lisp->comp.lisp_component_storage)) {
+    return NIL;
+  }
+  struct LispComponentStorage storage = *(struct LispComponentStorage *)ecs_get(
+      world, entity, lisp->comp.lisp_component_storage);
+  if (storage.type != STORE_STRUCT) {
+    return lisp_type_name(lisp, storage.object_type);
+  }
+  u16 id = storage.struct_id;
+  khiter_t iter = kh_get(struct_ids, lisp->struct_ids, id);
+  if (iter == kh_end(lisp->struct_ids)) {
+    WRONG("Couldn't find name of struct with ID", OBJ_IMM((i32)id));
+    return UNDEFINED;
+  }
+  return kh_value(lisp->struct_ids, iter);
+}
+
 static Object prim_ecs_set_name(LispEnv *lisp, Object args) {
   return lisp_bool(lisp, ecs_set_name(lisp->world, FIRST, SECOND));
 }
@@ -1145,6 +1178,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
   DEFPRIMFUN("ecs-new-component", "(symbol)", prim_ecs_new_component);
   DEFPRIMFUN("ecs-do-query", "(t t)", prim_ecs_do_query);
+  DEFPRIMFUN("ecs-storage-type", "((or entity relation))",
+             prim_ecs_storage_type);
   DEFPRIMFUN("is-mouse-down", "(symbol)", prim_mouse_down);
   DEFPRIMFUN("is-mouse-pressed", "(symbol)", prim_mouse_pressed);
 #undef DEFPRIMFUN
