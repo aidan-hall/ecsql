@@ -229,4 +229,7 @@ static inline size lisp_store_pointer(struct LispEnv *lisp, void *ptr) {
   return -idx;
 }
 
+#define LISP_EVAL_STR(LISP, STR)                                               \
+  (lisp_eval(LISP, lisp_macroexpand(lisp, OBJS(lisp, STR))))
+
 #endif
