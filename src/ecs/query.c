@@ -226,3 +226,33 @@ void *ecs_iter_get(struct EcsIter *iter, size index) {
 bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component) {
   return ecs_archetype_has(lisp->world, iter->archetype->id, component);
 }
+
+Object ecs_new_system(LispEnv *lisp, Object query, SystemFunc *func,
+                      void *data) {
+  struct World *world = lisp->world;
+  Object system = ecs_new(world);
+  WorldComponents *world_components = ecs_world_components(world);
+  ecs_add(world, system, world_components->system);
+  *(SystemFunc **)ecs_get(world, system, world_components->system) = func;
+  ecs_add(world, system, world_components->system_data);
+  *(void **)ecs_get(world, system, world_components->system_data) = data;
+  ecs_add(world, system, world_components->query);
+  *(Object *)ecs_get(world, system, world_components->query) = query;
+  return system;
+}
+
+Object ecs_new_self_join_system(LispEnv *lisp, Object query,
+                                NWiseSystem nwise_system, void *data) {
+  struct World *world = lisp->world;
+  Object entity = ecs_new(world);
+  WorldComponents *world_components = ecs_world_components(world);
+  ecs_add(world, entity, world_components->nwise_system);
+  *(NWiseSystem *)ecs_get(world, entity, world_components->nwise_system) =
+      nwise_system;
+  ecs_add(world, entity, world_components->system_data);
+  *(void **)ecs_get(world, entity, world_components->system_data) = data;
+  ecs_add(world, entity, world_components->query);
+  *(Object *)ecs_get(world, entity, world_components->query) = query;
+  ecs_add(world, entity, world_components->self_join_system);
+  return entity;
+}

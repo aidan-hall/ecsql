@@ -34,4 +34,9 @@ CachedQueryID ecs_query(LispEnv *lisp, Object query);
 
 void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query, SystemFunc *func,
                          void *data);
+
+Object ecs_new_system(LispEnv *lisp, Object query, SystemFunc *func,
+                      void *data);
+Object ecs_new_self_join_system(LispEnv *lisp, Object query,
+                                NWiseSystem nwise_system, void *data);
 #endif
