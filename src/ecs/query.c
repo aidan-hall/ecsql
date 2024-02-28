@@ -53,9 +53,83 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
   return false;
 }
 
-void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
+void ecs_do_pairwise_query(LispEnv *lisp, Object query0, Object query1,
+                           NWiseSystem system, void *data) {
   struct World *world = lisp->world;
   /* TODO: Calculate how many Components the Query contains */
+  Object components0 = LISP_CAR(lisp, query0);
+  Object predicate0 = LISP_CDR(lisp, query0);
+  EcsIter *foo[2] = {malloc(sizeof(EcsIter)), malloc(sizeof(EcsIter))};
+  foo[0]->n_columns = lisp_length(lisp, components0);
+  foo[0]->columns = calloc(foo[0]->n_columns, sizeof(foo[0]->columns[0]));
+  Object components1 = LISP_CAR(lisp, query1);
+  Object predicate1 = LISP_CDR(lisp, query1);
+  foo[1]->n_columns = lisp_length(lisp, components1);
+  foo[1]->columns = calloc(foo[1]->n_columns, sizeof(foo[1]->columns[1]));
+
+  for (size i = 0; i < kv_size(world->archetypes); ++i) {
+
+    Archetype *archetype_i = &kv_A(world->archetypes, i);
+    ArchetypeID id = archetype_i->id;
+    if (kv_size(archetype_i->entities) == 0) {
+      continue;
+    }
+    Object traversal_components = components0;
+    if (ecs_query_matches(lisp, id, predicate0)) {
+      foo[0]->archetype = archetype_i;
+      /* Produce the array of Component columns */
+      for (size j = 0; j < foo[0]->n_columns; ++j) {
+        Object the_component = LISP_CAR(lisp, traversal_components);
+        foo[0]->columns[j] =
+            ecs_archetype_component_column(world, archetype_i, the_component);
+        traversal_components = LISP_CDR(lisp, traversal_components);
+      }
+
+      /* Repeat for the partner archetype->
+       * TODO: What should the initial value of j be? This is a huge deciding
+       * factor in the behaviour-> 0: ordered pairs of *archetypes*, i:
+       * "unordered" pairs: never do (a, b) and (b, a) for distinct a & b. i +
+       * 1: unordered pairs, also excluding (a, a) for any archetype a.
+       */
+      size j;
+      switch (system.behaviour) {
+      case NWISE_ALL:
+        j = 0;
+        break;
+      case NWISE_DISTINCT:
+        j = i;
+        break;
+      }
+      for (; j < kv_size(world->archetypes); ++j) {
+
+        Archetype *archetype_j = &kv_A(world->archetypes, j);
+        ArchetypeID id = archetype_j->id;
+        if (kv_size(archetype_j->entities) == 0) {
+          continue;
+        }
+        traversal_components = components1;
+        if (ecs_query_matches(lisp, id, predicate1)) {
+          foo[1]->archetype = archetype_j;
+          /* Produce the array of Component columns */
+          for (size j = 0; j < foo[1]->n_columns; ++j) {
+            Object the_component = LISP_CAR(lisp, traversal_components);
+            foo[1]->columns[j] = ecs_archetype_component_column(
+                world, archetype_j, the_component);
+            traversal_components = LISP_CDR(lisp, traversal_components);
+          }
+          system.func(lisp, foo, data);
+        }
+      }
+    }
+  }
+  free(foo[0]->columns);
+  free(foo[1]->columns);
+  free(foo[0]);
+  free(foo[1]);
+}
+
+void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
+  struct World *world = lisp->world;
   Object components = LISP_CAR(lisp, query);
   Object predicate = LISP_CDR(lisp, query);
   EcsIter foo;

@@ -27,6 +27,8 @@ typedef struct NWiseSystem {
   enum NWiseBehaviour behaviour;
 } NWiseSystem;
 void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data);
+void ecs_do_pairwise_query(LispEnv *lisp, Object query0, Object query1,
+                           NWiseSystem system, void *data);
 
 CachedQueryID ecs_query(LispEnv *lisp, Object query);
 
