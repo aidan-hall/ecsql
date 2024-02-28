@@ -8,7 +8,7 @@
 
 struct EcsIter;
 
-void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index);
+void *ecs_iter_get(struct EcsIter *iter, size index);
 bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component);
 
 EntityID *ecs_iter_ids(struct EcsIter *iter);

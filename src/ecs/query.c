@@ -134,7 +134,7 @@ size ecs_iter_count(struct EcsIter *iter) {
   return kv_size(iter->archetype->entities);
 }
 
-void *ecs_iter_get(LispEnv *lisp, struct EcsIter *iter, size index) {
+void *ecs_iter_get(struct EcsIter *iter, size index) {
   if (index == NOT_PRESENT) {
     return NULL;
   }

@@ -95,8 +95,8 @@ struct Vec4i {
 void bounce_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
   IGNORE(data);
   size N = ecs_iter_count(iter);
-  struct Vec2 *poss = ecs_iter_get(lisp, iter, 0);
-  struct Vec2 *vels = ecs_iter_get(lisp, iter, 1);
+  struct Vec2 *poss = ecs_iter_get(iter, 0);
+  struct Vec2 *vels = ecs_iter_get(iter, 1);
   for (size i = 0; i < N; ++i) {
     if (poss[i].y < 0) {
       poss[i].y = 0;
@@ -116,8 +116,9 @@ void bounce_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
 }
 
 void draw_movers(LispEnv *lisp, struct EcsIter *iter, void *data) {
-  struct Vec2 *poss = ecs_iter_get(lisp, iter, 0);
-  struct Vec4i *colours = ecs_iter_get(lisp, iter, 2);
+  struct Vec2 *poss = ecs_iter_get(iter, 0);
+  struct Vec4i *colours = ecs_iter_get(iter, 1);
+  float *radii = ecs_iter_get(iter, 2);
   size N = ecs_iter_count(iter);
   for (size i = 0; i < N; ++i) {
     Color colour = WHITE;
@@ -137,8 +138,8 @@ void print_mover(LispEnv *lisp, struct EcsIter *iter, void *data) {
   printf("Printing some movers...\n");
   IGNORE(data);
   EntityID *ids = ecs_iter_ids(iter);
-  struct Vec2 *poss = ecs_iter_get(lisp, iter, 0);
-  struct Vec2 *vels = ecs_iter_get(lisp, iter, 1);
+  struct Vec2 *poss = ecs_iter_get(iter, 0);
+  struct Vec2 *vels = ecs_iter_get(iter, 1);
   size N = ecs_iter_count(iter);
   for (size i = 0; i < N; ++i) {
     printf("Entity %u: pos: (%f, %f), vel: (%f, %f)\n", ids[i].val, poss[i].x,
