@@ -80,18 +80,6 @@ struct Vec4i {
   i32 w;
 };
 
-/* void apply_velocity(LispEnv *lisp, struct EcsIter *iter, void *data) { */
-/*   IGNORE(data); */
-/*   struct Vec2 *poss = ecs_iter_get(lisp, iter, 0); */
-/*   struct Vec2 *vels = ecs_iter_get(lisp, iter, 1); */
-/*   size N = ecs_iter_count(iter); */
-/*   float delta = GetFrameTime(); */
-/*   for (size i = 0; i < N; ++i) { */
-/*     poss[i].x += vels[i].x * delta; */
-/*     poss[i].y += vels[i].y * delta; */
-/*   } */
-/* } */
-
 void bounce_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
   IGNORE(data);
   size N = ecs_iter_count(iter);
