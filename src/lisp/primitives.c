@@ -1052,6 +1052,10 @@ static Object prim_mouse_down(LispEnv *lisp, Object args) {
                    IsMouseButtonDown(symbol_to_mouse_button(lisp, FIRST)));
 }
 
+static Object prim_make_system(LispEnv *lisp, Object args) {
+  return lisp_make_system(lisp, FIRST, SECOND);
+}
+
 /* READER MACROS */
 
 Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
@@ -1209,6 +1213,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
   DEFPRIMFUN("ecs-new-component", "(symbol)", prim_ecs_new_component);
   DEFPRIMFUN("ecs-do-query", "(t t)", prim_ecs_do_query);
+  DEFPRIMFUN("ecs-register-system", "(pair (or closure primitive))",
+             prim_make_system);
   DEFPRIMFUN("ecs-storage-type", "((or entity relation))",
              prim_ecs_storage_type);
 
