@@ -703,6 +703,9 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
       UNBOXED_CASE(OBJ_INT_TAG, i32);
       UNBOXED_CASE(OBJ_FLOAT_TAG, f32);
       UNBOXED_CASE(OBJ_CHAR_TAG, u8);
+    case OBJ_NIL_TAG:
+      /* NIL type means no storage is required: can just use a normal Entity. */
+      return ecs_new(lisp->world);
     default:
       lisp_storage = (struct LispComponentStorage){.type = STORE_OBJECT,
                                                    .object_type = tag};
