@@ -355,6 +355,14 @@ static Object prim_mod(LispEnv *lisp, Object args) {
       BIT_CAST(i32, OBJ_UNBOX(FIRST)) % BIT_CAST(i32, OBJ_UNBOX(SECOND)), INT);
 }
 
+static Object prim_floor(LispEnv *lisp, Object args) {
+  return OBJ_IMM((i32)floorf(lisp_unbox_float(FIRST)));
+}
+
+static Object prim_ceiling(LispEnv *lisp, Object args) {
+  return OBJ_IMM((i32)ceilf(lisp_unbox_float(FIRST)));
+}
+
 #define LISP_CMP(NAME, OP)                                                     \
   static Object NAME(LispEnv *lisp, Object args) {                             \
     Object a = FIRST;                                                          \
@@ -1030,6 +1038,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("/", "(t . t)", prim_div);
   DEFPRIMFUN("-", "(* (or f32 i32))", prim_sub);
   DEFPRIMFUN("+", "(* (or f32 i32))", prim_add);
+  DEFPRIMFUN("floor", "(f32)", prim_floor);
+  DEFPRIMFUN("ceiling", "(f32)", prim_ceiling);
   DEFPRIMFUN("quit", "()", prim_quit);
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
