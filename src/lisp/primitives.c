@@ -956,7 +956,7 @@ static Object prim_ecs_new_component(LispEnv *lisp, Object args) {
 static Object prim_ecs_do_query(LispEnv *lisp, Object args) {
   Object query = FIRST;
   Object function = SECOND;
-  ecs_do_query(lisp, query, lisp_run_system, &function);
+  ecs_do_query(lisp, query, lisp_run_system, BIT_CAST(void *, function));
   return NIL;
 }
 
