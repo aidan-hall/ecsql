@@ -90,6 +90,7 @@ typedef struct LispEnv {
   struct {
     Object name;
     Object lisp_component_storage;
+    Object lisp_system;
   } comp;
   mtx_t memory_lock;
 } LispEnv;
