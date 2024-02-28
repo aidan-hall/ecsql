@@ -128,16 +128,8 @@ void draw_movers(LispEnv *lisp, struct EcsIter *iter, void *data) {
   float *radii = ecs_iter_get(iter, 2);
   size N = ecs_iter_count(iter);
   for (size i = 0; i < N; ++i) {
-    Color colour = WHITE;
-    if (colours != NULL) {
-      colour.r = colours[i].x;
-      colour.g = colours[i].y;
-      colour.b = colours[i].z;
-      colour.a = colours[i].w;
-    }
-    /* printf("colour: (%u, %u, %u, %u)\n", colour.r, colour.g, colour.b, */
-    /*        colour.a); */
-    DrawCircle(poss[i].x, poss[i].y, 5, colour);
+    Color colour = colours != NULL ? vec4i_to_colour(colours[i]) : WHITE;
+    DrawCircle(poss[i].x, poss[i].y, radii[i], colour);
   }
 }
 
