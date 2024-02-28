@@ -102,7 +102,7 @@ Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
 }
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
-  if(mtx_init(&lisp.memory_lock, mtx_plain) != thrd_success) {
+  if (mtx_init(&lisp.memory_lock, mtx_plain) != thrd_success) {
     fprintf(stderr, "Failed to initialise memory lock.\n");
     exit(1);
   }
