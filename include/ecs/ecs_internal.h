@@ -87,9 +87,7 @@ typedef struct World {
   kvec_t(Archetype) archetypes;
   kvec_t(CachedQuery) cached_queries;
   ArchetypeID empty_archetype;
-  struct {
-    Object storage;
-  } comp;
+  WorldComponents comp;
 } World;
 
 static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {

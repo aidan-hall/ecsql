@@ -15,6 +15,15 @@ KHASH_SET_INIT_INT(live);
 
 struct World;
 
+typedef struct WorldComponents {
+  Object storage;
+  Object system;
+  Object nwise_system;
+  Object self_join_system;
+  Object system_data;
+  Object query;
+} WorldComponents;
+
 #define ENT_ID_OFFSET (32 - OBJ_TAG_LENGTH)
 #define ENT_GEN_OFFSET (16 - OBJ_TAG_LENGTH)
 
