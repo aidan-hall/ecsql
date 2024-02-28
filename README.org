@@ -233,6 +233,30 @@ Options:
   mostly correct behaviour by immediately updating everything so the
   Entity "is in" the new Archetype, but not removing it from the old
   archetype until, for example, the System finished executing.
+*** DONE Automated Join/Outer Product/N-wise operations
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-28 Wed 16:29] \\
+  Implemented sufficiently in ~run_matching_self_join_systems~, and
+  associated Components.
+- State "DOING"      from "TODO"       [2024-02-28 Wed 16:29]
+:END:
+- Classic example: Collisions
+- Easier if user code is restricted to a specific pair of Entities,
+  but that comes at the cost of efficiency.
+- Current implementation uses plain indexable arrays for the
+  iterators, but it /may/ be possible to manipulate these to handle
+  pairs properly.
+- *The "hard" problem*: Iterating distinct pairs of Entities (i.e.
+  (a, b) and (b, a) should not both occur, and perhaps no (a, a)).
+- Doing an outer product on two distinct archetypes is easy: just pass
+  2 iterators to the user code, and all pairs are distinct.
+  - This is the common case, even when joining a query on itself (as in collisions).
+- Can and should this be generalised to N-way outer products?
+  - I've only had the occasional need for pairwise operations.
+    Operations on 3 or more Entities at once may either be represented
+    as pairwise interactions between all Entities involved, or involve
+    another mechanism to get at all the Entities in a sensible way.
+  - Probably not.
 ** Implementation
 *** DONE Lisp Interpreter [14/14]
 :LOGBOOK:
