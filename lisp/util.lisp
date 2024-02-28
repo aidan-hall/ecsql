@@ -1,8 +1,8 @@
 ;;; Basic definers for macros, functions and globals.
 (defname 'macro 'defmacro
-         (lambda (name params . body)
-           (list
-            'defname ''macro (list 'quote name) (cons 'lambda (cons params body)))))
+  (lambda (name params . body)
+    (list
+     'defname ''macro (list 'quote name) (cons 'lambda (cons params body)))))
 
 (defmacro defun (name params . body)
   (list
@@ -57,13 +57,13 @@
   (if l
       (cons (funcall f (car l))
             (mapcar f (cdr l)))
-    nil))
+      nil))
 
 (defun memql (elt list)
   (if (consp list)
       (if (eql elt (car list))
           list
-        (memql elt (cdr list)))))
+          (memql elt (cdr list)))))
 
 ;;; Common Macros
 (defmacro let (binds . body)
@@ -82,7 +82,7 @@
   (if binds
       (list 'let (list (car binds))
             (cons 'let* (cons (cdr binds) body)))
-    (cons 'progn body)))
+      (cons 'progn body)))
 
 (defmacro cond clauses
   ;; Evaluate the first expression in each clause until one is true,
@@ -91,7 +91,7 @@
       (let ((current (car clauses)))
         (list 'if (car current) (cons 'progn (cdr current))
               (cons 'cond (cdr clauses))))
-    clauses))
+      clauses))
 
 (defun qq-list-form (list)
   ;; Whether a quasiquoted expression can be translated into a call to `list'.
@@ -103,37 +103,37 @@
   ;; One backtick increases `level' by 1, one comma decreases it by 1.
   ;; Data at level 0 is inserted as code.
   (cond
-   ((eq level 0)
-    ;; At level 0, the form is unquoted.
-    form)
+    ((eq level 0)
+     ;; At level 0, the form is unquoted.
+     form)
 
-   ((not (consp form))
-    ;; Non-cons forms don't have sub-structure, so we can simply quote them and stop.
-    (list 'quote form))
+    ((not (consp form))
+     ;; Non-cons forms don't have sub-structure, so we can simply quote them and stop.
+     (list 'quote form))
 
-   (t
-    (let ((head (car form)))
-      (cond
-       ((eq head 'unquote)
-        ;; Decrease quasiquotation level by 1 for the sub-structure.
-        (let ((unquoted (quasiquote-rec (cadr form) (- level 1))))
-          ;; Only remove the innermost unquote (that reaches level 0).
-          ;; Repeated macroexpansion will successively remove the rest of the unquotes.
-          (if (> level 1)
-              (list 'unquote unquoted)
-            unquoted)))
+    (t
+     (let ((head (car form)))
+       (cond
+         ((eq head 'unquote)
+          ;; Decrease quasiquotation level by 1 for the sub-structure.
+          (let ((unquoted (quasiquote-rec (cadr form) (- level 1))))
+            ;; Only remove the innermost unquote (that reaches level 0).
+            ;; Repeated macroexpansion will successively remove the rest of the unquotes.
+            (if (> level 1)
+                (list 'unquote unquoted)
+                unquoted)))
 
-       ((eq head 'quasiquote)
-        ;; Increase quasiquotation level by 1 for the sub-structure.
-        (list 'quasiquote (quasiquote-rec (cadr form) (+ level 1))))
+         ((eq head 'quasiquote)
+          ;; Increase quasiquotation level by 1 for the sub-structure.
+          (list 'quasiquote (quasiquote-rec (cadr form) (+ level 1))))
 
-       (t
-        (if (qq-list-form form)
-            ;; Generating calls to `list' instead of `cons' makes the output shorter.
-            (cons 'list (mapcar (lambda (form) (quasiquote-rec form level)) form))
-          (list 'cons
-                (quasiquote-rec head level)
-                (quasiquote-rec (cdr form) level)))))))))
+         (t
+          (if (qq-list-form form)
+              ;; Generating calls to `list' instead of `cons' makes the output shorter.
+              (cons 'list (mapcar (lambda (form) (quasiquote-rec form level)) form))
+              (list 'cons
+                    (quasiquote-rec head level)
+                    (quasiquote-rec (cdr form) level)))))))))
 
 (defmacro quasiquote (form)
   (quasiquote-rec form 1))
@@ -141,7 +141,7 @@
 (defmacro unless (cond . body)
   `(if ,cond
        nil
-     . ,body))
+       . ,body))
 (defmacro when (cond . body)
   `(if ,cond
        (progn . ,body)))
@@ -154,11 +154,11 @@
                    ;; Treat t and otherwise as default clauses.
                    (if (memql (car clause) '(t otherwise))
                        (cons t (cdr clause))
-                     ;; Use `eql' directly if there is only one item in the clause.
-                     `(,(if (not (cdr (car clause)))
-                            `(eql ,gname ',(car (car clause)))
-                          `(memql ,gname ',(car clause)))
-                       . ,(cdr clause))))
+                       ;; Use `eql' directly if there is only one item in the clause.
+                       `(,(if (not (cdr (car clause)))
+                              `(eql ,gname ',(car (car clause)))
+                              `(memql ,gname ',(car clause)))
+                          . ,(cdr clause))))
                  clauses)))))
 
 ;;; Less Essential Utilities (Not Needed by any Common Macros)
@@ -188,8 +188,8 @@
       (let ((rest (filter f (cdr l))))
         (if (funcall f (car l))
             (cons (car l) rest)
-          rest))
-    nil))
+            rest))
+      nil))
 
 (defun reduce (f start elements)
   (while (consp elements)
@@ -200,7 +200,7 @@
 (defun last (l)
   (if (and (consp l) (consp (cdr l)))
       (last (cdr l))
-    l))
+      l))
 
 (defun nconc lists
   (while (and lists (not (car lists)))
@@ -288,7 +288,7 @@
   (if (and (consp a) (consp b))
       (and (equal (car a) (car b))
            (equal (cdr a) (cdr b)))
-    (eql a b)))
+      (eql a b)))
 
 (defmacro assert (spec)
   `(unless ,spec
@@ -310,9 +310,8 @@
       (if (eq form eof)
           (puts "End of file reached. Goodbye.
 ")
-        (prin1 (eval form))
-        (puts "
-")
-        )))
+          (prin1 (eval form))
+          (puts "
+"))))
   (puts "End of file reached. Goodbye.
 "))
