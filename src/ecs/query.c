@@ -63,10 +63,14 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
   foo.columns = calloc(foo.n_columns, sizeof(foo.columns[0]));
 
   for (size i = 0; i < kv_size(world->archetypes); ++i) {
+
+    Archetype *archetype = &kv_A(world->archetypes, i);
+    ArchetypeID id = archetype->id;
+    if (kv_size(archetype->entities) == 0) {
+      continue;
+    }
     Object traversal_components = components;
-    ArchetypeID id = kv_A(world->archetypes, i).id;
     if (ecs_query_matches(lisp, id, predicate)) {
-      Archetype *archetype = get_archetype(world, id);
       foo.archetype = archetype;
       /* Produce the array of Component columns */
       for (size j = 0; j < foo.n_columns; ++j) {
