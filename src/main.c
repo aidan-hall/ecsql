@@ -16,7 +16,7 @@
 #include <string.h>
 #include <threads.h>
 
-#define FPS (120)
+#define FPS (60)
 #define FRAMELEN (1.0 / FPS)
 #define SCREEN_HEIGHT (720)
 #define SCREEN_WIDTH (1280)
