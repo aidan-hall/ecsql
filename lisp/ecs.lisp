@@ -14,7 +14,10 @@
 (defcomponent Orientation v3)
 (defcomponent Health i32)
 (defcomponent Mass f32)
-(defcomponent Bounce nil)
+(defcomponent Bounce f32)
+(defcomponent Radius f32)
+(defcomponent Physics nil)
+(defcomponent Graphics nil)
 (defstruct colour
   (r i32)
   (g i32)
