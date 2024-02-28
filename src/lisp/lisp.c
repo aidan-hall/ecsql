@@ -278,8 +278,7 @@ Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
   return NIL;
 }
 
-static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
-                                    Object context) {
+Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
   /* TODO: Search in the lexical context. */
   while (OBJ_TYPE(context) == OBJ_PAIR_TAG) {

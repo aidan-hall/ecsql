@@ -213,6 +213,7 @@ Object lisp_evaluate_sequence(struct LispEnv *lisp, Object sequence,
                               Object context);
 Object lisp_add_to_namespace(struct LispEnv *lisp, khash_t(var_syms) * env,
                              Object symbol, Object value);
+Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context);
 Object lisp_lookup_function(LispEnv *lisp, Object symbol);
 Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value);
 
