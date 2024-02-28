@@ -156,10 +156,11 @@ LispEnv new_lisp_environment() {
   fclose(load_file);
 
   /* ECS Initialisation */
-  lisp.world = init_world(SYM(&lisp, "Storage"));
+  lisp.world = init_world();
   if (lisp.world == NULL) {
     wrong(&lisp, "Failed to initialise ECS world.\n", NIL);
   }
+  WorldComponents *world_components = ecs_world_components(lisp.world);
 
   lisp.comp.lisp_component_storage =
       ECS_NEW_COMPONENT(lisp.world, struct LispComponentStorage);
@@ -167,6 +168,30 @@ LispEnv new_lisp_environment() {
                     SYM(&lisp, "LispStorage"))) {
     wrong(&lisp, "Failed to set name for LispStorage component", NIL);
   }
+
+  lisp.comp.lisp_system = ecs_new(lisp.world);
+  if (!ecs_set_name(lisp.world, lisp.comp.lisp_system,
+                    SYM(&lisp, "LispSystem"))) {
+    wrong(&lisp, "Failed to set name for LispSystem component", NIL);
+  }
+
+
+  assert(ecs_set_name(lisp.world, world_components->storage,
+                      SYM(&lisp, "Storage")));
+  assert(
+      ecs_set_name(lisp.world, world_components->system, SYM(&lisp, "System")));
+  assert(ecs_set_name(lisp.world, world_components->nwise_system,
+                      SYM(&lisp, "NWiseSystem")));
+  assert(ecs_set_name(lisp.world, world_components->self_join_system,
+                      SYM(&lisp, "SelfJoin")));
+  assert(ecs_set_name(lisp.world, world_components->system_data,
+                      SYM(&lisp, "SystemData")));
+
+  /* This component should be a Lisp data component, so it has to be initialised
+   * here, rather than in init_world with the rest of them. */
+  world_components->query = lisp_new_ecs_component(&lisp, SYM(&lisp, "pair"));
+  assert(
+      ecs_set_name(lisp.world, world_components->query, SYM(&lisp, "Query")));
 
   /* Load the standard library */
   lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/stdlib.lisp\")"));

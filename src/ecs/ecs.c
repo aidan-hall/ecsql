@@ -1,3 +1,4 @@
+#include "ecs/query.h"
 #include <arena.h>
 #include <ecs/ecs.h>
 #include <ecs/ecs_internal.h>
@@ -334,7 +335,11 @@ Object ecs_new_component(World *world, struct Storage storage) {
   return obj;
 }
 
-struct World *init_world(Object storage_name) {
+WorldComponents *ecs_world_components(struct World *world) {
+  return &world->comp;
+}
+
+struct World *init_world() {
   World *world = malloc(sizeof(World));
   if (world == NULL)
     return NULL;
@@ -353,10 +358,6 @@ struct World *init_world(Object storage_name) {
 
   /* Set up internal Components */
   world->comp.storage = ecs_new(world);
-  if (!ecs_set_name(world, world->comp.storage, storage_name)) {
-    fprintf(stderr, "Failed to set name for Storage Component.\n");
-    goto err;
-  }
 
   kv_push(Object, some_type, world->comp.storage);
   Archetype *only_storage_archetype =
@@ -384,6 +385,14 @@ struct World *init_world(Object storage_name) {
   ecs_add(world, world->comp.storage, world->comp.storage);
   *(struct Storage *)ecs_get(world, world->comp.storage, world->comp.storage) =
       storage_storage;
+
+  /* Create the System components. */
+  world->comp.system = ECS_NEW_COMPONENT(world, SystemFunc *);
+  world->comp.nwise_system = ECS_NEW_COMPONENT(world, NWiseSystem);
+  world->comp.system_data = ECS_NEW_COMPONENT(world, void *);
+  static_assert(sizeof(void *) == sizeof(Object),
+                "we will store an Object in the bits of the void*");
+  world->comp.self_join_system = ecs_new(world);
 
   return world;
 
