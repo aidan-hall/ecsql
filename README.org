@@ -890,6 +890,31 @@ unnecessarily restrictive, and there are many plausible Components
 such as "Transform" that would contain multiple vectors/matrices for
 position and orientation.
 
+*** TODO Utility DSLs [2/3]
+**** DONE ecsql
+:LOGBOOK:
+- State "DONE"       from              [2024-02-28 Wed 11:33]
+:END:
+- Dispatch a query once, and run some code a single time on each
+  result.
+**** DONE ecs-new-system
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-28 Wed 11:34]
+- State "DOING"      from "TODO"       [2024-02-28 Wed 11:34]
+:END:
+- Take a Query, function, and set of Components to add to a new
+  system, that is immediately created and can start running in the
+  game loop.
+**** DOING Scene Definition Macros
+:LOGBOOK:
+CLOCK: [2024-02-28 Wed 12:08]--[2024-02-28 Wed 12:33] =>  0:25
+CLOCK: [2024-02-28 Wed 11:36]--[2024-02-28 Wed 12:01] =>  0:25
+- State "DOING"      from "TODO"       [2024-02-28 Wed 11:36]
+:END:
+Short-hand macros to make it easier and quicker to define (and
+manipulate) initial scene data.
+- [X] ~ecs-add*~
+- [X] ~ecs-create~
 * Development Notes
 ** Recurring Bugs
 *** Junk in unused bits of ~Object~
