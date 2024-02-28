@@ -1,4 +1,5 @@
 /* Primitive Lisp functions, macros and reader macros. */
+#include "raylib.h"
 #include <ecs/ecs.h>
 #include <klib/khash.h>
 #include <lisp/lisp.h>
@@ -9,6 +10,7 @@
 #include <lisp/reader.h>
 #include <lisp/systems.h>
 #include <lisp/types.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
