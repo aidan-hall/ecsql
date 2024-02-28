@@ -102,22 +102,64 @@ void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
 
 void do_bounce(LispEnv *lisp, struct EcsIter *iter, void *data) {
   size N = ecs_iter_count(iter);
+
   struct Vec2 *poss = ecs_iter_get(iter, 0);
   struct Vec2 *vels = ecs_iter_get(iter, 1);
+  const float *bounce_damp = ecs_iter_get(iter, 2);
+
   for (size i = 0; i < N; ++i) {
     if (poss[i].y < 0) {
       poss[i].y = 0;
-      vels[i].y *= -1;
+      vels[i].y *= -bounce_damp[i];
     } else if (poss[i].y > SCREEN_HEIGHT) {
       poss[i].y = SCREEN_HEIGHT;
-      vels[i].y *= -1;
+      vels[i].y *= -bounce_damp[i];
     }
     if (poss[i].x < 0) {
       poss[i].x = 0;
-      vels[i].x *= -1;
+      vels[i].x *= -bounce_damp[i];
     } else if (poss[i].x > SCREEN_WIDTH) {
       poss[i].x = SCREEN_WIDTH;
-      vels[i].x *= -1;
+      vels[i].x *= -bounce_damp[i];
+    }
+  }
+}
+
+void collision_system(LispEnv *lisp, struct EcsIter **iter, void *data) {
+  /* printf("Running collisions for archetypes %u and %u\n", archetype0.val,
+   * archetype1.val); */
+  float delta = GetFrameTime();
+
+  size N = ecs_iter_count(iter[0]);
+  struct Vec2 *possn = ecs_iter_get(iter[0], 0);
+  struct Vec2 *velsn = ecs_iter_get(iter[0], 1);
+  float *radiin = ecs_iter_get(iter[0], 2);
+  float *bouncen = ecs_iter_get(iter[0], 3);
+
+  size M = ecs_iter_count(iter[1]);
+  struct Vec2 *possm = ecs_iter_get(iter[1], 0);
+  struct Vec2 *velsm = ecs_iter_get(iter[1], 1);
+  float *radiim = ecs_iter_get(iter[1], 2);
+  float *bouncem = ecs_iter_get(iter[1], 3);
+
+  for (size i = 0; i < N; ++i) {
+    /* Skip indistinct pairs of Entities in the same archetype */
+    for (size j = ecs_iter_same_archetype(iter[0], iter[1]) ? i + 1 : 0; j < M;
+         ++j) {
+      Vec2 diff = v2sub(possm[j], possn[i]);
+      float dist2 = v2len2(diff);
+      float threshold = powf(radiin[i], 2) + powf(radiim[j], 2);
+      if (dist2 <= threshold) {
+        /* printf("collision (%f, %f): %u in %u & %u in %u\n", diff.x, diff.y,
+         */
+        /*        idsn[i].val, archetype0.val, idsm[j].val, archetype1.val); */
+        possn[i] = v2sub(possn[i], v2smul(velsn[i], 2 * delta));
+        possm[j] = v2sub(possm[j], v2smul(velsm[j], 2 * delta));
+
+        Vec2 dir = v2norm(diff);
+        velsm[j] = v2smul(v2reflect(velsm[j], dir), bouncem[j]);
+        velsn[i] = v2smul(v2reflect(velsn[i], dir), bouncen[i]);
+      }
     }
   }
 }
@@ -182,21 +224,36 @@ int main(int argc, char *argv[]) {
            pos_storage.alignment);
   }
 
+  Object physics_component = ecs_lookup_by_name(world, SYM(lisp, "Physics"));
+  Object graphics_component = ecs_lookup_by_name(world, SYM(lisp, "Graphics"));
 
+  ecs_add(world,
+          ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Colour)"),
+                         mouse_gravity, NULL),
+          physics_component);
 
-  Object mover_query = lisp_eval(
-      lisp, lisp_macroexpand(lisp, OBJS(lisp, "(select Pos Vel Colour)")));
-  Object bouncer_query = lisp_eval(
+  ecs_add(world,
+          ecs_new_system(lisp,
+                         LISP_EVAL_STR(lisp, "(select Pos Colour Radius)"),
+                         draw_movers, NULL),
+          graphics_component);
+  ecs_add(world,
+          ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Bounce)"),
+                         do_bounce, NULL),
+          physics_component);
+  ecs_add(world,
+          ecs_new_self_join_system(
+              lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Radius Bounce)"),
+              (NWiseSystem){collision_system, NWISE_DISTINCT}, NULL),
+          physics_component);
+
+  Object nwise_physics_query = LISP_EVAL_STR(
       lisp,
-      lisp_macroexpand(lisp, OBJS(lisp, "(select Pos Vel (with Bounce))")));
-  /* CachedQueryID cached_mover_query = ecs_query(lisp, mover_query); */
-  /* ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL); */
-  Object lisp_move_system =
-      lisp_lookup_function(lisp, SYM(lisp, "move-system"));
-  ecs_do_query(lisp, mover_query, print_mover, NULL);
-  /* ecs_do_cached_query(lisp, cached_mover_query, lisp_run_system, */
-  /*                     &lisp_move_system); */
-  /* ecs_do_cached_query(lisp, cached_mover_query, print_mover, NULL); */
+      "(select NWiseSystem Query SystemData (with SelfJoin) (with Physics))");
+  Object physics_query =
+      LISP_EVAL_STR(lisp, "(select System Query SystemData (with Physics))");
+  Object graphics_query =
+      LISP_EVAL_STR(lisp, "(select System Query SystemData (with Graphics))");
 
   /* Main game loop */
   thrd_t repl_thread;
@@ -204,17 +261,14 @@ int main(int argc, char *argv[]) {
   thrd_create(&repl_thread, repl_thread_function, lisp);
   SetTargetFPS(FPS);
   while (!WindowShouldClose()) {
-    ecs_do_query(lisp, mover_query, lisp_run_system, &lisp_move_system);
-    ecs_do_query(lisp, bouncer_query, bounce_system, NULL);
-    /* ecs_do_query(lisp, mover_query, apply_velocity, NULL); */
-    /* ecs_do_cached_query(lisp, cached_mover_query, run_lisp_system,
-     * &lisp_move_system); */
-    /* ecs_do_cached_query(lisp, cached_mover_query, apply_velocity, NULL); */
+
+    ecs_do_query(lisp, nwise_physics_query, run_matching_self_join_systems,
+                 NULL);
+    ecs_do_query(lisp, physics_query, run_matching_systems, NULL);
     BeginDrawing();
-    DrawFPS(1150, 10);
     ClearBackground(BLACK);
-    ecs_do_query(lisp, mover_query, draw_movers, NULL);
-    /* ecs_do_query(lisp, mover_query, print_mover, NULL); */
+    ecs_do_query(lisp, graphics_query, run_matching_systems, NULL);
+    DrawFPS(1150, 10);
     EndDrawing();
   }
   CloseWindow();
