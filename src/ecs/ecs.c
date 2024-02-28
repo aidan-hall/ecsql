@@ -168,24 +168,6 @@ Object ecs_new(World *world) {
   return entity;
 }
 
-[[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
-                                Object name) {
-  khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
-  if (iter != kh_end(world->entity_names)) {
-    fprintf(stderr, "An Entity with the supplied name already exists.\n");
-    return false;
-  }
-  int absent;
-  iter = kh_put(entity_name, world->entity_names, name.bits, &absent);
-  if (absent < 0) {
-    fprintf(stderr, "Failed to add a name for the supplied entity.\n");
-    return false;
-  }
-
-  kh_value(world->entity_names, iter) = entity;
-  return true;
-}
-
 Object ecs_lookup_by_name(struct World *world, Object name) {
   khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
   if (iter == kh_end(world->entity_names)) {
@@ -202,6 +184,24 @@ Object ecs_lookup_by_name(struct World *world, Object name) {
   }
 
   return entity;
+}
+
+[[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
+                                Object name) {
+  Object existing = ecs_lookup_by_name(world, name);
+  if (!EQ(existing, NIL)) {
+    fprintf(stderr, "An Entity with the supplied name already exists.\n");
+    return false;
+  }
+  int absent;
+  khiter_t iter = kh_put(entity_name, world->entity_names, name.bits, &absent);
+  if (absent < 0) {
+    fprintf(stderr, "Failed to add a name for the supplied entity.\n");
+    return false;
+  }
+
+  kh_value(world->entity_names, iter) = entity;
+  return true;
 }
 
 /* Remove the Entity in the given row, and maintain packing. */
