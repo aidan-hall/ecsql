@@ -64,5 +64,18 @@
   (let* ((query (fixup-predicate predicate))
          (code (create-system-function names body (car query))))
     `(ecs-do-query ',query ,code)))
+
+(defmacro ecs-new-system (components predicate names . body)
+  (let* ((query (fixup-predicate predicate))
+         (code (create-system-function names body (car query)))
+         (sysname (gensym)))
+    `(let ((,sysname (ecs-register-system ',query ,code)))
+       (progn
+         . ,(mapcar (lambda (component)
+                      `(ecs-add ,sysname
+                                ',(ecs-lookup component)))
+                    components))
+       ,sysname)))
+
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
