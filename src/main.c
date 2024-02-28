@@ -280,7 +280,6 @@ int main(int argc, char *argv[]) {
   CloseWindow();
   thrd_join(repl_thread, NULL);
   printf("goodbye\n");
-  /* lisp_eval(lisp, OBJS(lisp, "(repl)")); */
 
   return 0;
 }
