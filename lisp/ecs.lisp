@@ -1,5 +1,5 @@
 (defmacro defcomponent (name type)
-  `(if (ecs-lookup-by-name ',name)
+  `(if (ecs-lookup ',name)
        (wrong "An entity with the given name already exists" ',name)
      (let ((comp (ecs-new-component ',type)))
        ;; Attempt to set the name inside the ECS first, since this could fail.

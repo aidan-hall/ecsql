@@ -1091,7 +1091,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-get", "(entity (or entity relation))", prim_ecs_get);
   DEFPRIMFUN("ecs-set", "(entity (or entity relation) t)", prim_ecs_set);
   DEFPRIMFUN("ecs-set-name", "(entity symbol)", prim_ecs_set_name);
-  DEFPRIMFUN("ecs-lookup-by-name", "(symbol)", prim_ecs_lookup_by_name);
+  DEFPRIMFUN("ecs-lookup", "(symbol)", prim_ecs_lookup_by_name);
   DEFPRIMFUN("ecs-has", "(entity (or entity relation))", prim_ecs_has);
   DEFPRIMFUN("ecs-alive", "(entity)", prim_ecs_alive);
   DEFPRIMFUN("ecs-add", "(entity (or entity relation))", prim_ecs_add);
