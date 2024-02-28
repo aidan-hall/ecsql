@@ -21,6 +21,10 @@
 #define SCREEN_HEIGHT (720)
 #define SCREEN_WIDTH (1280)
 
+static inline Color vec4i_to_colour(Vec4i colour) {
+  return (Color){.r = colour.x, .g = colour.y, .b = colour.z, .a = colour.w};
+}
+
 int repl_thread_function(void *_lisp) {
   LispEnv *lisp = (LispEnv *)_lisp;
   if (setjmp(lisp->error_loc) != 0) {
