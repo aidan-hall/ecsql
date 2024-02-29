@@ -33,5 +33,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 target_link_libraries(Ecsql PUBLIC raylib)
 
+## Raygui
+FetchContent_Declare(
+  raygui
+  GIT_REPOSITORY https://github.com/raysan5/raygui.git
+  GIT_TAG 4.0
+  SOURCE_SUBDIR projects/CMake
+)
+FetchContent_MakeAvailable(raygui)
+target_link_libraries(Ecsql PUBLIC raygui)
+
 target_include_directories(Ecsql PUBLIC ../include ../external)
 file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json" "compile_commands.json" SYMBOLIC)
