@@ -1,7 +1,8 @@
+(defvar raylib-orange (make-colour 255 161 0 255))
 (ecs-add* (ecs-new)
           (name 'Gandalf)
           (Species . Wizard)
-          (Colour 255 161 0 255)        ; Raylib orange
+          (Colour = raylib-orange)
           (Radius 20.0)
           (Pos 100. 100.)
           (Bounce 0.0)
