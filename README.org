@@ -922,3 +922,8 @@ manipulate) initial scene data.
 - This ensures that two Objects that store the same value are
   bit-for-bit identical, so we can use the cheap C ~==~ operator to
   implement ~(eq)~ in Lisp.
+** Evaluation Day Survey Results
+- Survey: https://docs.google.com/forms/d/1vUGaDhqMAvydt-CoOt62zEJN7ihMKbf38fNVJE4KdlI/edit
+- We only got 0-2 responses per question, with the only helpful
+  suggestion being adding documentation or a tutorial to make the
+  system easier to use.
