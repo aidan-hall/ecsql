@@ -6,6 +6,7 @@ project(ECSQL VERSION 0.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 set(CMAKE_C_VERSION 23)
 set(CMAKE_C_VERSION_REQUIRED True)
+set(FETCHCONTENT_QUIET False)
 
 add_executable(Ecsql
   arena.c main.c
