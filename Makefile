@@ -1,4 +1,4 @@
-CC	= gcc
+CC	= scl enable gcc-toolset-13 -- gcc
 SRCDIR	= src
 SRCS	:= $(wildcard $(SRCDIR)/*.c) $(wildcard $(SRCDIR)/**/*.c)
 
@@ -6,7 +6,7 @@ TARGET = ecsql
 
 CPPFLAGS := -std=gnu2x $(CVERSION)
 CPPFLAGS += $(addprefix -I, include/ external/)
-CFLAGS	+= $(CPPFLAGS) -Wall
+CFLAGS	+= $(CPPFLAGS) -Wall -lpthread
 
 LDLIBS =
 
