@@ -3,7 +3,6 @@
 #include <common.h>
 #include <ecs/ecs.h>
 #include <ecs/query.h>
-#include <linalg.h>
 #include <lisp/lexer.h>
 #include <lisp/lisp.h>
 #include <lisp/print.h>
@@ -11,6 +10,7 @@
 #include <lisp/systems.h>
 #include <math.h>
 #include <raylib.h>
+#include <raymath.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +20,13 @@
 #define FRAMELEN (1.0 / FPS)
 #define SCREEN_HEIGHT (720)
 #define SCREEN_WIDTH (1280)
+
+typedef struct Vec4i {
+  i32 x;
+  i32 y;
+  i32 z;
+  i32 w;
+} Vec4i;
 
 static inline Color vec4i_to_colour(Vec4i colour) {
   return (Color){.r = colour.x, .g = colour.y, .b = colour.z, .a = colour.w};
@@ -79,17 +86,17 @@ void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
   IGNORE(data);
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-    Vec2 mouse_pos = (Vec2){GetMouseX(), GetMouseY()};
+    Vector2 mouse_pos = (Vector2){GetMouseX(), GetMouseY()};
     size N = ecs_iter_count(iter);
-    struct Vec2 *poss = ecs_iter_get(iter, 0);
-    struct Vec2 *vels = ecs_iter_get(iter, 1);
+    struct Vector2 *poss = ecs_iter_get(iter, 0);
+    struct Vector2 *vels = ecs_iter_get(iter, 1);
 
     for (size i = 0; i < N; ++i) {
-      Vec2 to_centre = v2sub(mouse_pos, poss[i]);
+      Vector2 to_centre = Vector2Subtract(mouse_pos, poss[i]);
       /* It would be more realistic to normalise, but this produces a more
        * visible effect */
-      /* Vec2 dir_to_centre = v2norm(to_centre); */
-      float dist_to_centre2 = v2len2(to_centre);
+      /* Vector2 dir_to_centre = Vector2Normalize(to_centre); */
+      float dist_to_centre2 = Vector2LengthSqr(to_centre);
       /* Prevent badness at the centre. TODO: Bounce off the mouse or something.
        */
       if (dist_to_centre2 <= 25.0)
@@ -103,8 +110,8 @@ void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
 void do_bounce(LispEnv *lisp, struct EcsIter *iter, void *data) {
   size N = ecs_iter_count(iter);
 
-  struct Vec2 *poss = ecs_iter_get(iter, 0);
-  struct Vec2 *vels = ecs_iter_get(iter, 1);
+  struct Vector2 *poss = ecs_iter_get(iter, 0);
+  struct Vector2 *vels = ecs_iter_get(iter, 1);
   const float *bounce_damp = ecs_iter_get(iter, 2);
 
   for (size i = 0; i < N; ++i) {
@@ -131,14 +138,14 @@ void collision_system(LispEnv *lisp, struct EcsIter **iter, void *data) {
   float delta = GetFrameTime();
 
   size N = ecs_iter_count(iter[0]);
-  struct Vec2 *possn = ecs_iter_get(iter[0], 0);
-  struct Vec2 *velsn = ecs_iter_get(iter[0], 1);
+  struct Vector2 *possn = ecs_iter_get(iter[0], 0);
+  struct Vector2 *velsn = ecs_iter_get(iter[0], 1);
   float *radiin = ecs_iter_get(iter[0], 2);
   float *bouncen = ecs_iter_get(iter[0], 3);
 
   size M = ecs_iter_count(iter[1]);
-  struct Vec2 *possm = ecs_iter_get(iter[1], 0);
-  struct Vec2 *velsm = ecs_iter_get(iter[1], 1);
+  struct Vector2 *possm = ecs_iter_get(iter[1], 0);
+  struct Vector2 *velsm = ecs_iter_get(iter[1], 1);
   float *radiim = ecs_iter_get(iter[1], 2);
   float *bouncem = ecs_iter_get(iter[1], 3);
 
@@ -146,26 +153,26 @@ void collision_system(LispEnv *lisp, struct EcsIter **iter, void *data) {
     /* Skip indistinct pairs of Entities in the same archetype */
     for (size j = ecs_iter_same_archetype(iter[0], iter[1]) ? i + 1 : 0; j < M;
          ++j) {
-      Vec2 diff = v2sub(possm[j], possn[i]);
-      float dist2 = v2len2(diff);
+      Vector2 diff = Vector2Subtract(possm[j], possn[i]);
+      float dist2 = Vector2LengthSqr(diff);
       float threshold = powf(radiin[i], 2) + powf(radiim[j], 2);
       if (dist2 <= threshold) {
         /* printf("collision (%f, %f): %u in %u & %u in %u\n", diff.x, diff.y,
          */
         /*        idsn[i].val, archetype0.val, idsm[j].val, archetype1.val); */
-        possn[i] = v2sub(possn[i], v2smul(velsn[i], 2 * delta));
-        possm[j] = v2sub(possm[j], v2smul(velsm[j], 2 * delta));
+        possn[i] = Vector2Subtract(possn[i], Vector2Scale(velsn[i], 2 * delta));
+        possm[j] = Vector2Subtract(possm[j], Vector2Scale(velsm[j], 2 * delta));
 
-        Vec2 dir = v2norm(diff);
-        velsm[j] = v2smul(v2reflect(velsm[j], dir), bouncem[j]);
-        velsn[i] = v2smul(v2reflect(velsn[i], dir), bouncen[i]);
+        Vector2 dir = Vector2Normalize(diff);
+        velsm[j] = Vector2Scale(Vector2Reflect(velsm[j], dir), bouncem[j]);
+        velsn[i] = Vector2Scale(Vector2Reflect(velsn[i], dir), bouncen[i]);
       }
     }
   }
 }
 
 void draw_movers(LispEnv *lisp, struct EcsIter *iter, void *data) {
-  struct Vec2 *poss = ecs_iter_get(iter, 0);
+  struct Vector2 *poss = ecs_iter_get(iter, 0);
   struct Vec4i *colours = ecs_iter_get(iter, 1);
   float *radii = ecs_iter_get(iter, 2);
   size N = ecs_iter_count(iter);
@@ -179,8 +186,8 @@ void print_mover(LispEnv *lisp, struct EcsIter *iter, void *data) {
   printf("Printing some movers...\n");
   IGNORE(data);
   EntityID *ids = ecs_iter_ids(iter);
-  struct Vec2 *poss = ecs_iter_get(iter, 0);
-  struct Vec2 *vels = ecs_iter_get(iter, 1);
+  struct Vector2 *poss = ecs_iter_get(iter, 0);
+  struct Vector2 *vels = ecs_iter_get(iter, 1);
   size N = ecs_iter_count(iter);
   for (size i = 0; i < N; ++i) {
     printf("Entity %u: pos: (%f, %f), vel: (%f, %f)\n", ids[i].val, poss[i].x,
