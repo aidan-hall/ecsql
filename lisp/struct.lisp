@@ -97,23 +97,28 @@
          (let ((dest-type (type-of dest)))
            (assert (eq dest-type ',struct-type))
            (assert (eq dest-type (type-of src))))
-         (--struct-set-vec dest 0 ,my-size src))
+         (--struct-set-vec dest 0 src ,my-size))
+       ;; A setter for every member of a struct.
+       (defun ,(intern (concat "set-" my-name))
+           ;; Argument list
+           (me . ,my-member-symbols)
+         (progn
+           . ,(mapcar
+               (lambda (member-name)
+                 `(,(intern (concat "set-" my-name "-" member-name))
+                    me
+                    ,(intern member-name)))
+               my-member-names))
+         ;; Return the produced struct
+         me)
        ;; Constructor
        (defun ,(intern (concat "make-" my-name))
            ;; Produce argument list
            ,my-member-symbols
          ;; Allocate the structure
          (let ((me (--struct-allocate ,my-size ,my-id)))
-           ;; Assign the initial values
-           (progn
-             . ,(mapcar
-                 (lambda (member-name)
-                   `(,(intern (concat "set-" my-name "-" member-name))
-                      me
-                      ,(intern member-name)))
-                 my-member-names))
-           ;; Return the produced struct
-           me))
+           ;; Assign the initial values by calling out to the "whole struct" setter.
+           (,(intern (concat "set-" my-name)) me . ,my-member-symbols)))
 
        ;; Getters and setters
        . ,(mapcar

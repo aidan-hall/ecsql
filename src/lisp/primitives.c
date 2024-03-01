@@ -1,4 +1,5 @@
 /* Primitive Lisp functions, macros and reader macros. */
+#include "raylib.h"
 #include <ecs/ecs.h>
 #include <klib/khash.h>
 #include <lisp/lisp.h>
@@ -9,6 +10,7 @@
 #include <lisp/reader.h>
 #include <lisp/systems.h>
 #include <lisp/types.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -353,6 +355,14 @@ static Object prim_add2f(LispEnv *lisp, Object args) {
 static Object prim_mod(LispEnv *lisp, Object args) {
   return OBJ_BOX(
       BIT_CAST(i32, OBJ_UNBOX(FIRST)) % BIT_CAST(i32, OBJ_UNBOX(SECOND)), INT);
+}
+
+static Object prim_floor(LispEnv *lisp, Object args) {
+  return OBJ_IMM((i32)floorf(lisp_unbox_float(FIRST)));
+}
+
+static Object prim_ceiling(LispEnv *lisp, Object args) {
+  return OBJ_IMM((i32)ceilf(lisp_unbox_float(FIRST)));
 }
 
 #define LISP_CMP(NAME, OP)                                                     \
@@ -776,6 +786,14 @@ static Object prim_make_entity(LispEnv *lisp, Object args) {
   return ENT_BOX((EntityID){BIT_CAST(u32, OBJ_UNBOX(FIRST))},
                  BIT_CAST(u32, OBJ_UNBOX(SECOND)));
 }
+/* Obtain the live Entity with the supplied ID, otherwise NIL. */
+static Object prim_entity_with_id(LispEnv *lisp, Object args) {
+  EntityID id = (EntityID){OBJ_UNBOX(FIRST)};
+  u16 *gen = ecs_generation(lisp->world, id);
+  Object entity = ENT_BOX(id, *gen);
+  return ecs_alive(lisp->world, entity) ? entity : NIL;
+}
+
 static Object prim_ecs_new(LispEnv *lisp, Object args) {
   return ecs_new(lisp->world);
 }
@@ -885,6 +903,39 @@ static Object prim_ecs_set(LispEnv *lisp, Object args) {
   return value;
 }
 
+/* Returns nil for Entities with no Storage or LispComponentStorage. */
+static Object prim_ecs_storage_type(LispEnv *lisp, Object args) {
+  Object entity = FIRST;
+  struct World *world = lisp->world;
+  WorldComponents *world_components = ecs_world_components(world);
+
+  if (OBJ_TYPE(entity) == OBJ_RELATION_TAG) {
+    Object original = entity;
+    entity = ecs_object_with_id(world, (EntityID){entity.relation});
+    if (EQ(entity, NIL)) {
+      WRONG("Failed to get storage type of a relation", original);
+      return UNDEFINED;
+    }
+  }
+
+  if (!ecs_has(world, entity, world_components->storage) ||
+      !ecs_has(world, entity, lisp->comp.lisp_component_storage)) {
+    return NIL;
+  }
+  struct LispComponentStorage storage = *(struct LispComponentStorage *)ecs_get(
+      world, entity, lisp->comp.lisp_component_storage);
+  if (storage.type != STORE_STRUCT) {
+    return lisp_type_name(lisp, storage.object_type);
+  }
+  u16 id = storage.struct_id;
+  khiter_t iter = kh_get(struct_ids, lisp->struct_ids, id);
+  if (iter == kh_end(lisp->struct_ids)) {
+    WRONG("Couldn't find name of struct with ID", OBJ_IMM((i32)id));
+    return UNDEFINED;
+  }
+  return kh_value(lisp->struct_ids, iter);
+}
+
 static Object prim_ecs_set_name(LispEnv *lisp, Object args) {
   return lisp_bool(lisp, ecs_set_name(lisp->world, FIRST, SECOND));
 }
@@ -946,8 +997,63 @@ static Object prim_ecs_new_component(LispEnv *lisp, Object args) {
 static Object prim_ecs_do_query(LispEnv *lisp, Object args) {
   Object query = FIRST;
   Object function = SECOND;
-  ecs_do_query(lisp, query, lisp_run_system, &function);
+  ecs_do_query(lisp, query, lisp_run_system, BIT_CAST(void *, function));
   return NIL;
+}
+
+static Object prim_get_mouse_y(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  float y = GetMouseY();
+  return OBJ_IMM(y);
+}
+
+static Object prim_get_mouse_x(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  float x = GetMouseX();
+  return OBJ_IMM(x);
+}
+
+static Object prim_get_delta(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  return OBJ_IMM(GetFrameTime());
+}
+
+static Object prim_draw_text(LispEnv *lisp, Object args) {
+  const char *text = (char *)lisp_string_to_null_terminated(lisp, FIRST);
+  SHIFT_ARGS(1);
+  float x = lisp_unbox_float(FIRST);
+  SHIFT_ARGS(1);
+  float y = lisp_unbox_float(FIRST);
+  SHIFT_ARGS(1);
+  float font_size = lisp_unbox_float(FIRST);
+
+  DrawText(text, x, y, font_size, WHITE);
+  return NIL;
+}
+
+static MouseButton symbol_to_mouse_button(LispEnv *lisp, Object sym) {
+  if (EQ(sym, lisp->keysyms.left)) {
+    return MOUSE_BUTTON_LEFT;
+  } else if (EQ(sym, lisp->keysyms.right)) {
+    return MOUSE_BUTTON_RIGHT;
+  } else {
+    WRONG("Invalid mouse button name", sym);
+    exit(1);
+  }
+}
+
+static Object prim_mouse_pressed(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp,
+                   IsMouseButtonPressed(symbol_to_mouse_button(lisp, FIRST)));
+}
+
+static Object prim_mouse_down(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp,
+                   IsMouseButtonDown(symbol_to_mouse_button(lisp, FIRST)));
+}
+
+static Object prim_make_system(LispEnv *lisp, Object args) {
+  return lisp_make_system(lisp, FIRST, SECOND);
 }
 
 /* READER MACROS */
@@ -1030,6 +1136,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("/", "(t . t)", prim_div);
   DEFPRIMFUN("-", "(* (or f32 i32))", prim_sub);
   DEFPRIMFUN("+", "(* (or f32 i32))", prim_add);
+  DEFPRIMFUN("floor", "(f32)", prim_floor);
+  DEFPRIMFUN("ceiling", "(f32)", prim_ceiling);
   DEFPRIMFUN("quit", "()", prim_quit);
   DEFPRIMFUN("fopen", "(string string)", lisp_open_file);
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
@@ -1087,11 +1195,12 @@ void lisp_install_primitives(LispEnv *lisp) {
 
   DEFPRIMFUN("ecs-new", "()", prim_ecs_new);
   DEFPRIMFUN("make-entity", "(i32 i32)", prim_make_entity);
+  DEFPRIMFUN("ecs-entity", "(i32)", prim_entity_with_id);
   DEFPRIMFUN("ecs-destroy", "(entity)", prim_ecs_destroy);
   DEFPRIMFUN("ecs-get", "(entity (or entity relation))", prim_ecs_get);
   DEFPRIMFUN("ecs-set", "(entity (or entity relation) t)", prim_ecs_set);
   DEFPRIMFUN("ecs-set-name", "(entity symbol)", prim_ecs_set_name);
-  DEFPRIMFUN("ecs-lookup-by-name", "(symbol)", prim_ecs_lookup_by_name);
+  DEFPRIMFUN("ecs-lookup", "(symbol)", prim_ecs_lookup_by_name);
   DEFPRIMFUN("ecs-has", "(entity (or entity relation))", prim_ecs_has);
   DEFPRIMFUN("ecs-alive", "(entity)", prim_ecs_alive);
   DEFPRIMFUN("ecs-add", "(entity (or entity relation))", prim_ecs_add);
@@ -1104,6 +1213,17 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-target", "(relation)", prim_ecs_pair_target);
   DEFPRIMFUN("ecs-new-component", "(symbol)", prim_ecs_new_component);
   DEFPRIMFUN("ecs-do-query", "(t t)", prim_ecs_do_query);
+  DEFPRIMFUN("ecs-register-system", "(pair (or closure primitive))",
+             prim_make_system);
+  DEFPRIMFUN("ecs-storage-type", "((or entity relation))",
+             prim_ecs_storage_type);
+
+  DEFPRIMFUN("get-mouse-y", "()", prim_get_mouse_y);
+  DEFPRIMFUN("get-mouse-x", "()", prim_get_mouse_x);
+  DEFPRIMFUN("get-delta", "()", prim_get_delta);
+  DEFPRIMFUN("draw-text", "(string f32 f32 i32)", prim_draw_text);
+  DEFPRIMFUN("is-mouse-down", "(symbol)", prim_mouse_down);
+  DEFPRIMFUN("is-mouse-pressed", "(symbol)", prim_mouse_pressed);
 #undef DEFPRIMFUN
 #undef OBJSX
 }

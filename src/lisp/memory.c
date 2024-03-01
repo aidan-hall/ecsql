@@ -8,13 +8,13 @@
 Memory new_lisp_memory(size capacity) {
   /* Allocate enough space for the active and inactive stores. */
   Memory memory;
-  memory.space = new_arena(capacity * 2);
+  memory.space = new_arena(capacity);
   if (memory.space.end == NULL) {
     fputs("Failed to allocate memory for Lisp.", stderr);
     exit(EXIT_FAILURE);
   }
   memory.active = (Arena){memory.space.begin, memory.space.begin + capacity};
-  memory.inactive = (Arena){memory.active.begin, memory.space.end};
+  memory.inactive = (Arena){NULL, NULL};
 
   return memory;
 }

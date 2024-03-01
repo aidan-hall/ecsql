@@ -1,3 +1,4 @@
+#include "ecs/query.h"
 #include <arena.h>
 #include <ecs/ecs.h>
 #include <ecs/ecs_internal.h>
@@ -168,24 +169,6 @@ Object ecs_new(World *world) {
   return entity;
 }
 
-[[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
-                                Object name) {
-  khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
-  if (iter != kh_end(world->entity_names)) {
-    fprintf(stderr, "An Entity with the supplied name already exists.\n");
-    return false;
-  }
-  int absent;
-  iter = kh_put(entity_name, world->entity_names, name.bits, &absent);
-  if (absent < 0) {
-    fprintf(stderr, "Failed to add a name for the supplied entity.\n");
-    return false;
-  }
-
-  kh_value(world->entity_names, iter) = entity;
-  return true;
-}
-
 Object ecs_lookup_by_name(struct World *world, Object name) {
   khiter_t iter = kh_get(entity_name, world->entity_names, name.bits);
   if (iter == kh_end(world->entity_names)) {
@@ -202,6 +185,24 @@ Object ecs_lookup_by_name(struct World *world, Object name) {
   }
 
   return entity;
+}
+
+[[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
+                                Object name) {
+  Object existing = ecs_lookup_by_name(world, name);
+  if (!EQ(existing, NIL)) {
+    fprintf(stderr, "An Entity with the supplied name already exists.\n");
+    return false;
+  }
+  int absent;
+  khiter_t iter = kh_put(entity_name, world->entity_names, name.bits, &absent);
+  if (absent < 0) {
+    fprintf(stderr, "Failed to add a name for the supplied entity.\n");
+    return false;
+  }
+
+  kh_value(world->entity_names, iter) = entity;
+  return true;
 }
 
 /* Remove the Entity in the given row, and maintain packing. */
@@ -334,7 +335,11 @@ Object ecs_new_component(World *world, struct Storage storage) {
   return obj;
 }
 
-struct World *init_world(Object storage_name) {
+WorldComponents *ecs_world_components(struct World *world) {
+  return &world->comp;
+}
+
+struct World *init_world() {
   World *world = malloc(sizeof(World));
   if (world == NULL)
     return NULL;
@@ -353,10 +358,6 @@ struct World *init_world(Object storage_name) {
 
   /* Set up internal Components */
   world->comp.storage = ecs_new(world);
-  if (!ecs_set_name(world, world->comp.storage, storage_name)) {
-    fprintf(stderr, "Failed to set name for Storage Component.\n");
-    goto err;
-  }
 
   kv_push(Object, some_type, world->comp.storage);
   Archetype *only_storage_archetype =
@@ -384,6 +385,14 @@ struct World *init_world(Object storage_name) {
   ecs_add(world, world->comp.storage, world->comp.storage);
   *(struct Storage *)ecs_get(world, world->comp.storage, world->comp.storage) =
       storage_storage;
+
+  /* Create the System components. */
+  world->comp.system = ECS_NEW_COMPONENT(world, SystemFunc *);
+  world->comp.nwise_system = ECS_NEW_COMPONENT(world, NWiseSystem);
+  world->comp.system_data = ECS_NEW_COMPONENT(world, void *);
+  static_assert(sizeof(void *) == sizeof(Object),
+                "we will store an Object in the bits of the void*");
+  world->comp.self_join_system = ecs_new(world);
 
   return world;
 

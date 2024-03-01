@@ -27,24 +27,55 @@
        ((with)
         (cons nil (cdr (translate-predicate (cadr predicate)))))
        ((rel)
-        (let ((component (ecs-pair (ecs-lookup-by-name (cadr predicate))
-                                   (ecs-lookup-by-name (caddr predicate)))))
+        (let ((component (ecs-pair (ecs-lookup (cadr predicate))
+                                   (ecs-lookup (caddr predicate)))))
           (cons (list component) component)))
-       ((t)
+       (t
         (wrong "Invalid predicate form" predicate))))
     ;; Resolve Component names
     ((symbol)
-     (let ((component (ecs-lookup-by-name predicate)))
+     (let ((component (ecs-lookup predicate)))
        (if component
            (cons (list component) component)
            (wrong "Nonexistent Component name" predicate))))
     ((entity relation)
      (cons (list predicate) predicate))
     ((t) (wrong "Invalid form of query" predicate))))
+(defun reverse (l)
+  (reduce (lambda (acc elem) (cons elem acc)) nil l))
+(defun fixup-predicate (predicate)
+  (let ((res (translate-predicate predicate)))
+    (cons (reverse (car res)) (cdr res))))
 
 (defmacro select predicate
   ;; Implicit and form at top level.
-  (let ((res (translate-predicate (cons 'and predicate))))
+  (let ((res (fixup-predicate (cons 'and predicate))))
     `',res))
+
+(defun create-system-function (names body components)
+  `(lambda (entity)
+     ((lambda ,names
+        . ,body)
+      . ,(mapcar (lambda (component)
+                   `(ecs-get entity ',component))
+                 components))))
+
+(defmacro ecsql (predicate names . body)
+  (let* ((query (fixup-predicate predicate))
+         (code (create-system-function names body (car query))))
+    `(ecs-do-query ',query ,code)))
+
+(defmacro ecs-new-system (components predicate names . body)
+  (let* ((query (fixup-predicate predicate))
+         (code (create-system-function names body (car query)))
+         (sysname (gensym)))
+    `(let ((,sysname (ecs-register-system ',query ,code)))
+       (progn
+         . ,(mapcar (lambda (component)
+                      `(ecs-add ,sysname
+                                ',(ecs-lookup component)))
+                    components))
+       ,sysname)))
+
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))

@@ -49,7 +49,9 @@
   F(eof)                                                                       \
   F(vector)                                                                    \
   F(entity)                                                                    \
-  F(relation)
+  F(relation)                                                                  \
+  F(left)                                                                      \
+  F(right)
 
 typedef struct LispEnv {
   Memory memory;
@@ -88,6 +90,7 @@ typedef struct LispEnv {
   struct {
     Object name;
     Object lisp_component_storage;
+    Object lisp_system;
   } comp;
   mtx_t memory_lock;
 } LispEnv;
@@ -210,6 +213,7 @@ Object lisp_evaluate_sequence(struct LispEnv *lisp, Object sequence,
                               Object context);
 Object lisp_add_to_namespace(struct LispEnv *lisp, khash_t(var_syms) * env,
                              Object symbol, Object value);
+Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context);
 Object lisp_lookup_function(LispEnv *lisp, Object symbol);
 Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value);
 
@@ -225,4 +229,8 @@ static inline size lisp_store_pointer(struct LispEnv *lisp, void *ptr) {
   return -idx;
 }
 
+#define LISP_EVAL_STR(LISP, STR)                                               \
+  (lisp_eval(LISP, lisp_macroexpand(lisp, OBJS(lisp, STR))))
+
+Object lisp_make_system(LispEnv *lisp, Object query, Object func);
 #endif

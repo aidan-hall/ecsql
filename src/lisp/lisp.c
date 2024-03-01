@@ -4,6 +4,7 @@
 #include <lisp/primitives.h>
 #include <lisp/print.h>
 #include <lisp/reader.h>
+#include <lisp/systems.h>
 #include <stdarg.h>
 #include <threads.h>
 
@@ -102,7 +103,7 @@ Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream) {
 }
 LispEnv new_lisp_environment() {
   LispEnv lisp = {0};
-  if(mtx_init(&lisp.memory_lock, mtx_plain) != thrd_success) {
+  if (mtx_init(&lisp.memory_lock, mtx_plain) != thrd_success) {
     fprintf(stderr, "Failed to initialise memory lock.\n");
     exit(1);
   }
@@ -113,8 +114,8 @@ LispEnv new_lisp_environment() {
     exit(1);
   }
 
-  /* 4 Gigabytes of RAM should do the trick. */
-  lisp.memory = new_lisp_memory(4L * 1024 * 1024 * 1024);
+  /* 8 Gigabytes of RAM should do the trick. */
+  lisp.memory = new_lisp_memory(8L * 1024 * 1024 * 1024);
 
   static_assert(sizeof(void *) == sizeof(Object), "Can't use clibs/hash.");
   lisp.symbols = kh_init(sym_name);
@@ -156,10 +157,11 @@ LispEnv new_lisp_environment() {
   fclose(load_file);
 
   /* ECS Initialisation */
-  lisp.world = init_world(SYM(&lisp, "Storage"));
+  lisp.world = init_world();
   if (lisp.world == NULL) {
     wrong(&lisp, "Failed to initialise ECS world.\n", NIL);
   }
+  WorldComponents *world_components = ecs_world_components(lisp.world);
 
   lisp.comp.lisp_component_storage =
       ECS_NEW_COMPONENT(lisp.world, struct LispComponentStorage);
@@ -167,6 +169,30 @@ LispEnv new_lisp_environment() {
                     SYM(&lisp, "LispStorage"))) {
     wrong(&lisp, "Failed to set name for LispStorage component", NIL);
   }
+
+  lisp.comp.lisp_system = ecs_new(lisp.world);
+  if (!ecs_set_name(lisp.world, lisp.comp.lisp_system,
+                    SYM(&lisp, "LispSystem"))) {
+    wrong(&lisp, "Failed to set name for LispSystem component", NIL);
+  }
+
+
+  assert(ecs_set_name(lisp.world, world_components->storage,
+                      SYM(&lisp, "Storage")));
+  assert(
+      ecs_set_name(lisp.world, world_components->system, SYM(&lisp, "System")));
+  assert(ecs_set_name(lisp.world, world_components->nwise_system,
+                      SYM(&lisp, "NWiseSystem")));
+  assert(ecs_set_name(lisp.world, world_components->self_join_system,
+                      SYM(&lisp, "SelfJoin")));
+  assert(ecs_set_name(lisp.world, world_components->system_data,
+                      SYM(&lisp, "SystemData")));
+
+  /* This component should be a Lisp data component, so it has to be initialised
+   * here, rather than in init_world with the rest of them. */
+  world_components->query = lisp_new_ecs_component(&lisp, SYM(&lisp, "pair"));
+  assert(
+      ecs_set_name(lisp.world, world_components->query, SYM(&lisp, "Query")));
 
   /* Load the standard library */
   lisp_eval(&lisp, OBJS(&lisp, "(load \"lisp/stdlib.lisp\")"));
@@ -253,8 +279,7 @@ Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
   return NIL;
 }
 
-static Object *lisp_lookup_variable(LispEnv *lisp, Object symbol,
-                                    Object context) {
+Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
   /* TODO: Search in the lexical context. */
   while (OBJ_TYPE(context) == OBJ_PAIR_TAG) {
@@ -678,9 +703,12 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
       UNBOXED_CASE(OBJ_INT_TAG, i32);
       UNBOXED_CASE(OBJ_FLOAT_TAG, f32);
       UNBOXED_CASE(OBJ_CHAR_TAG, u8);
+    case OBJ_NIL_TAG:
+      /* NIL type means no storage is required: can just use a normal Entity. */
+      return ecs_new(lisp->world);
     default:
-      lisp_storage = (struct LispComponentStorage){.type = STORE_OBJECT,
-                                                   .object_type = tag};
+      lisp_storage = (struct LispComponentStorage){
+          .type = STORE_OBJECT, .object_type = tag, .size = sizeof(Object)};
       storage = (struct Storage){.size = sizeof(Object),
                                  .alignment = alignof(Object)};
     }
@@ -693,4 +721,11 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
   *(struct LispComponentStorage *)ecs_get(
       lisp->world, obj, lisp->comp.lisp_component_storage) = lisp_storage;
   return obj;
+}
+
+Object lisp_make_system(LispEnv *lisp, Object query, Object func) {
+  Object system =
+      ecs_new_system(lisp, query, lisp_run_system, BIT_CAST(void *, func));
+  ecs_add(lisp->world, system, lisp->comp.lisp_system);
+  return system;
 }

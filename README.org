@@ -10,7 +10,7 @@ This is the source code for ECSQL.
 :PROPERTIES:
 :COLUMNS:  %ITEM %PRIORITY %TODO
 :END:
-`Since we must rely on some piece of software for project management,
+Since we must rely on some piece of software for project management,
 we will use the most reliable one (in terms of longevity): Emacs.
 ** Design
 *** TODO Basic ECS Architecture [3/4]
@@ -233,6 +233,30 @@ Options:
   mostly correct behaviour by immediately updating everything so the
   Entity "is in" the new Archetype, but not removing it from the old
   archetype until, for example, the System finished executing.
+*** DONE Automated Join/Outer Product/N-wise operations
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-28 Wed 16:29] \\
+  Implemented sufficiently in ~run_matching_self_join_systems~, and
+  associated Components.
+- State "DOING"      from "TODO"       [2024-02-28 Wed 16:29]
+:END:
+- Classic example: Collisions
+- Easier if user code is restricted to a specific pair of Entities,
+  but that comes at the cost of efficiency.
+- Current implementation uses plain indexable arrays for the
+  iterators, but it /may/ be possible to manipulate these to handle
+  pairs properly.
+- *The "hard" problem*: Iterating distinct pairs of Entities (i.e.
+  (a, b) and (b, a) should not both occur, and perhaps no (a, a)).
+- Doing an outer product on two distinct archetypes is easy: just pass
+  2 iterators to the user code, and all pairs are distinct.
+  - This is the common case, even when joining a query on itself (as in collisions).
+- Can and should this be generalised to N-way outer products?
+  - I've only had the occasional need for pairwise operations.
+    Operations on 3 or more Entities at once may either be represented
+    as pairwise interactions between all Entities involved, or involve
+    another mechanism to get at all the Entities in a sensible way.
+  - Probably not.
 ** Implementation
 *** DONE Lisp Interpreter [14/14]
 :LOGBOOK:
@@ -578,7 +602,7 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
   - Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [3/7]
+*** TODO ECS [4/7]
 **** DONE Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-09 Fri 12:45] \\
@@ -694,8 +718,12 @@ struct QueryEntry {
 - Iteration over Archetypes:
   1. User supplies a function to the ECS.
   2. The ECS calls that function once for each matched (set of) Archetype(s)
-**** DOING [#C] Relationships
+**** DONE [#C] Relationships
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-28 Wed 11:31] \\
+  We have a very dumb form of relationships, e.g. no wildcards, but
+  we're at the point of dimishing returns for this feature that is
+  tangential to the focus of this project.
 - State "DOING"      from "TODO"       [2024-02-09 Fri 19:19]
 :END:
 - Is this essential?
@@ -862,6 +890,37 @@ unnecessarily restrictive, and there are many plausible Components
 such as "Transform" that would contain multiple vectors/matrices for
 position and orientation.
 
+*** TODO Utility DSLs [2/3]
+**** DONE ecsql
+:LOGBOOK:
+- State "DONE"       from              [2024-02-28 Wed 11:33]
+:END:
+- Dispatch a query once, and run some code a single time on each
+  result.
+**** DONE ecs-new-system
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-02-28 Wed 11:34]
+- State "DOING"      from "TODO"       [2024-02-28 Wed 11:34]
+:END:
+- Take a Query, function, and set of Components to add to a new
+  system, that is immediately created and can start running in the
+  game loop.
+**** DOING Scene Definition Macros
+:LOGBOOK:
+CLOCK: [2024-02-28 Wed 12:08]--[2024-02-28 Wed 12:33] =>  0:25
+CLOCK: [2024-02-28 Wed 11:36]--[2024-02-28 Wed 12:01] =>  0:25
+- State "DOING"      from "TODO"       [2024-02-28 Wed 11:36]
+:END:
+Short-hand macros to make it easier and quicker to define (and
+manipulate) initial scene data.
+- [X] ~ecs-add*~
+- [X] ~ecs-create~
+
+** Improvement Ideas
+- Lisp system function argument list can be constructed once, with
+  stored pointers at known places
+  - Modify the stored pointers (+= sizeof(Component)) for each
+    iteration
 * Development Notes
 ** Recurring Bugs
 *** Junk in unused bits of ~Object~
@@ -869,9 +928,8 @@ position and orientation.
 - This ensures that two Objects that store the same value are
   bit-for-bit identical, so we can use the cheap C ~==~ operator to
   implement ~(eq)~ in Lisp.
-
-** Improvement Ideas
-- Lisp system function argument list can be constructed once, with
-  stored pointers at known places
-  - Modify the stored pointers (+= sizeof(Component)) for each
-    iteration
+** Evaluation Day Survey Results
+- Survey: https://docs.google.com/forms/d/1vUGaDhqMAvydt-CoOt62zEJN7ihMKbf38fNVJE4KdlI/edit
+- We only got 0-2 responses per question, with the only helpful
+  suggestion being adding documentation or a tutorial to make the
+  system easier to use.

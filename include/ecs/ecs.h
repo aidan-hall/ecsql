@@ -15,6 +15,15 @@ KHASH_SET_INIT_INT(live);
 
 struct World;
 
+typedef struct WorldComponents {
+  Object storage;
+  Object system;
+  Object nwise_system;
+  Object self_join_system;
+  Object system_data;
+  Object query;
+} WorldComponents;
+
 #define ENT_ID_OFFSET (32 - OBJ_TAG_LENGTH)
 #define ENT_GEN_OFFSET (16 - OBJ_TAG_LENGTH)
 
@@ -63,7 +72,7 @@ static inline Object ecs_pair(Object relationship, Object entity) {
   return obj;
 }
 
-struct World *init_world(Object storage_name);
+struct World *init_world();
 Object ecs_new(struct World *world);
 /* Attempts to set a name for the given Entity.  Returns false if the operation
  * failed. */
@@ -83,6 +92,7 @@ void ecs_add(struct World *world, Object entity, Object component);
 void ecs_remove(struct World *world, Object entity, Object component);
 Object ecs_new_component(struct World *world, struct Storage storage);
 u16 *ecs_generation(struct World *world, EntityID id);
+WorldComponents *ecs_world_components(struct World *world);
 
 static inline Object ecs_object_with_id(struct World *world, EntityID id) {
   u16 gen = *ecs_generation(world, id);
