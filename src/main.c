@@ -85,7 +85,7 @@ void test_type_bsearch() {
 void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
   IGNORE(data);
 
-  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+  if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
     Vector2 mouse_pos = (Vector2){GetMouseX(), GetMouseY()};
     size N = ecs_iter_count(iter);
     struct Vector2 *poss = ecs_iter_get(iter, 0);
