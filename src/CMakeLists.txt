@@ -27,7 +27,7 @@ target_link_libraries(Ecsql PRIVATE Threads::Threads)
 ## Raylib
 FetchContent_Declare(
   raylib
-  GIT_REPOSITORY https://github.com/raysan5/raylib.git
+  GIT_REPOSITORY git@github.com:raysan5/raylib.git
   GIT_TAG 5.0
 )
 FetchContent_MakeAvailable(raylib)
