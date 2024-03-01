@@ -869,3 +869,9 @@ position and orientation.
 - This ensures that two Objects that store the same value are
   bit-for-bit identical, so we can use the cheap C ~==~ operator to
   implement ~(eq)~ in Lisp.
+
+** Improvement Ideas
+- Lisp system function argument list can be constructed once, with
+  stored pointers at known places
+  - Modify the stored pointers (+= sizeof(Component)) for each
+    iteration
