@@ -275,7 +275,6 @@ int main(int argc, char *argv[]) {
     BeginDrawing();
     ClearBackground(BLACK);
     ecs_do_query(lisp, graphics_query, run_matching_systems, NULL);
-    DrawFPS(1150, 10);
     EndDrawing();
   }
   CloseWindow();
