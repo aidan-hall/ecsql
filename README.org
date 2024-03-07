@@ -933,3 +933,8 @@ manipulate) initial scene data.
 - We only got 0-2 responses per question, with the only helpful
   suggestion being adding documentation or a tutorial to make the
   system easier to use.
+** The Need for Garbage Collection
+At the time of writing (<2024-03-01 Fri>) the system consumes 8GB of
+memory at 60FPS in 5 minutes, which is not long enough for the demo.
+Considering the functionality of the system is mostly complete, we can
+now strongly consider implementing a garbage collector.
