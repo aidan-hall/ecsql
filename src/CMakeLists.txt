@@ -27,8 +27,7 @@ target_link_libraries(Ecsql PRIVATE Threads::Threads)
 ## Raylib
 FetchContent_Declare(
   raylib
-  GIT_REPOSITORY git@github.com:raysan5/raylib.git
-  GIT_TAG 5.0
+  URL https://github.com/raysan5/raylib/archive/refs/tags/5.0.tar.gz
 )
 FetchContent_MakeAvailable(raylib)
 target_link_libraries(Ecsql PUBLIC raylib)
@@ -36,8 +35,7 @@ target_link_libraries(Ecsql PUBLIC raylib)
 ## Raygui
 FetchContent_Declare(
   raygui
-  GIT_REPOSITORY https://github.com/raysan5/raygui.git
-  GIT_TAG 4.0
+  URL https://github.com/raysan5/raygui/archive/refs/tags/4.0.tar.gz
   SOURCE_SUBDIR projects/CMake
 )
 FetchContent_MakeAvailable(raygui)
