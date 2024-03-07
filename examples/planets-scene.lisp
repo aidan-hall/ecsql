@@ -5,7 +5,7 @@
           (Colour = raylib-orange)
           (Radius 20.0)
           (Pos 100. 100.)
-          (Bounce 0.0)
+          (Bounce 0.5)
           Vel)
 
 (let ((species-vec (vector Dwarf Elf Goblin)))
