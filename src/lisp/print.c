@@ -71,7 +71,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     return;
   case OBJ_CLOSURE_TAG:
     fputs("(lambda ", stream);
-    lisp_print(lisp, OBJ_REINTERPRET(object, PAIR), stream);
+    lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream);
     fputs(")", stream);
     return;
   case OBJ_VECTOR_TAG: {
