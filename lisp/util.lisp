@@ -1,15 +1,94 @@
 ;;; Basic definers for macros, functions and globals.
-(defname 'macro 'defmacro
+(defname 'macro 'defmacro*
   (lambda (name params . body)
     (list
      'defname ''macro (list 'quote name) (cons 'lambda (cons params body)))))
 
-(defmacro defun (name params . body)
+(defmacro* defun* (name params . body)
   (list
    'defname ''function (list 'quote name) (cons 'lambda (cons params body))))
 
-(defmacro defvar (name value)
+(defmacro* defvar* (name value)
   (list 'defname ''global (list 'quote name) value))
+
+;;; Doc string-enabled definers.
+
+(defun* not (object)
+  (eq object nil))
+
+(defvar* *doc-strings* nil)
+(defun* add-doc-string (object string)
+  (if (eq (type-of string) 'string)
+      (setq *doc-strings* (cons (cons object string) *doc-strings*))
+      (wrong "Attempted to pass non-string as docstring" string))
+  string)
+(add-doc-string (function add-doc-string)
+                "Add a documentation STRING for the given name.")
+(add-doc-string (function not)
+                "Returns t iff OBJECT is nil.")
+
+(defmacro* defmacro (name params . body)
+  (if (and (eq (type-of body) 'pair)
+           (eq (type-of (cdr body)) 'pair)
+           (eq (type-of (car body)) 'string))
+      (list 'progn
+            (list 'add-doc-string
+                  (list 'quote name)
+                  (concat
+                   (car body)
+                   "
+Macro arguments: "
+                   (to-string params)))
+            (cons 'defmacro* (cons name (cons params (cdr body)))))
+      (cons 'defmacro* (cons name (cons params body)))))
+;; Doc strings for that things that had to be defined before the docstring-enabled definers.
+(add-doc-string
+ 'defmacro
+ "Define a macro with the given NAME, PARAMS and BODY in global scope.
+If the first form of BODY is a string, it will be used as the docstring for this macro.")
+
+(defmacro defun (name params . body)
+  "Define a function with the given NAME, PARAMS and BODY in global scope.
+If the first form of BODY is a string,
+it will be used as the docstring for this function."
+  (if (and (eq (type-of body) 'pair)
+           (eq (type-of (cdr body)) 'pair)
+           (eq (type-of (car body)) 'string))
+      (list 'progn
+            (list 'add-doc-string
+                  (list 'quote name)
+                  (concat
+                   (car body)
+                   "
+Function arguments: "
+                   (to-string params)))
+            (cons 'defun* (cons name (cons params (cdr body)))))
+      (cons 'defun* (cons name (cons params body)))))
+
+(defmacro defvar (name value . docstring?)
+  "Define a variable with the given NAME and VALUE.
+Use the optional third argument to document the variable."
+  (list 'progn
+        (list 'defvar* name value)
+        (list 'add-doc-string
+              (list 'quote name)
+              (if (and (consp docstring?) (stringp (car docstring?)))
+                  (car docstring?)
+                  "Undocumented special/global variable."))
+        name))
+
+(defun describe (object)
+  "Prints some information about the supplied OBJECT.
+This comprises its value, and its docstring if it has one."
+  (print object)
+  ((lambda (docform)
+     (if docform
+         (puts (cdr docform))))
+   (assoc object *doc-strings*))
+  nil)
+
+
+
 
 ;;; Common shorthands for accessing the contents of
 (defun cadr (x)
@@ -35,9 +114,6 @@
 (def-type-predicate symbolp symbol)
 (def-type-predicate relationp relation)
 (def-type-predicate entityp entity)
-
-(defun not (v)
-  (eq v nil))
 
 (defun listp (v)
   (or (consp v) (not v)))
