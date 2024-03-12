@@ -116,6 +116,8 @@ This comprises its value, and its docstring if it has one."
 (def-type-predicate symbolp symbol)
 (def-type-predicate relationp relation)
 (def-type-predicate entityp entity)
+(def-type-predicate stringp string)
+(def-type-predicate vectorp vector)
 
 (defun listp (v)
   (or (consp v) (not v)))
