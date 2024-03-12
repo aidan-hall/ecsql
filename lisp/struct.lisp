@@ -96,6 +96,8 @@ The OFFSETS are produced by struct-generate-offsets."
          (my-member-symbols (mapcar (function intern) my-member-names))
          (my-size (struct-metadata-size my-metadata)))
     `(progn
+       ;; Type test predicate
+       (def-type-predicate ,(intern (concat my-name "p")) ,struct-type)
        ;; A special method to copy a whole struct.
        (defun ,(intern (concat "copy-" my-name)) (dest src)
          (let ((dest-type (type-of dest)))
