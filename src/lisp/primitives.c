@@ -441,6 +441,30 @@ static Object prim_funcall(LispEnv *lisp, Object args) {
   return lisp_apply(lisp, function, args);
 }
 
+static Object build_apply_arglist(LispEnv *lisp, Object args) {
+  if (OBJ_TYPE(args) != OBJ_PAIR_TAG) {
+    WRONG("Invalid argument list to apply.");
+  }
+  if (OBJ_TYPE(LISP_CDR(lisp, args)) != OBJ_NIL_TAG) {
+    return lisp_cons(lisp, LISP_CAR(lisp, args),
+                     build_apply_arglist(lisp, LISP_CDR(lisp, args)));
+  }
+  if (OBJ_TYPE(LISP_CAR(lisp, args)) != OBJ_PAIR_TAG) {
+    WRONG("Last argument to apply was not a list.");
+  }
+  return LISP_CAR(lisp, args);
+}
+
+static Object prim_apply(LispEnv *lisp, Object args) {
+  Object function = FIRST;
+  SHIFT_ARGS(1);
+
+  if (OBJ_TYPE(function) == OBJ_SYMBOL_TAG) {
+    function = lisp_lookup_function(lisp, function);
+  }
+  return lisp_apply(lisp, function, build_apply_arglist(lisp, args));
+}
+
 static Object prim_eval(LispEnv *lisp, Object args) {
   return lisp_eval(lisp, lisp_macroexpand(lisp, FIRST));
 }
@@ -1174,6 +1198,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("type-of", "(t)", prim_type_of);
   DEFPRIMFUN("type-tag", "(symbol)", prim_type_tag);
   DEFPRIMFUN("funcall", "(t . t)", prim_funcall);
+  DEFPRIMFUN("apply", "(t . t)", prim_apply);
   DEFPRIMFUN("eval", "(t)", prim_eval);
   DEFPRIMFUN("macroexpand-1", "(t)", prim_macroexpand_1);
   DEFPRIMFUN("macroexpand", "(t)", prim_macroexpand);
