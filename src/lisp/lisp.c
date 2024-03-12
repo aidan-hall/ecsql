@@ -377,7 +377,8 @@ static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
   bool res = lisp_type_spec_matches(lisp, arguments, prim.argument_types);
   if (!res) {
     WRONG("Invalid argument(s) to primitive function",
-          lisp_cons(lisp, prim.id_symbol, arguments));
+          lisp_list(lisp, lisp_cons(lisp, prim.id_symbol, arguments),
+                    prim.argument_types, NIL));
   }
   return res;
 }
