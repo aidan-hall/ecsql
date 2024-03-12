@@ -64,11 +64,19 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
   case OBJ_UNDEFINED_TAG:
     fprintf(stream, "#!undefined");
     return;
-  case OBJ_PRIMITIVE_TAG:
+  case OBJ_PRIMITIVE_TAG: {
     fputs("(function ", stream);
-    lisp_print(lisp, OBJ_REINTERPRET(object, SYMBOL), stream);
+    khiter_t iter = kh_get(primitives, lisp->primitive_functions, object.bits);
+    if (iter == kh_end(lisp->primitive_functions)) {
+      WRONG("Attempted to print an invalid primitive function");
+    }
+    InterpreterPrimitive fn = kh_value(lisp->primitive_functions, iter);
+    lisp_print(lisp, fn.id_symbol, stream);
+    fputc(' ', stream);
+    lisp_print(lisp, fn.argument_types, stream);
     fputs(")", stream);
     return;
+  }
   case OBJ_CLOSURE_TAG:
     fputs("(lambda ", stream);
     lisp_print(lisp, LISP_CAR(lisp, LISP_CDR(lisp, object)), stream);
