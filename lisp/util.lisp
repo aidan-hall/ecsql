@@ -42,15 +42,6 @@
 (defun listp (v)
   (or (consp v) (not v)))
 
-(defun type-spec-matches (value spec)
-  ;; Logically equivalent to lisp_type_spec_matches in types.c.
-  (or (eq spec t)
-      (and (consp value) (consp spec)
-           (type-spec-matches (car value) (car spec))
-           (type-spec-matches (cdr value) (cdr spec)))
-      (and (not value) (not spec))
-      (eq (type-of value) spec)))
-
 ;;; Essential Utility Functions
 
 (defun mapcar (f l)

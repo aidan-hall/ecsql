@@ -682,6 +682,10 @@ static Object prim_size_of(LispEnv *lisp, Object args) {
   return UNDEFINED;
 }
 
+static Object prim_type_spec_matches(LispEnv *lisp, Object args) {
+  return lisp_bool(lisp, lisp_type_spec_matches(lisp, FIRST, SECOND));
+}
+
 /* STRUCT API */
 
 static Object prim_is_struct(LispEnv *lisp, Object args) {
@@ -1205,6 +1209,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("wrong", "(string t)", prim_wrong);
   DEFPRIMFUN("defname", "(symbol symbol t)", prim_defname);
   DEFPRIMFUN("size-of", "(symbol)", prim_size_of);
+  DEFPRIMFUN("type-spec-matches", "(t t)", prim_type_spec_matches);
   /* TODO: These are private, and only called from generated code, so don't
    * waste time checking the type. */
   DEFPRIMFUN("--struct-set-vec", "(t i32 t i32)", prim_mem_set_vec);
