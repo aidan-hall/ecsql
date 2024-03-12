@@ -8,7 +8,7 @@
   (case type
     ((nil character i32 f32)
      nil)
-    ((file vector undefined symbol pair primitive closure entity relation)
+    ((file vector undefined symbol pair primitive closure entity relation string)
      t)
     (t
      (wrong "Invalid primitive type name" type))))
