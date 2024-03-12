@@ -123,7 +123,10 @@ Also define a variable bound to that Entity."
        (let ((comp (ecs-new-component ',type)))
          ;; Attempt to set the name inside the ECS first, since this could fail.
          (if (ecs-set-name comp ',name)
-             (defvar ,name comp)
+             (defvar ,name comp
+               ,(if type
+                    (concat "A Component. Stores data of type " (to-string type) ".")
+                    "A tag Component. Does not store any data."))
              (puts "Couldn't set entity name. Cleaning up....")
              ;; Clean up the Entity if we failed to assign the name.
              (ecs-destroy comp)))))
