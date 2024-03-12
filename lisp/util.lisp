@@ -106,9 +106,9 @@ This comprises its value, and its docstring if it has one."
 
 (defmacro def-type-predicate (name type)
   "Define function NAME that returns t iff its argument has type TYPE."
-  `(defun ,name (object)
-     ,(concat "Returns t iff OBJECT is a " (symbol-name type) ".")
-     (eq (type-of object) ',type)))
+  (list 'defun name (list 'object)
+        (concat "Returns t iff OBJECT is a " (symbol-name type) ".")
+        (list 'eq '(type-of object) (list 'quote type))))
 
 (def-type-predicate consp pair)
 (def-type-predicate integerp i32)
