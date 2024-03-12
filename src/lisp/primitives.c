@@ -1091,6 +1091,45 @@ Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
   switch (next) {
   case '\\':
     return OBJ_BOX(fgetc(stream), CHAR);
+  case '\'':
+    return lisp_cons(lisp, lisp->keysyms.function,
+                     lisp_cons(lisp, lisp_read(lisp, stream), NIL));
+  case 's': {
+    Object stream_id = lisp_read(lisp, stream);
+    LISP_ASSERT_TYPE(stream_id, INT);
+    size stream_index = OBJ_UNBOX(stream_id);
+    if (stream_index < 0 || stream_index > LISP_MAX_OPEN_STREAMS) {
+      WRONG("Invalid stream id", stream_id);
+    } else if (lisp->open_streams[stream_index] == NULL) {
+      WRONG("Stream is not open", stream_id);
+      return UNDEFINED;
+    } else {
+      return OBJ_BOX(stream_index, FILE_PTR);
+    }
+  }
+  case '/':
+    return lisp_cons(lisp, lisp->keysyms.macro,
+                     lisp_cons(lisp, lisp_read(lisp, stream), NIL));
+  case '*': {
+    Object type = lisp_read(lisp, stream);
+    LISP_ASSERT_TYPE(type, SYMBOL);
+    return lisp_cons(
+        lisp,
+        lisp_intern(
+            lisp,
+            lisp_string_to_s8(
+                lisp,
+                lisp_concat(
+                    lisp, lisp_list(lisp, lisp_store_string(lisp, s8("make-")),
+                                    OBJ_REINTERPRET(type, STRING), NIL)))),
+        lisp_read(lisp, stream));
+  }
+  case '!':
+    WRONG("Attempt to read an unreadable expression", lisp_read(lisp, stream));
+    return UNDEFINED;
+  case 'g':
+    WRONG("Attempt to re-read gensym numbered", lisp_read(lisp, stream));
+    return UNDEFINED;
   default:
     WRONG("Unknown # reader macro", OBJ_BOX(next, CHAR));
     return NIL;
