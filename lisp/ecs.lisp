@@ -1,5 +1,10 @@
 (defun ecs-resolve (thing)
-  ;; Attempt to resolve `thing' into an Entity or Relation.
+  "Attempt to resolve THING into an Entity or Relation as follows:
+
+  Entity or Relation  → THING,
+  i32                 → Live Entity with that ID, if any,
+  symbol              → Live Entity with that name, if any,
+  (rel X Y) | (X . Y) → Relation with ecs-relation value X and ecs-target Y."
   (case (type-of thing)
     ((relation entity) thing)
     ((i32) (ecs-entity thing))
@@ -22,23 +27,27 @@
     (t (wrong "Unable to resolve to an Entity or Relation" thing))))
 
 (defmacro ecs-add* (entity . components)
-  ;; For each form in Components, generate code to add an appropriate Component, possibly
-  ;; initialised, to the supplied Entity.
-  ;;
-  ;; Each form of components may take one of the following forms, with the following effects:
-  ;;   symbol or (symbol) → Adds (ecs-lookup symbol).
-  ;;   (name symbol) → (ecs-set-name entity symbol).
-  ;;   (rel *1 *2) → Adds Relation (*1 . *2), after evaluating *1 and *2
-  ;;   (* . *) → Adds (ecs-resolve form), almost certainly a Relation.
-  ;;   (* ...) → Adds the Component specified in the car (derived with ecs-resolve),
-  ;;             and initialises it using the remaining arguments.
-  ;;             If the Component is stored as a struct, the constructor is called.
-  ;;   (* = *) → Adds the Component specified in the car,
-  ;;             and assigns it the value of the expression after the = sign.
-  ;;   (* : *) → Adds the Component specified in the car,
-  ;;             and copies the value of that Component from the Entity after the = sign.
-  ;;
-  ;; E.g. (ecs-add* entity (Pos 12. 13.) (Bounce : Dwarf) Vel (Colour = red) (Species . Wizard))
+  "For each form in COMPONENTS, generate code to add an appropriate Component, possibly
+initialised, to the supplied ENTITY.
+
+Each form of components may take one of the following forms, with the following effects:
+  symbol or (symbol) → Adds (ecs-lookup symbol).
+  (name symbol) → (ecs-set-name entity symbol).
+  (rel *1 *2) → Adds Relation (*1 . *2), after evaluating *1 and *2
+  (* . *) → Adds (ecs-resolve form), almost certainly a Relation.
+  (* ...) → Adds the Component specified in the car (derived with ecs-resolve),
+            and initialises it using the remaining arguments.
+            If the Component is stored as a struct, the constructor is called.
+  (* = *) → Adds the Component specified in the car,
+            and assigns it the value of the expression after the = sign.
+  (* : *) → Adds the Component specified in the car,
+            and copies the value of that Component from the Entity after the = sign.
+
+Example:
+(ecs-add*
+ entity
+ (Pos 12. 13.) (Bounce : Dwarf) Vel
+ (Colour = red) (Species . Wizard))"
 
   ;; Use a gensym to ensure the entity argument is only evaluated once.
   ;; A common pattern is (ecs-add* (ecs-new) ...), so this is essential.
@@ -105,6 +114,8 @@
            components))))
 
 (defmacro defcomponent (name type)
+  "Define an Entity with the given NAME and LispStorage TYPE.
+Also define a variable bound to that Entity."
   `(if (ecs-lookup ',name)
        (wrong "An entity with the given name already exists" ',name)
        (let ((comp (ecs-new-component ',type)))
