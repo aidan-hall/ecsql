@@ -195,6 +195,18 @@ void print_mover(LispEnv *lisp, struct EcsIter *iter, void *data) {
   }
 }
 
+void move(LispEnv *lisp, struct EcsIter *iter, void *data) {
+  IGNORE(data);
+  struct Vector2 *poss = ecs_iter_get(iter, 0);
+  struct Vector2 *vels = ecs_iter_get(iter, 1);
+  size N = ecs_iter_count(iter);
+  float delta = GetFrameTime();
+  for (size i = 0; i < N; ++i) {
+    poss[i].x += vels[i].x * delta;
+    poss[i].y += vels[i].y * delta;
+  }
+}
+
 int main(int argc, char *argv[]) {
   LispEnv lisp_env = new_lisp_environment();
   LispEnv *lisp = &lisp_env;
@@ -234,6 +246,10 @@ int main(int argc, char *argv[]) {
   Object physics_component = ecs_lookup_by_name(world, SYM(lisp, "Physics"));
   Object graphics_component = ecs_lookup_by_name(world, SYM(lisp, "Graphics"));
 
+  ecs_add(
+      world,
+      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel)"), move, NULL),
+      physics_component);
   ecs_add(world,
           ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Colour)"),
                          mouse_gravity, NULL),
