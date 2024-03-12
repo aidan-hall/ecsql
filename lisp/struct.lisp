@@ -49,7 +49,8 @@ A padding algorithm is used to generate aligned offsets that match those of C."
                              offset
                              name
                              type
-                             member-size)
+                             member-size
+                             (car elt))
                             offsets))
         (if (struct-metadata type)
             (setq offsets
@@ -78,6 +79,7 @@ A padding algorithm is used to generate aligned offsets that match those of C."
 (defun struct-printer (struct-type name-string members)
   "Generate a function that prints structs of type STRUCT-TYPE."
   `(defun ,(intern (concat "print-" name-string "-to")) (stream obj)
+     ,(concat "Print OBJ of type " name-string " to STREAM.")
      (assert (eq (type-of obj) ',struct-type))
      (fputs ,(concat "#*" name-string) stream)
      (prin1-to stream
@@ -100,6 +102,7 @@ The OFFSETS are produced by struct-generate-offsets."
        (def-type-predicate ,(intern (concat my-name "p")) ,struct-type)
        ;; A special method to copy a whole struct.
        (defun ,(intern (concat "copy-" my-name)) (dest src)
+         ,(concat "Copy the contents of " my-name " DEST to " my-name " SRC.")
          (let ((dest-type (type-of dest)))
            (assert (eq dest-type ',struct-type))
            (assert (eq dest-type (type-of src))))
@@ -107,20 +110,24 @@ The OFFSETS are produced by struct-generate-offsets."
        ;; A setter for every member of a struct.
        (defun ,(intern (concat "set-" my-name))
            ;; Argument list
-           (me . ,my-member-symbols)
+           (,struct-type . ,my-member-symbols)
+         ;; Doc string
+         ,(concat "Set the value of each member of " my-name ".")
          (progn
            . ,(mapcar
                (lambda (member-name)
-                 `(,(intern (concat "set-" my-name "-" member-name))
-                    me
-                    ,(intern member-name)))
+                 (list (intern (concat "set-" my-name "-" member-name))
+                       struct-type
+                       (intern member-name)))
                my-member-names))
          ;; Return the produced struct
-         me)
+         ,struct-type)
        ;; Constructor
        (defun ,(intern (concat "make-" my-name))
            ;; Produce argument list
            ,my-member-symbols
+         ;; Doc string
+         ,(concat "Create a new " my-name ".")
          ;; Allocate the structure
          (let ((me (--struct-allocate ,my-size ,my-id)))
            ;; Assign the initial values by calling out to the "whole struct" setter.
@@ -129,48 +136,59 @@ The OFFSETS are produced by struct-generate-offsets."
        ;; Getters and setters
        . ,(mapcar
            (lambda (entry)
-             ;; entry: (offset name-string type size/B)
-             (let ((offset (car entry))
-                   (name (cadr entry))
-                   (type (caddr entry))
-                   (size (cadddr entry)))
-               (let ((is-struct-type `(assert (eq (type-of structure) ',struct-type)))
-                     (is-member-type `(assert (eq (type-of value) ',type)))
-                     (getter (intern (concat name)))
-                     (setter (intern (concat "set-" name))))
-                 (print (list "member type of " struct-type ": " type))
-                 (let ((member-metadata (struct-metadata type)))
-                   (if member-metadata
-                       ;; Struct member
-                       (let ((id (struct-metadata-id member-metadata)))
+             ;; entry: (offset prefixed-name-string type size/B base-name-string)
+             (let* ((offset (car entry))
+                    (name (cadr entry))
+                    (type (caddr entry))
+                    (size (cadddr entry))
+                    (base-name (cadddr (cdr entry)))
+                    (base-name-sym (intern base-name))
+                    (is-struct-type `(assert (eq (type-of ,struct-type) ',struct-type)))
+                    (is-member-type `(assert (type-spec-matches ,base-name-sym ',type)))
+                    (type-name (symbol-name type))
+                    (getter (intern (concat name)))
+                    (setter (intern (concat "set-" name)))
+                    (getter-doc (concat "Get member " name " of " my-name ", type " type-name "."))
+                    (setter-doc (concat "Set member " name " of " my-name ", type " type-name ", to " base-name ".")))
+               (print (list "member type of " struct-type ": " type))
+               (let ((member-metadata (struct-metadata type)))
+                 (if member-metadata
+                     ;; Struct member
+                     (let ((id (struct-metadata-id member-metadata)))
+                       `(progn
+                          (defun ,getter (,struct-type)
+                            ,getter-doc
+                            ,is-struct-type
+                            (--struct-get-vec ,struct-type ,offset ,id ,size))
+                          (defun ,setter (,struct-type ,base-name-sym)
+                            ,setter-doc
+                            ,is-struct-type
+                            ,is-member-type
+                            (--struct-set-vec ,struct-type ,offset ,base-name-sym ,size))))
+                     ;; Non-struct member
+                     (if (struct-store-type-boxed-p type)
+                         ;; Member stored as Object
                          `(progn
-                            (defun ,getter (structure)
+                            (defun ,getter (,struct-type)
+                              ,getter-doc
                               ,is-struct-type
-                              (--struct-get-vec structure ,offset ,id ,size))
-                            (defun ,setter (structure value)
+                              (--struct-get-object ,struct-type ,offset))
+                            (defun ,setter (,struct-type ,base-name-sym)
+                              ,setter-doc
                               ,is-struct-type
                               ,is-member-type
-                              (--struct-set-vec structure ,offset value ,size))))
-                       ;; Non-struct member
-                       (if (struct-store-type-boxed-p type)
-                           ;; Member stored as Object
-                           `(progn
-                              (defun ,getter (structure)
-                                ,is-struct-type
-                                (--struct-get-object structure ,offset))
-                              (defun ,setter (structure value)
-                                ,is-struct-type
-                                ,is-member-type
-                                (--struct-set-object structure ,offset value)))
-                           ;; Member stored as raw Bytes
-                           `(progn
-                              (defun ,getter (structure)
-                                ,is-struct-type
-                                (--struct-get-val structure ,offset ,(type-tag type) ,size))
-                              (defun ,setter (structure value)
-                                ,is-struct-type
-                                ,is-member-type
-                                (--struct-set-val structure ,offset value ,size)))))))))
+                              (--struct-set-object ,struct-type ,offset ,base-name-sym)))
+                         ;; Member stored as raw Bytes
+                         `(progn
+                            (defun ,getter (,struct-type)
+                              ,getter-doc
+                              ,is-struct-type
+                              (--struct-get-val ,struct-type ,offset ,(type-tag type) ,size))
+                            (defun ,setter (,struct-type ,base-name-sym)
+                              ,setter-doc
+                              ,is-struct-type
+                              ,is-member-type
+                              (--struct-set-val ,struct-type ,offset ,base-name-sym ,size))))))))
            offsets))))
 
 (defun prin1-struct-to (stream obj)
