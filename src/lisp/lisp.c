@@ -34,6 +34,36 @@ const u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
   }
 }
 
+/* Concatenate a list of strings to produce a new one */
+Object lisp_concat(LispEnv *lisp, Object strings) {
+  if (EQ(strings, NIL)) {
+    /* Return an empty string: No allocation necessary, memory address
+     * (hopefully) irrelevant. */
+    return OBJ_BOX_INDEX(0, 0, STRING);
+  }
+
+  u16 length = 0;
+  for (Object t = strings, elem = LISP_CAR(lisp, t);
+       OBJ_TYPE(t) == OBJ_PAIR_TAG;
+       t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
+    length += (u16)OBJ_UNBOX_METADATA(elem);
+  }
+
+  /* Include null terminator byte. */
+  size data_index = lisp_allocate_bytes(lisp, length + 1);
+  char *dest = (char *)lisp_cell_at(lisp, data_index);
+  dest[0] = '\0';
+
+  for (Object t = strings, elem = LISP_CAR(lisp, t);
+       OBJ_TYPE(t) == OBJ_PAIR_TAG;
+       t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
+    strncat(dest, (const char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(elem)),
+            (u16)OBJ_UNBOX_METADATA(elem));
+  }
+
+  return OBJ_BOX_INDEX(data_index, length, STRING);
+}
+
 /* Add 'symbol' to 'env' with 'value'. */
 Object lisp_add_to_namespace(LispEnv *lisp, khash_t(var_syms) * env,
                              Object symbol, Object value) {

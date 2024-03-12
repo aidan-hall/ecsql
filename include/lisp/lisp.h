@@ -159,6 +159,7 @@ static inline Object lisp_bool(LispEnv *lisp, bool value) {
 Object lisp_list(LispEnv *lisp, ...);
 
 Object lisp_store_string(LispEnv *lisp, s8 string);
+Object lisp_concat(LispEnv *lisp, Object strings);
 
 static inline size lisp_string_length(Object string) {
   /* LISP_ASSERT_TYPE(string, STRING); */

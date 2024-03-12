@@ -555,34 +555,6 @@ static Object prim_wrong(LispEnv *lisp, Object args) {
   return UNDEFINED;
 }
 
-/* Concatenate all string arguments */
-static Object prim_concat(LispEnv *lisp, Object args) {
-  if (EQ(args, NIL)) {
-    /* Return an empty string: No allocation necessary, memory address
-     * (hopefully) irrelevant. */
-    return OBJ_BOX_INDEX(0, 0, STRING);
-  }
-
-  u16 length = 0;
-  for (Object t = args, elem = LISP_CAR(lisp, t); OBJ_TYPE(t) == OBJ_PAIR_TAG;
-       t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
-    length += (u16)OBJ_UNBOX_METADATA(elem);
-  }
-
-  /* Include null terminator byte. */
-  size data_index = lisp_allocate_bytes(lisp, length + 1);
-  char *dest = (char *)lisp_cell_at(lisp, data_index);
-  dest[0] = '\0';
-
-  for (Object t = args, elem = LISP_CAR(lisp, t); OBJ_TYPE(t) == OBJ_PAIR_TAG;
-       t = LISP_CDR(lisp, t), elem = LISP_CAR(lisp, t)) {
-    strncat(dest, (const char *)lisp_cell_at(lisp, OBJ_UNBOX_INDEX(elem)),
-            (u16)OBJ_UNBOX_METADATA(elem));
-  }
-
-  return OBJ_BOX_INDEX(data_index, length, STRING);
-}
-
 /* Create a new string of the specified length, filled with the supplied
  * character. */
 static Object prim_make_string(LispEnv *lisp, Object args) {
@@ -1143,7 +1115,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("fclose", "(file)", lisp_close_stream);
   DEFPRIMFUN("fputs", "(string file) ", prim_fputs_stream);
   DEFPRIMFUN("fputc", "(character file) ", prim_fputc_stream);
-  DEFPRIMFUN("concat", "(* string)", prim_concat);
+  DEFPRIMFUN("concat", "(* string)", lisp_concat);
   DEFPRIMFUN("make-string", "(i32 character)", prim_make_string);
   DEFPRIMFUN("symbol-name", "(symbol)", prim_symbol_name);
   DEFPRIMFUN("intern", "(string)", prim_intern);
