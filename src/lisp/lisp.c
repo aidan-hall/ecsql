@@ -206,7 +206,6 @@ LispEnv new_lisp_environment() {
     wrong(&lisp, "Failed to set name for LispSystem component", NIL);
   }
 
-
   assert(ecs_set_name(lisp.world, world_components->storage,
                       SYM(&lisp, "Storage")));
   assert(
