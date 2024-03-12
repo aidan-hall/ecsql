@@ -225,11 +225,21 @@ static Object prim_div(LispEnv *lisp, Object args) {
     element = FIRST;
 
     switch (OBJ_TYPE(element)) {
-    case OBJ_INT_TAG:
-      return OBJ_BOX(1 / (i32)OBJ_UNBOX(element), INT);
-    case OBJ_FLOAT_TAG:
-      numerator_float = 1.0 / lisp_unbox_float(element);
+    case OBJ_INT_TAG: {
+      i32 denominator = OBJ_UNBOX(element);
+      if (denominator == 0) {
+        WRONG("Division by 0.");
+      }
+      return OBJ_BOX(1 / denominator, INT);
+    }
+    case OBJ_FLOAT_TAG: {
+      float denominator = lisp_unbox_float(element);
+      if (denominator == 0) {
+        WRONG("Division by 0.");
+      }
+      numerator_float = 1.0 / denominator;
       return OBJ_IMM(numerator_float);
+    }
     default:
       WRONG("Wrong type argument to /");
       return UNDEFINED;
@@ -248,9 +258,13 @@ static Object prim_div(LispEnv *lisp, Object args) {
       element = FIRST;
       SHIFT_ARGS(1);
       switch (OBJ_TYPE(element)) {
-      case OBJ_INT_TAG:
-        numerator_int /= (i32)OBJ_UNBOX(element);
-        break;
+      case OBJ_INT_TAG: {
+        i32 denominator = OBJ_UNBOX(element);
+        if (denominator == 0) {
+          WRONG("Division by 0.");
+        }
+        numerator_int /= denominator;
+      } break;
       case OBJ_FLOAT_TAG:
         break;
       default:
@@ -266,7 +280,12 @@ static Object prim_div(LispEnv *lisp, Object args) {
     numerator_float = (float)numerator_int;
 
     if (OBJ_TYPE(element) == OBJ_FLOAT_TAG) {
-      numerator_float /= lisp_unbox_float(element);
+      float denominator = lisp_unbox_float(element);
+      if (denominator == 0) {
+        WRONG("Division by 0.");
+      }
+
+      numerator_float /= denominator;
     }
 
   } else {
@@ -277,12 +296,21 @@ static Object prim_div(LispEnv *lisp, Object args) {
     element = FIRST;
     SHIFT_ARGS(1);
     switch (OBJ_TYPE(element)) {
-    case OBJ_INT_TAG:
-      numerator_float /= (float)(i32)OBJ_UNBOX(element);
-      break;
-    case OBJ_FLOAT_TAG:
-      numerator_float /= lisp_unbox_float(element);
-      break;
+    case OBJ_INT_TAG: {
+      i32 denominator = OBJ_UNBOX(element);
+      if (denominator == 0) {
+        WRONG("Division by 0.");
+      }
+      numerator_float /= (float)denominator;
+    } break;
+    case OBJ_FLOAT_TAG: {
+      float denominator = lisp_unbox_float(element);
+      if (denominator == 0) {
+        WRONG("Division by 0.");
+      }
+
+      numerator_float /= denominator;
+    } break;
     default:
       WRONG("Wrong type argument to *");
       return UNDEFINED;
