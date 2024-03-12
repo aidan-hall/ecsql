@@ -21,9 +21,11 @@
             nil
             (mapcar (function car) children))
            (cons (car predicate) (mapcar (function cdr) children)))))
-       ;; Allow Components to be required but not fetched.
+       ;; Make a Component bound but not required.
+       ;; TODO: Make this work.
        ((opt)
         (cons (car (translate-predicate (cadr predicate))) '(and)))
+       ;; Allow Components to be required but not fetched.
        ((with)
         (cons nil (cdr (translate-predicate (cadr predicate)))))
        ((rel)
