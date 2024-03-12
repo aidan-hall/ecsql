@@ -82,8 +82,10 @@ Use the optional third argument to document the variable."
 This comprises its value, and its docstring if it has one."
   (print object)
   ((lambda (docform)
-     (if docform
-         (puts (cdr docform))))
+     (when docform
+       (puts (cdr docform))
+       (puts "
+")))
    (assoc object *doc-strings*))
   nil)
 
