@@ -105,9 +105,11 @@ This comprises its value, and its docstring if it has one."
 ;;; Type Predicates
 
 (defmacro def-type-predicate (name type)
-  ;; Generate a function that tests if a value has the specified type.
-  (list 'defun name (list 'v)
-        (list 'eq '(type-of v) (list 'quote type))))
+  "Define function NAME that returns t iff its argument has type TYPE."
+  `(defun ,name (object)
+     ,(concat "Returns t iff OBJECT is a " (symbol-name type) ".")
+     (eq (type-of object) ',type)))
+
 (def-type-predicate consp pair)
 (def-type-predicate integerp i32)
 (def-type-predicate floatp f32)
