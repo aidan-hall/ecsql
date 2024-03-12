@@ -209,6 +209,31 @@ then evaluate the rest of that clause."
 (defmacro quasiquote (form)
   (quasiquote-rec form 1))
 
+;;; Less Essential Utilities (Not Needed by any Common Macros)
+
+(defvar gensym-counter 0
+  "Added to the name of each gensym so they all appear distinct.
+Incremented upon each call to gensym.")
+(defun gensym ()
+  "Generate a new, uninterned symbol."
+  (setq gensym-counter (+ gensym-counter 1))
+  (make-symbol (concat "#g" (to-string gensym-counter))))
+
+(defun max (a . as)
+  "Obtain the maximum value of list (A . AS)."
+  (let ((m a))
+    (while (consp as)
+      (let ((current (car as)))
+        (if (> current m)
+            (setq m current)))
+      (setq as (cdr as)))
+    m))
+
+(defun negated (f)
+  (lambda (x)
+    (not (funcall f x))))
+
+;;; Control Flow macros
 (defmacro unless (cond . body)
   `(if ,cond
        nil
@@ -235,16 +260,6 @@ A clause matches if the result of evaluating EXPR is eql to one of the forms in 
                           . ,(cdr clause))))
                  clauses)))))
 
-;;; Less Essential Utilities (Not Needed by any Common Macros)
-(defun max (a . as)
-  (let ((m a))
-    (while (consp as)
-      (let ((current (car as)))
-        (if (> current m)
-            (setq m current)))
-      (setq as (cdr as)))
-    m))
-
 (defmacro dotimes (iterator . body)
   "Evaluate BODY a given number of times in sequence.
 ITERATOR takes the form (var n).
@@ -255,10 +270,7 @@ Var is bound to 0, 1, ..., n-1 on the corresponding iteration."
          (progn . ,body)
          (incq ,varname)))))
 
-(defvar gensym-counter 0)
-(defun gensym ()
-  (setq gensym-counter (+ gensym-counter 1))
-  (make-symbol (concat "#g" (to-string gensym-counter))))
+;;; Functional/List Processing Macros
 
 (defun filter (f l)
   (if l
@@ -294,9 +306,10 @@ Performs a left fold."
      (cdr lists))
     (car lists)))
 
-(defun negated (f)
-  (lambda (x)
-    (not (funcall f x))))
+(defun zip (a b)
+  "Zip lists A and B together."
+  (when (and (consp a) (consp b))
+    (cons (cons (car a) (car b)) (zip (cdr a) (cdr b)))))
 
 (defun union (a b)
   "Compute the union of lists A & B.
