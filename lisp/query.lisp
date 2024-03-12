@@ -115,15 +115,10 @@ E.g. A system to move Entities with Pos and Vel:
              (+ (v2-x pos) (* (v2-x vel) delta))
              (+ (v2-y pos) (* (v2-y vel) delta))))))"
   (let* ((query (fixup-predicate predicate))
-         (code (create-system-function names body (car query)))
-         (sysname (gensym)))
-    `(let ((,sysname (ecs-register-system ',query ,code)))
-       (progn
-         . ,(mapcar (lambda (component)
-                      `(ecs-add ,sysname
-                                ',(ecs-lookup component)))
-                    components))
-       ,sysname)))
+         (code (create-system-function names body (car query))))
+    `(ecs-add*
+      (ecs-register-system ',query ,code)
+      . ,components)))
 
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
