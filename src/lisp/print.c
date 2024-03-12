@@ -59,10 +59,10 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     lisp_print_list(lisp, object, stream);
     return;
   case OBJ_FILE_PTR_TAG:
-    fprintf(stream, "#(stream %ld)", OBJ_UNBOX(object));
+    fprintf(stream, "#s%ld", OBJ_UNBOX(object));
     return;
   case OBJ_UNDEFINED_TAG:
-    fprintf(stream, "#undefined");
+    fprintf(stream, "#!undefined");
     return;
   case OBJ_PRIMITIVE_TAG:
     fputs("(function ", stream);
@@ -93,7 +93,7 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     return;
   case OBJ_ENTITY_TAG:
   case OBJ_RELATION_TAG:
-    fprintf(stream, "#unprintable");
+    fprintf(stream, "#!unprintable");
     return;
   }
   /* Should be unreachable. */
