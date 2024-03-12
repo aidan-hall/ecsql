@@ -29,14 +29,14 @@
        ((with)
         (cons nil (cdr (translate-predicate (cadr predicate)))))
        ((rel)
-        (let ((component (ecs-pair (ecs-lookup (cadr predicate))
-                                   (ecs-lookup (caddr predicate)))))
+        (let ((component (ecs-pair (ecs-resolve (cadr predicate))
+                                   (ecs-resolve (caddr predicate)))))
           (cons (list component) component)))
        (t
         (wrong "Invalid predicate form" predicate))))
     ;; Resolve Component names
-    ((symbol)
-     (let ((component (ecs-lookup predicate)))
+    ((symbol i32)
+     (let ((component (ecs-resolve predicate)))
        (if component
            (cons (list component) component)
            (wrong "Nonexistent Component name" predicate))))
