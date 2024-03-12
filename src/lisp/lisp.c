@@ -326,6 +326,17 @@ Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context) {
   return &kh_value(lisp->globals, global_key);
 }
 
+Object lisp_lookup_macro(LispEnv *lisp, Object symbol) {
+  LISP_ASSERT_TYPE(symbol, SYMBOL);
+  /* TODO: Search in the lexical context. */
+  khint_t macro_key = kh_get(var_syms, lisp->macros, symbol.bits);
+  if (macro_key == kh_end(lisp->macros)) {
+    WRONG("Undefined macro", symbol);
+    return UNDEFINED;
+  }
+  return kh_value(lisp->macros, macro_key);
+}
+
 /* We don't support lexical function definitions, so this function takes no
  * context argument. */
 Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
@@ -575,6 +586,11 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
       return LISP_CAR(lisp, tmp);
+
+    } else if (EQ(tmp, lisp->keysyms.macro)) {
+      tmp = LISP_CDR(lisp, expression);
+      LISP_ASSERT_TYPE(tmp, PAIR);
+      return lisp_lookup_macro(lisp, LISP_CAR(lisp, tmp));
 
     } else if (EQ(tmp, lisp->keysyms.function)) {
       tmp = LISP_CDR(lisp, expression);
