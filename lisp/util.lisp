@@ -138,9 +138,9 @@ This comprises its value, and its docstring if it has one."
 
 ;;; Common Macros
 (defmacro let (binds . body)
-  ;; Generate a set of lexical bindings that cannot refer to one another,
-  ;; and are accessible within the `body' code.
-  ;; `binds' takes the form: ((name value) (name value) ...)
+  "Generate a set of lexical bindings that cannot refer to one another,
+and are accessible within the BODY code.
+BINDS takes the form: ((name value) (name value) ...)"
   ((lambda (names values)
      (cons
       (cons 'lambda (cons names body))
@@ -149,15 +149,15 @@ This comprises its value, and its docstring if it has one."
    (mapcar (lambda (bind) (and (consp bind) (cadr bind))) binds)))
 
 (defmacro let* (binds . body)
-  ;; Generate a set of lexical bindings where each binding can refer to the previous ones.
+  "Generate a set of lexical bindings where each binding can refer to the previous ones."
   (if binds
       (list 'let (list (car binds))
             (cons 'let* (cons (cdr binds) body)))
       (cons 'progn body)))
 
 (defmacro cond clauses
-  ;; Evaluate the first expression in each clause until one is true,
-  ;; then evaluate the rest of that clause.
+  "Evaluate the first expression in each clause until one is true,
+then evaluate the rest of that clause."
   (if (consp clauses)
       (let ((current (car clauses)))
         (list 'if (car current) (cons 'progn (cdr current))
@@ -218,6 +218,9 @@ This comprises its value, and its docstring if it has one."
        (progn . ,body)))
 
 (defmacro case (expr . clauses)
+  "Evaluate EXPR. Evaluate the first matching clause in CLAUSES.
+A clause has the form ((forms...) body...).
+A clause matches if the result of evaluating EXPR is eql to one of the forms in its car."
   (let ((gname (gensym)))
     `(let ((,gname ,expr))
        (cond . ,(mapcar
@@ -243,6 +246,9 @@ This comprises its value, and its docstring if it has one."
     m))
 
 (defmacro dotimes (iterator . body)
+  "Evaluate BODY a given number of times in sequence.
+ITERATOR takes the form (var n).
+Var is bound to 0, 1, ..., n-1 on the corresponding iteration."
   (let ((varname (car iterator)))
     `(let ((,varname 0))
        (while (< ,varname ,(cadr iterator))
@@ -263,17 +269,21 @@ This comprises its value, and its docstring if it has one."
       nil))
 
 (defun reduce (f start elements)
+  "Reduce ELEMENTS to a single value with function F, starting with START.
+Performs a left fold."
   (while (consp elements)
     (setq start (funcall f start (car elements)))
     (setq elements (cdr elements)))
   start)
 
 (defun last (l)
+  "Returns the last cons cell in list L, or nil if L is nil."
   (if (and (consp l) (consp (cdr l)))
       (last (cdr l))
       l))
 
 (defun nconc lists
+  "Concatenate LISTS by modifying them. The last list is not modified."
   (while (and lists (not (car lists)))
     (setq lists (cdr lists)))
   (when (consp lists)
@@ -289,6 +299,8 @@ This comprises its value, and its docstring if it has one."
     (not (funcall f x))))
 
 (defun union (a b)
+  "Compute the union of lists A & B.
+Elements are compared with eql."
   (reduce
    (lambda (acc elem)
      (if (memql elem acc)
@@ -354,7 +366,7 @@ This comprises its value, and its docstring if it has one."
 " stdout))
 
 (defun equal (a b)
-  ;; Return t if `a' and `b' are the same, traversing the sub-structure of `cons' pairs.
+  "Return t if `a' and `b' are the same, traversing the sub-structure of `cons' pairs."
   ;; TODO: Do the right thing for vectors and structs.
   (if (and (consp a) (consp b))
       (and (equal (car a) (car b))
@@ -370,11 +382,11 @@ This comprises its value, and its docstring if it has one."
   `(setq ,var (+ ,var ,(if rest (car rest) 1))))
 
 (defun puts (string)
-  ;; Write `string' to `stdout'.
+  "Write STRING to STDOUT."
   (fputs string stdout))
 
 (defun repl ()
-  ;; Run a Read-Eval-Print loop
+  "Run a Read-Eval-Print loop."
   (while (not (feof stdin))
     (puts "* ")
     (let ((form (read-stream stdin)))
