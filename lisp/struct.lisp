@@ -4,7 +4,7 @@
 ;;; list(offset name-string type-symbol size/B)
 
 (defun struct-store-type-boxed-p (type)
-  ;; type: A primitive type name
+  "Whether struct members of type TYPE should be stored as a boxed Object."
   (case type
     ((nil character i32 f32)
      nil)
@@ -14,15 +14,17 @@
      (wrong "Invalid primitive type name" type))))
 
 (defun align-of (type)
+  "Get the alignment of TYPE."
   (let ((metadata (struct-metadata type)))
-   (if metadata
-       (struct-metadata-alignment metadata)
-       ;; Primitives' alignment is the same as their size.
-       (size-of type))))
+    (if metadata
+        (struct-metadata-alignment metadata)
+        ;; Primitives' alignment is the same as their size.
+        (size-of type))))
 
 ;;; → (list total-size offsets alignment)
 (defun struct-generate-offsets (members prefix offset)
-  ;; Generates unaligned offsets, but that doesn't matter with the current implementation.
+  "Generate getter names with the given PREFIX, and aligned offsets for MEMBERS.
+A padding algorithm is used to generate aligned offsets that match those of C."
   (let ((offsets nil)
         (alignment 1))
 
@@ -74,6 +76,7 @@
   (aref metadata 4))
 
 (defun struct-printer (struct-type name-string members)
+  "Generate a function that prints structs of type STRUCT-TYPE."
   `(defun ,(intern (concat "print-" name-string "-to")) (stream obj)
      (assert (eq (type-of obj) ',struct-type))
      (fputs ,(concat "#*" name-string) stream)
@@ -83,8 +86,9 @@
                            `(,(intern (concat name-string "-" (car member))) obj))
                          members)))))
 
-;;; Generate getters and setters for a struct from a description of the offsets
 (defun struct-accessors (struct-type offsets)
+  "Generate getters and setters for STRUCT-TYPE based on the OFFSETS.
+The OFFSETS are produced by struct-generate-offsets."
   (let* ((my-metadata (struct-metadata struct-type))
          (my-name (symbol-name struct-type))
          (my-id (struct-metadata-id my-metadata))
