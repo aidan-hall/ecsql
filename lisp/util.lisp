@@ -417,3 +417,109 @@ Elements are compared with eql."
 "))))
   (puts "End of file reached. Goodbye.
 "))
+
+;; Doc strings for primitives
+
+(defmacro generate-primitive-docstrings (entries)
+  "Generate doc strings for the given primitive functions.
+ENTRIES is a list, with items of the form (name docstring)."
+  (cons
+   'progn
+   (mapcar
+    (lambda (entry)
+      `(add-doc-string
+        ',(car entry)
+        (concat ,(cadr entry)
+                "
+
+Primitive function.
+"
+                ,(if (cddr entry)
+                     (concat "Arguments: " (to-string (caddr entry)) ".
+")
+                     "")
+                "Typespec: "
+                (to-string (function ,(car entry))) ".")))
+    entries)))
+
+(generate-primitive-docstrings
+ ((/ "Divide the first argument by each of the remaining arguments.
+With one argument, divide 1 by it.")
+  (- "Subtract from the first argument all remaining arguments.
+With one argument, negate it.")
+  (quit "Quit Lisp.")
+  (symbol-name "Get the name of the supplied symbol as a string.")
+  (intern "Obtain the canonical symbol with the given name name.
+I.e. (eq 'a (intern (make-string 1 #\a))) => t")
+  (make-symbol "Produce a new, uninterned symbol with the given name.
+Calling make-symbol twice with the same argument will produce two symbols that are distinct from
+each other, and the canonical symbol with that name.")
+  (make-string "Given arguments (n c), produce a string length N, with every character being C.")
+  (make-vector "Given arguments (n v), produce a vector length N, with every element being V.")
+  (vector "Produce a vector containing the arguments.")
+  (aref "Get the nth element of the vector.")
+  (aset "Set the nth element of the vector to the supplied value.")
+  (eq "Return t iff the arguments are bit-for-bit the same.")
+  (eql "Return t iff the arguments are equal.
+• Numbers: Numerically equal.
+• Strings: Same length, and all characters the same.")
+  (length "Returns the length of the given list, vector or string.")
+  (to-string "Returns the printed representation of the argument as a string.")
+  (type-of "Returns the symbol representing the type of the argument.")
+  (type-tag "Returns the Object type tag of the argument.
+Note that all structs have the same type tag.")
+  (funcall "Apply the first argument to the remaining arguments.")
+  (apply "Apply the first argument to the remaining arguments.
+The last argument is a list of arguments to pass to the function.
+E.g. (apply #'+ 4 '(1 2 3)) => 10.")
+  (eval "Evaluate the argument form.
+It is preferable to use macros or other language features over this function where possible.")
+  (macroexpand-1 "Expand the top-level macro in the argument form, if there is one.")
+  (macroexpand "Recursively expand out all macros in the argument form.")
+  (wrong "Signal an error, displaying a message and the value of the second argument.")
+  (size-of "Return the number of Bytes necessary to store elements of the argument type in a struct.")
+  (type-spec-matches "Returns t iff the supplied form matches the supplied type spec." (form spec))
+  (structp "Returns t iff the argument is a struct.")
+  (struct-metadata "Returns reflection data about the given struct type.")
+  (ecs-new "Create and return a new ECS entity.")
+  (make-entity "Produce an Entity object with the given id and generation.
+Not guaranteed to be a live entity.")
+  (ecs-pair "Produce a Relation object with the given RELATION and TARGET.
+Not guaranteed to be a valid Relation (wherein RELATION and TARGET are both alive."
+                 (relation target))
+  (make-relation "Produce a Relation object with the given RELATION and TARGET.
+Not guaranteed to be a valid Relation (wherein RELATION and TARGET are both alive."
+                 (relation target))
+  (ecs-entity "Returns the Entity with the argument ID, if alive. Otherwise, nil.")
+  (ecs-destroy "Destroy the supplied Entity.")
+  (ecs-get "Obtain the value of COMPONENT for ENTITY.
+ENTITY must have COMPONENT, and COMPONENT must have LispStorage,
+or an error is raised." (entity component))
+  (ecs-set "Set the value of COMPONENT for ENTITY.
+ENTITY must already have COMPONENT, and COMPONENT must have LispStorage.
+VALUE must be of COMPONENT's LispStorage type (see ecs-storage-type)." (entity component value))
+  (ecs-set-name "Set the name of ENTITY.
+Names are not Components, and are used to find Entities with ecs-lookup." (entity name))
+  (ecs-lookup "Obtain the Entity with the given name, if it exists." (name))
+  (ecs-has "Returns t iff ENTITY has COMPONENT." (entity component))
+  (ecs-add "Add COMPONENT to ENTITY." (entity component))
+  (ecs-id "Returns the ID of ENTITY." (entity))
+  (ecs-gen "Returns the generation of ENTITY." (entity))
+  (ecs-relation "Returns the Relation type of RELATION" (relation))
+  (ecs-target "Returns the target Entity of RELATION" (relation))
+  (ecs-new-component "Creates a new Component that stores values of type TYPE.")
+  (ecs-do-query "Run FUNCTION on every Entity matching QUERY.
+This is the backend to ecsql, which you should probably use instead." (function query))
+  (ecs-register-system "Create a new System (Entity) with the given FUNCTION and QUERY added.
+This is the backend to ecs-new-system, which you should probably use instead." (function query))
+  (ecs-storage-type "Obtain the type of Lisp Object stored by COMPONENT.
+If COMPONENT is a Relation, this will be the same as (ecs-storage-type (ecs-relation COMPONENT))." (component))
+  (get-mouse-x "Get the X coordinate of the mouse cursor on the game window.")
+  (get-mouse-y "Get the Y coordinate of the mouse cursor on the game window.")
+  (get-delta "Get the duration of the last frame.")
+  (draw-text "Draw TEXT at the given X and Y coordinates, at the given SIZE."
+             (text x y size))
+  (is-mouse-down "Returns t iff mouse button BUTTON is currently held down.
+Allowed values of BUTTON: left, right." (button))
+  (is-mouse-pressed "Returns t iff mouse button BUTTON was just pressed.
+Allowed values of BUTTON: left, right." (button))))
