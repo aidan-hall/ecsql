@@ -79,8 +79,9 @@ Use the optional third argument to document the variable."
 
 (defun describe (object)
   "Prints some information about the supplied OBJECT.
-This comprises its value, and its docstring if it has one."
+This comprises its value, its type, and its docstring if it has one."
   (print object)
+  (print (type-of object))
   ((lambda (docform)
      (when docform
        (puts (cdr docform))
