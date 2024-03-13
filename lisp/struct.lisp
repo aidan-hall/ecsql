@@ -88,7 +88,15 @@ A padding algorithm is used to generate aligned offsets that match those of C."
                            `(,(intern (concat name-string "-" (car member))) obj))
                          members)))))
 
-(defun struct-accessors (struct-type offsets)
+(defun struct-member-types-string (stringy-members)
+  "Generate a string listing the members of a struct and their types."
+  (apply #'concat
+         (mapcar (lambda (entry)
+                   (concat "• " (car entry) ": " (symbol-name (cadr entry)) "
+"))
+                 stringy-members)))
+
+(defun struct-accessors (struct-type offsets member-types-doc)
   "Generate getters and setters for STRUCT-TYPE based on the OFFSETS.
 The OFFSETS are produced by struct-generate-offsets."
   (let* ((my-metadata (struct-metadata struct-type))
@@ -112,7 +120,9 @@ The OFFSETS are produced by struct-generate-offsets."
            ;; Argument list
            (,struct-type . ,my-member-symbols)
          ;; Doc string
-         ,(concat "Set the value of each member of " my-name ".")
+         ,(concat "Set the value of each member of " my-name ".
+"
+                  member-types-doc)
          (progn
            . ,(mapcar
                (lambda (member-name)
@@ -127,7 +137,9 @@ The OFFSETS are produced by struct-generate-offsets."
            ;; Produce argument list
            ,my-member-symbols
          ;; Doc string
-         ,(concat "Create a new " my-name ".")
+         ,(concat "Create a new " my-name ".
+"
+                  member-types-doc)
          ;; Allocate the structure
          (let ((me (--struct-allocate ,my-size ,my-id)))
            ;; Assign the initial values by calling out to the "whole struct" setter.
@@ -202,19 +214,37 @@ The OFFSETS are produced by struct-generate-offsets."
 
 (defmacro defstruct (name . members)
   (let* ((name-string (symbol-name name))
+         (doc-string
+          (if (stringp (car members))
+              (let ((custom-doc (car members)))
+                (setq members (cdr members))
+                custom-doc)
+              ""))
          (stringy-members
           (mapcar
            (lambda (member)
              (list (symbol-name (car member)) (cadr member)))
            members))
+         (member-types-doc (struct-member-types-string stringy-members))
          (size-and-offsets (struct-generate-offsets stringy-members name-string 0))
          (printer-code (struct-printer name name-string stringy-members)))
     ;; The printer function is not defined at macroexpansion time, so we must defer adding it.
     (if (>= (length name-string) 128)
-        (wrong "struct name is way too long" struct-type)
+        (wrong "struct name is way too long" name)
 
         (struct-install name (car size-and-offsets) stringy-members nil (caddr size-and-offsets))
         `(let ((printer-function ,printer-code))
-           ,(struct-accessors name (cadr size-and-offsets))
+           ,(struct-accessors name (cadr size-and-offsets) member-types-doc)
+           ;; Doc string
+           (add-doc-string ',name
+                           ,(concat
+                             "A struct type.
+"
+                             doc-string
+                             "
+Members:
+"
+                             member-types-doc))
+
            ;; printer-code is a defun form, so we can get the function name with cadr.
            (aset (struct-metadata ',name) 3 (function ,(cadr printer-code)))))))
