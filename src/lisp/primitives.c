@@ -1224,7 +1224,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("setcdr", "(pair t)", prim_setcdr);
   DEFPRIMFUN("cons", "(t t)", prim_cons);
   DEFPRIMFUN("list", "t", prim_list);
-  DEFPRIMFUN("length", "(t)", prim_length);
+  DEFPRIMFUN("length", "((or pair vector string))", prim_length);
   DEFPRIMFUN("make-vector", "(i32 t)", prim_make_vector);
   DEFPRIMFUN("vector", "t", prim_vector);
   DEFPRIMFUN("aref", "(vector i32)", prim_aref);
