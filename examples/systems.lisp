@@ -9,7 +9,9 @@
              (+ (v2-y pos) (* (v2-y vel) delta))))))
 (defvar wizard-follow
   (ecs-new-system
-   (Physics) (and (with (rel Species Wizard)) Pos) (pos)
+   (Physics
+    (name 'WizardFollow))
+   (and (with (rel Species Wizard)) Pos) (pos)
    (set-v2 pos (+ (get-mouse-x) 30.0) (get-mouse-y))))
 (defvar human-follow
   (ecs-new-system
