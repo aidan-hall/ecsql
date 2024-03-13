@@ -22,10 +22,6 @@
       (setq *doc-strings* (cons (cons object string) *doc-strings*))
       (wrong "Attempted to pass non-string as docstring" string))
   string)
-(add-doc-string (function add-doc-string)
-                "Add a documentation STRING for the given name.")
-(add-doc-string (function not)
-                "Returns t iff OBJECT is nil.")
 
 (defmacro* defmacro (name params . body)
   (if (and (eq (type-of body) 'pair)
@@ -37,11 +33,17 @@
                   (concat
                    (car body)
                    "
+
 Macro arguments: "
                    (to-string params)))
             (cons 'defmacro* (cons name (cons params (cdr body)))))
       (cons 'defmacro* (cons name (cons params body)))))
+
 ;; Doc strings for that things that had to be defined before the docstring-enabled definers.
+(add-doc-string (function add-doc-string)
+                "Add a documentation STRING for the given name.")
+(add-doc-string (function not)
+                "Returns t iff OBJECT is nil.")
 (add-doc-string
  'defmacro
  "Define a macro with the given NAME, PARAMS and BODY in global scope.
@@ -60,6 +62,7 @@ it will be used as the docstring for this function."
                   (concat
                    (car body)
                    "
+
 Function arguments: "
                    (to-string params)))
             (cons 'defun* (cons name (cons params (cdr body)))))
