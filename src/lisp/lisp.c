@@ -349,11 +349,12 @@ Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
   return kh_value(lisp->functions, function_key);
 }
 
-Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
+Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments,
+                       Object function) {
   Object tmp;
   if (EQ(parameters, NIL)) {
     if (!EQ(arguments, NIL)) {
-      WRONG("Too many arguments.");
+      WRONG("Too many arguments to function", function);
     } else {
       /* End of parameters and arguments lists */
       return NIL;
@@ -364,9 +365,9 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
                       LISP_CAR(lisp, arguments));
       return lisp_cons(lisp, tmp,
                        lisp_bind_recur(lisp, LISP_CDR(lisp, parameters),
-                                       LISP_CDR(lisp, arguments)));
+                                       LISP_CDR(lisp, arguments), function));
     } else {
-      WRONG("Too few arguments.");
+      WRONG("Too few arguments to function", function);
     }
   }
 
@@ -378,8 +379,9 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments) {
 /* Create a context (alist) on top of 'context' with 'parameters' bound to
  * 'arguments'. */
 Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
-                 Object context) {
-  return lisp_cons(lisp, lisp_bind_recur(lisp, parameters, arguments), context);
+                 Object function, Object context) {
+  return lisp_cons(lisp, lisp_bind_recur(lisp, parameters, arguments, function),
+                   context);
 }
 
 static bool lisp_check_argument_types(LispEnv *lisp, InterpreterPrimitive prim,
@@ -412,7 +414,7 @@ Object lisp_apply(LispEnv *lisp, Object function, Object arguments) {
 
     return lisp_evaluate_sequence(lisp, LISP_CDR(lisp, form),
                                   lisp_bind(lisp, LISP_CAR(lisp, form),
-                                            arguments,
+                                            arguments, function,
                                             LISP_CAR(lisp, function)));
   }
   default:

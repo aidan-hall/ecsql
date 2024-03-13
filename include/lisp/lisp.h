@@ -206,7 +206,7 @@ Object lisp_assoc(LispEnv *lisp, Object key, Object value);
 Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream);
 
 Object lisp_bind(struct LispEnv *lisp, Object parameters, Object arguments,
-                 Object context);
+                 Object function, Object context);
 Object lisp_evaluate(struct LispEnv *lisp, Object expression, Object context);
 Object lisp_eval(struct LispEnv *lisp, Object expression);
 Object lisp_apply(struct LispEnv *lisp, Object function, Object arguments);
