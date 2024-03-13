@@ -16,17 +16,26 @@
           (set-v2 vel 0.0 0.0)))
 
 ;; Interactive versions
-;; Make all moving Entities converge towards (200, 200)
+;; Make all dynamic entities move towards (200,200)
 (ecsql (and Pos Vel)
        (pos vel)
        (set-v2 vel
                (- 200 (v2-x pos))
                (- 200 (v2-y pos))))
-
-;; Change the colour of all Elves and Dwarves to yellow
+;; Colour all Elves and Dwarves yellow
 (ecsql (and Colour
             (with (or (rel Species Dwarf)
                       (rel Species Elf))))
        (colour)
        (set-colour colour
                    255 255 0 255))
+;; Move Entities with Pos and Vel every frame
+(defvar move-system
+  (ecs-new-system
+   (Physics)
+   (and Pos Vel)
+   (pos vel)
+   (let ((delta (get-delta)))
+     (set-v2 pos
+             (+ (v2-x pos) (* (v2-x vel) delta))
+             (+ (v2-y pos) (* (v2-y vel) delta))))))

@@ -1,12 +1,3 @@
-(defvar move-system
-  (ecs-new-system
-   (Physics)
-   (and Pos Vel)
-   (pos vel)
-   (let ((delta (get-delta)))
-     (set-v2 pos
-             (+ (v2-x pos) (* (v2-x vel) delta))
-             (+ (v2-y pos) (* (v2-y vel) delta))))))
 (defvar wizard-follow
   (ecs-new-system
    (Physics
