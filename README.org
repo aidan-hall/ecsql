@@ -13,7 +13,11 @@ This is the source code for ECSQL.
 Since we must rely on some piece of software for project management,
 we will use the most reliable one (in terms of longevity): Emacs.
 ** Design
-*** TODO Basic ECS Architecture [3/4]
+*** DONE Basic ECS Architecture [4/4]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-03-12 Tue 13:03]
+:END:
+
 **** DONE Automatically generated Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-05 Mon 14:51]
@@ -47,15 +51,24 @@ we will use the most reliable one (in terms of longevity): Emacs.
 - State "DOING"      from "TODO"       [2024-02-05 Mon 14:52]
 :END:
 - Archetype tables: Entity=row, Component data=column.
-**** DOING System Scheduler
+**** DONE System Scheduler
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 12:50] \\
+  Most basic solution, done a few weeks ago.
 - State "DOING"      from "TODO"       [2024-02-05 Mon 15:14]
 :END:
 - Fairly tangential to the premise of ECSQL, so either:
   - Manual :: User code to specify the order of execution.
   - Ordering Relation Tree :: As in Flecs.
   - Order of creation :: Fine for non-rendering Systems.
-*** TODO ECSQL Language Specification [0/11]
+*** CANCELLED ECSQL Language Specification [0/11]
+:LOGBOOK:
+- State "CANCELLED"  from "DOING"      [2024-03-12 Tue 12:51] \\
+  See the doc string of the ~ecsql~ macro for what little of this was
+  necessary. The interface is essentially a Lisp library, and the
+  boundary between those and DSLs is blurry at the best of times.
+- State "DOING"      from "TODO"       [2024-03-12 Tue 12:51]
+:END:
 - [ ] Create and delete entities
 - [ ] Add and remove Components
 - [ ] Display and edit Component data
@@ -153,13 +166,18 @@ the conditional and switch instructions.
    - Maximum stack depth in each function is known statically (deepest
      expression nesting level).
 3. Evaluator: libgccjit or simple interpreter.
-*** DOING Demo Application
+*** DONE Demo Application
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 12:58] \\
+  Extended version of evaluation day demo.
 - State "DOING"      from "TODO"       [2024-02-20 Tue 10:39]
 :END:
 - 2D Raylib game
-*** TODO Asynchronous REPL
+*** DONE Asynchronous REPL
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 12:57] \\
+  Done a while ago, in the dumbest way possible.
+- State "DOING"      from "TODO"       [2024-03-12 Tue 12:57]
 CLOCK: [2024-02-20 Tue 11:28]--[2024-02-20 Tue 11:53] =>  0:25
 CLOCK: [2024-02-20 Tue 10:57]--[2024-02-20 Tue 11:22] =>  0:25
 :END:
@@ -423,6 +441,17 @@ this was error prone, since C was allowing implicit conversions
 between integers and Objects, which were invalid.  We replaced this
 with a complex union with bit fields, immediately revealed a large
 number of such invalid conversions (<2024-02-08 Thu>).
+***** Actual Implementation
+#+begin_example
++-------------------------------+-----------------------------++
+<----------------------Data (59b)-------------------------><typ>
+<-------Entity (32b)-----------><---Gen (16b)-->00000000000<typ>
+<--Relation Target--(32b)------><---Relation (23b)----><--><typ>
+000000000000000000000000000<--------Integer (32b)---------><typ>
+000000000000000000000000000<---------Float (32b)----------><typ>
+<-----------Index   (43b)-----------------><-Metadata(16b)><typ>
+#+end_example
+
 **** DONE Scope, Namespaces etc.
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-01-26 Fri 12:13] \\
@@ -578,13 +607,18 @@ Lisp Representation:
 - Name :: Symbol, bound in the function namespace as a constructor(?).
 - Definition :: As below:
   #+begin_src lisp
-(defstruct v3f
+(defstruct v2
   (x f32)
-  (y f32)
-  (z f32))
-(defstruct physics
-  (pos v3f) ; Recursive structs
-  (vel v3f))
+  (y f32))
+
+(defstruct player
+  (rotation f32)
+  (name string)
+  (pos v2)) ; Recursive structs
+
+(make-player 90.0 "Aidan" (make-v2 -20.0 42.1))
+
+=> #*player(90.0 "Aidan" #*v2(-20.0 42.1))
 (defstruct node
   (car t)
   (cdr t))
@@ -602,7 +636,11 @@ Lisp Representation:
     list from the parent class and dispatching to normal ~defstruct~.
   - Include a cast to the base class.
   - Not in the spirit of, or relevant to, what we are doing.
-*** TODO ECS [4/7]
+*** DONE ECS [7/7]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-03-12 Tue 13:02]
+:END:
+
 **** DONE Entity IDs
 :LOGBOOK:
 - State "DONE"       from "DOING"      [2024-02-09 Fri 12:45] \\
@@ -662,8 +700,11 @@ Lisp Representation:
   2. Create the Archetype for Entities with only the "Component Storage" Component, manually specifying the storage parameters in its only Column (which contains the Component Storage data),
   3. Add "Component Storage" to itself, with the appropriate data values.
   4. For all Subsequent Components with storage, simply add the "Component Storage" Component and it will just work™.
-**** DOING Queries
+**** DONE Queries
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 12:59] \\
+  - Single-entity queries in C & Lisp,
+  - Pairwise queries in C.
 CLOCK: [2024-02-20 Tue 12:09]--[2024-02-20 Tue 12:34] =>  0:25
 - State "DOING"      from "TODO"       [2024-02-15 Thu 10:42]
 :END:
@@ -713,8 +754,20 @@ struct QueryEntry {
   size columns[];
 };
 #+end_src
-***** TODO Lisp Interface
-**** TODO Systems
+***** DONE Lisp Interface
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 12:58] \\
+  See ~select~ and ~ecsql~ in query.lisp.
+- State "DOING"      from "TODO"       [2024-03-12 Tue 12:58]
+:END:
+
+**** DONE Systems
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 12:59] \\
+  - Straightforward approach taken.
+  - System data is stored as Components.
+- State "DOING"      from "TODO"       [2024-03-12 Tue 12:59]
+:END:
 - Iteration over Archetypes:
   1. User supplies a function to the ECS.
   2. The ECS calls that function once for each matched (set of) Archetype(s)
@@ -782,8 +835,10 @@ implement of 16 weeks.
 - Value trade-off of allowing an Entity to have the same relation to
   two distinct Entities?
   - Better to allow it.
-**** DOING [#A] Lisp API
+**** DONE [#A] Lisp API
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 13:00] \\
+  Pretty nice, with a whole load of macros.
 - State "DOING"      from "TODO"       [2024-02-14 Wed 17:13] \\
   Current implementation:
   ~(set-v3-x (ecs-get player Velocity) 3)~
@@ -890,7 +945,12 @@ unnecessarily restrictive, and there are many plausible Components
 such as "Transform" that would contain multiple vectors/matrices for
 position and orientation.
 
-*** TODO Utility DSLs [2/3]
+*** DONE Utility DSLs [3/3]
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 13:02]
+- State "DOING"      from "TODO"       [2024-03-12 Tue 13:02]
+:END:
+
 **** DONE ecsql
 :LOGBOOK:
 - State "DONE"       from              [2024-02-28 Wed 11:33]
@@ -905,8 +965,10 @@ position and orientation.
 - Take a Query, function, and set of Components to add to a new
   system, that is immediately created and can start running in the
   game loop.
-**** DOING Scene Definition Macros
+**** DONE Scene Definition Macros
 :LOGBOOK:
+- State "DONE"       from "DOING"      [2024-03-12 Tue 13:00] \\
+  Done a few weeks ago, and extended
 CLOCK: [2024-02-28 Wed 12:08]--[2024-02-28 Wed 12:33] =>  0:25
 CLOCK: [2024-02-28 Wed 11:36]--[2024-02-28 Wed 12:01] =>  0:25
 - State "DOING"      from "TODO"       [2024-02-28 Wed 11:36]
@@ -915,6 +977,12 @@ Short-hand macros to make it easier and quicker to define (and
 manipulate) initial scene data.
 - [X] ~ecs-add*~
 - [X] ~ecs-create~
+*** DONE Documentation
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-03-12 Tue 13:01] \\
+  We implemented docstrings, with user-specifiable and auto-generated
+  documentation for most notable Lisp code.
+:END:
 
 ** Improvement Ideas
 - Lisp system function argument list can be constructed once, with
