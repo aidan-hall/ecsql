@@ -1041,6 +1041,18 @@ static Object prim_get_mouse_x(LispEnv *lisp, Object args) {
   return OBJ_IMM(x);
 }
 
+static Object prim_get_screen_width(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  float x = GetScreenWidth();
+  return OBJ_IMM(x);
+}
+
+static Object prim_get_screen_height(LispEnv *lisp, Object args) {
+  IGNORE(args);
+  float x = GetScreenHeight();
+  return OBJ_IMM(x);
+}
+
 static Object prim_get_delta(LispEnv *lisp, Object args) {
   IGNORE(args);
   return OBJ_IMM(GetFrameTime());
@@ -1289,6 +1301,8 @@ void lisp_install_primitives(LispEnv *lisp) {
 
   DEFPRIMFUN("get-mouse-y", "()", prim_get_mouse_y);
   DEFPRIMFUN("get-mouse-x", "()", prim_get_mouse_x);
+  DEFPRIMFUN("get-screen-width", "()", prim_get_screen_width);
+  DEFPRIMFUN("get-screen-height", "()", prim_get_screen_height);
   DEFPRIMFUN("get-delta", "()", prim_get_delta);
   DEFPRIMFUN("draw-text", "(string f32 f32 i32)", prim_draw_text);
   DEFPRIMFUN("is-mouse-down", "(symbol)", prim_mouse_down);

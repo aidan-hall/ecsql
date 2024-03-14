@@ -516,6 +516,8 @@ This is the backend to ecs-new-system, which you should probably use instead." (
 If COMPONENT is a Relation, this will be the same as (ecs-storage-type (ecs-relation COMPONENT))." (component))
   (get-mouse-x "Get the X coordinate of the mouse cursor on the game window.")
   (get-mouse-y "Get the Y coordinate of the mouse cursor on the game window.")
+  (get-screen-width "Get the width of the game window in pixels.")
+  (get-screen-height "Get the height of the game window in pixels.")
   (get-delta "Get the duration of the last frame.")
   (draw-text "Draw TEXT at the given X and Y coordinates, at the given SIZE."
              (text x y size))
