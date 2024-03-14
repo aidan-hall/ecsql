@@ -1031,26 +1031,22 @@ static Object prim_ecs_do_query(LispEnv *lisp, Object args) {
 
 static Object prim_get_mouse_y(LispEnv *lisp, Object args) {
   IGNORE(args);
-  float y = GetMouseY();
-  return OBJ_IMM(y);
+  return OBJ_IMM(GetMouseY());
 }
 
 static Object prim_get_mouse_x(LispEnv *lisp, Object args) {
   IGNORE(args);
-  float x = GetMouseX();
-  return OBJ_IMM(x);
+  return OBJ_IMM(GetMouseX());
 }
 
 static Object prim_get_screen_width(LispEnv *lisp, Object args) {
   IGNORE(args);
-  float x = GetScreenWidth();
-  return OBJ_IMM(x);
+  return OBJ_IMM(GetScreenWidth());
 }
 
 static Object prim_get_screen_height(LispEnv *lisp, Object args) {
   IGNORE(args);
-  float x = GetScreenHeight();
-  return OBJ_IMM(x);
+  return OBJ_IMM(GetScreenHeight());
 }
 
 static Object prim_get_delta(LispEnv *lisp, Object args) {
