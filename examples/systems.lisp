@@ -12,7 +12,9 @@
 (defvar pos-label
   (ecs-new-system
    (Graphics) (and Pos Radius (with Colour) (with Vel)) (pos radius)
-   (draw-text (to-string (list (floor (v2-x pos)) (floor (v2-y pos)))) (+ (v2-x pos) radius) (- (v2-y pos) radius) 8)))
+   (draw-text (to-string (list (floor (v2-x pos)) (floor (v2-y pos))))
+              (+ (v2-x pos) radius)
+              (- (v2-y pos) radius) 8)))
 
 (defun point-in-circle (centre radius point)
   (let* ((radius2 (* radius radius))
