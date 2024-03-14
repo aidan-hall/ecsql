@@ -1,6 +1,12 @@
 (load "examples/planets-components.lisp")
 
 ;; Create an Entity and poke it about
+(defvar e
+  (ecs-add* (ecs-new)
+            (Pos 200.0 200.0)
+            (Vel 50. 100.)
+            (Radius 10.0)
+            (Colour 255 0 0 255)))
 
 (load "examples/planets-scene.lisp")
 
@@ -13,7 +19,7 @@
 
 ;; Colour all Elves and Dwarves yellow
 (ecsql (and Colour
-            (with (or (rel Species Dwarf)
+            (has (or (rel Species Dwarf)
                       (rel Species Elf))))
        (colour)
        (set-colour colour
