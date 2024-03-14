@@ -26,7 +26,7 @@
        ((opt)
         (cons (car (translate-predicate (cadr predicate))) '(and)))
        ;; Allow Components to be required but not fetched.
-       ((with)
+       ((with has)
         (cons nil (cdr (translate-predicate (cadr predicate)))))
        ((rel)
         (let ((component (ecs-pair (ecs-resolve (cadr predicate))
