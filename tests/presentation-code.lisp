@@ -19,8 +19,7 @@
 
 ;; Colour all Elves and Dwarves yellow
 (ecsql (and Colour
-            (has (or (rel Species Dwarf)
-                      (rel Species Elf))))
+            (has (or Dwarf Elf)))
        (colour)
        (set-colour colour
                    255 255 0 255))
