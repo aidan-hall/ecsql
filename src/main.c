@@ -51,35 +51,6 @@ int repl_thread_function(void *_lisp) {
   return thrd_success;
 }
 
-void test_type_bsearch() {
-  Type a;
-  kv_init(a);
-  Object foo = (Object){.bits = ~0};
-  printf("foo: %lx, ENT_SIG(foo): %lx\n", foo.bits, ENT_SIG(foo));
-  foo = ENT_BOX((EntityID){3}, 0);
-  printf("foo: %lx, ENT_SIG(foo): %lu\n", foo.bits, ENT_SIG(foo));
-  kv_push(Object, a, foo);
-  kv_push(Object, a, (ENT_BOX((EntityID){49}, 0)));
-  kv_push(Object, a, (ENT_BOX((EntityID){67}, 0)));
-  kv_push(Object, a, (ENT_BOX((EntityID){93}, 0)));
-  kv_push(Object, a, (ENT_BOX((EntityID){105}, 0)));
-  kv_push(Object, a, (ENT_BOX((EntityID){241}, 0)));
-  kv_push(Object, a, (ENT_BOX((EntityID){999}, 0)));
-  kv_push(Object, a, (ENT_BOX((EntityID){7680}, 0)));
-  fprintf(stderr, "Elements: ");
-  for (size i = 0; i < kv_size(a); ++i) {
-    fprintf(stderr, "%lx, ", kv_A(a, i).bits);
-  }
-  fputc('\n', stderr);
-
-  printf("t: %ld\n", type_pos(a, ENT_BOX((EntityID){93}, 0)));
-  printf("f: %ld\n", type_pos(a, ENT_BOX((EntityID){0}, 0)));
-  printf("t: %ld\n", type_pos(a, ENT_BOX((EntityID){3}, 0)));
-  printf("f: %ld\n", type_pos(a, ENT_BOX((EntityID){10000}, 0)));
-  printf("t: %ld\n", type_pos(a, ENT_BOX((EntityID){999}, 0)));
-  printf("t: %ld\n", type_pos(a, ENT_BOX((EntityID){7680}, 0)));
-}
-
 #define GRAVITY (200.0)
 
 void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
@@ -215,33 +186,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  {
-    /* Allocate an object outside Lisp memory, and insert a pointer to it. */
-    char outside[] = "fruitbar";
-    size idx = lisp_allocate_cells(lisp, 1);
-    *(char **)lisp_cell_at(lisp, idx) = outside;
-    lisp_add_to_namespace(lisp, lisp->globals, SYM(lisp, "fruitptr"),
-                          OBJ_BOX_INDEX(-idx, strlen(outside), STRING));
-  }
-
-  Object l = lisp_list(lisp, lisp->keysyms.quote, lisp->keysyms.t, OBJ_NIL_TAG);
-  lisp_print(lisp, l, stdout);
-  fputc('\n', stdout);
-
-  test_type_bsearch();
   struct World *world = lisp->world;
-  WorldComponents *world_components = ecs_world_components(lisp->world);
-  Object storage_comp = world_components->storage;
-
-  lisp_apply(lisp, lisp_lookup_function(lisp, SYM(lisp, "print")),
-             lisp_cons(lisp, storage_comp, NIL));
-  Object pos = ecs_lookup_by_name(world, SYM(lisp, "Pos"));
-  {
-    struct Storage pos_storage =
-        *(struct Storage *)ecs_get(world, pos, storage_comp);
-    printf("pos_storage: .size = %lu, .alignment = %lu\n", pos_storage.size,
-           pos_storage.alignment);
-  }
 
   Object physics_component = ecs_lookup_by_name(world, SYM(lisp, "Physics"));
   Object graphics_component = ecs_lookup_by_name(world, SYM(lisp, "Graphics"));
