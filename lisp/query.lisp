@@ -80,7 +80,7 @@ PREDICATE ::= (not PREDICATE)
                 → At least one predicate must match.
            |  (opt PREDICATE)
                 → Bind Components in predicate, but they do not have to match.
-           |  (with PREDICATE)
+           |  (with PREDICATE) | (has PREDICATE)
                 → Predicate must match, but does not bind Components.
            |  (rel ENTITY ENTITY)
                 → Matches Entities that have given Relation. Binds it.
