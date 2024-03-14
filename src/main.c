@@ -103,7 +103,8 @@ void do_bounce(LispEnv *lisp, struct EcsIter *iter, void *data) {
   }
 }
 
-void collision_system(LispEnv *lisp, struct EcsIter **iter, void *data) {
+void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
+                                  void *data) {
   /* printf("Running collisions for archetypes %u and %u\n", archetype0.val,
    * archetype1.val); */
   float delta = GetFrameTime();
@@ -193,28 +194,29 @@ int main(int argc, char *argv[]) {
 
   Object move_system =
       ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel)"), move, NULL);
-
   ecs_add(world, move_system, physics_component);
   assert(ecs_set_name(world, move_system, SYM(lisp, "Move")));
-  ecs_add(world,
-          ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Colour)"),
-                         mouse_gravity, NULL),
-          physics_component);
 
-  ecs_add(world,
-          ecs_new_system(lisp,
-                         LISP_EVAL_STR(lisp, "(select Pos Colour Radius)"),
-                         draw_movers, NULL),
-          graphics_component);
-  ecs_add(world,
-          ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Bounce)"),
-                         do_bounce, NULL),
-          physics_component);
-  ecs_add(world,
-          ecs_new_self_join_system(
-              lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Radius Bounce)"),
-              (NWiseSystem){collision_system, NWISE_DISTINCT}, NULL),
-          physics_component);
+  Object mouse_gravity_system =
+      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Colour)"),
+                     mouse_gravity, NULL);
+  ecs_add(world, mouse_gravity_system, physics_component);
+  assert(ecs_set_name(world, mouse_gravity_system, SYM(lisp, "MouseGravity")));
+
+  Object draw_movers_system =
+      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Colour Radius)"),
+                     draw_movers, NULL);
+  ecs_add(world, draw_movers_system, graphics_component);
+  assert(ecs_set_name(world, draw_movers_system, SYM(lisp, "DrawMovers")));
+  Object bounce_system = ecs_new_system(
+      lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Bounce)"), do_bounce, NULL);
+  ecs_add(world, bounce_system, physics_component);
+  assert(ecs_set_name(world, bounce_system, SYM(lisp, "DoBounce")));
+  Object collision_system = ecs_new_self_join_system(
+      lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Radius Bounce)"),
+      (NWiseSystem){detect_collisions_and_bounce, NWISE_DISTINCT}, NULL);
+  assert(ecs_set_name(world, collision_system, SYM(lisp, "DoCollision")));
+  ecs_add(world, collision_system, physics_component);
 
   Object nwise_physics_query = LISP_EVAL_STR(
       lisp,
