@@ -105,10 +105,6 @@ void do_bounce(LispEnv *lisp, struct EcsIter *iter, void *data) {
 
 void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
                                   void *data) {
-  /* printf("Running collisions for archetypes %u and %u\n", archetype0.val,
-   * archetype1.val); */
-  float delta = GetFrameTime();
-
   size N = ecs_iter_count(iter[0]);
   struct Vector2 *possn = ecs_iter_get(iter[0], 0);
   struct Vector2 *velsn = ecs_iter_get(iter[0], 1);
@@ -129,15 +125,28 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
       float dist2 = Vector2LengthSqr(diff);
       float threshold = powf(radiin[i], 2) + powf(radiim[j], 2);
       if (dist2 <= threshold) {
+        Vector2 dir = Vector2Normalize(diff);
+        Vector2 intersection =
+            Vector2Scale(dir, radiim[j] + radiin[i] - sqrtf(dist2));
+        Vector2 half_collision = Vector2Scale(intersection, 0.5);
+        Vector2 relative_velocity = Vector2Subtract(velsn[i], velsm[j]);
         /* printf("collision (%f, %f): %u in %u & %u in %u\n", diff.x, diff.y,
          */
         /*        idsn[i].val, archetype0.val, idsm[j].val, archetype1.val); */
-        possn[i] = Vector2Subtract(possn[i], Vector2Scale(velsn[i], 2 * delta));
-        possm[j] = Vector2Subtract(possm[j], Vector2Scale(velsm[j], 2 * delta));
+        possn[i] = Vector2Subtract(possn[i], half_collision);
+        possm[j] = Vector2Add(possm[j], half_collision);
 
-        Vector2 dir = Vector2Normalize(diff);
-        velsm[j] = Vector2Scale(Vector2Reflect(velsm[j], dir), bouncem[j]);
-        velsn[i] = Vector2Scale(Vector2Reflect(velsn[i], dir), bouncen[i]);
+        velsm[j] = Vector2Subtract(
+            velsm[j],
+            Vector2Scale(dir, -(1 + bouncem[j]) *
+                                  Vector2DotProduct(relative_velocity, dir) /
+                                  2));
+
+        velsn[i] = Vector2Subtract(
+            velsn[i],
+            Vector2Scale(dir, (1 + bouncen[i]) *
+                                  Vector2DotProduct(relative_velocity, dir) /
+                                  2));
       }
     }
   }
