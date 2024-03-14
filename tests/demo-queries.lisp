@@ -7,16 +7,16 @@
 
 (defmacro recolour-species (species new-colour)
   "Re-colour all Entities with Species SPECIES to NEW-COLOUR."
-  `(ecsql (and (with (rel Species ,species)) Colour) (colour)
+  `(ecsql (and (has ,species) Colour) (colour)
           (copy-colour colour ,new-colour)))
 
 ;;; Make all entities of a given species stop moving
 (defmacro halt-species (species)
-  `(ecsql (and Vel (with (rel Species ,species))) (vel)
+  `(ecsql (and Vel (has ,species)) (vel)
           (set-v2 vel 0.0 0.0)))
 
 ;; Interactive versions
-;; Make all dynamic entities move towards (200,200)
+;; Make Entities move towards (200, 200)
 (ecsql (and Pos Vel)
        (pos vel)
        (set-v2 vel
@@ -24,8 +24,7 @@
                (- 200 (v2-y pos))))
 ;; Colour all Elves and Dwarves yellow
 (ecsql (and Colour
-            (with (or (rel Species Dwarf)
-                      (rel Species Elf))))
+            (has (or Elf Dwarf)))
        (colour)
        (set-colour colour
                    255 255 0 255))
