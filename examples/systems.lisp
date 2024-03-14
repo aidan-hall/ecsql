@@ -2,16 +2,16 @@
   (ecs-new-system
    (Physics
     (name 'WizardFollow))
-   (and (with (rel Species Wizard)) Pos) (pos)
+   (and (has Wizard) Pos) (pos)
    (set-v2 pos (+ (get-mouse-x) 30.0) (get-mouse-y))))
 (defvar human-follow
   (ecs-new-system
-   (Physics) (and (with (rel Species Human)) Pos Vel) (pos vel)
+   (Physics) (and (has Human) Pos Vel) (pos vel)
    (set-v2 pos (- (get-mouse-x) 30.0) (get-mouse-y))
    (set-v2 vel 0. 0.)))
 (defvar pos-label
   (ecs-new-system
-   (Graphics) (and Pos Radius (with Colour) (with Vel)) (pos radius)
+   (Graphics) (and Pos Radius (has Colour) (has Vel)) (pos radius)
    (draw-text (to-string (list (floor (v2-x pos)) (floor (v2-y pos))))
               (+ (v2-x pos) radius)
               (- (v2-y pos) radius) 8)))
@@ -26,7 +26,7 @@
 
 (defvar clicked-me
   (ecs-new-system
-   (Graphics) (and Pos Radius (with Colour) (with Vel)) (pos radius)
+   (Graphics) (and Pos Radius (has Colour) (has Vel)) (pos radius)
    (when (and (is-mouse-down 'left)
               (point-in-circle pos radius (make-v2 (get-mouse-x) (get-mouse-y))))
      (draw-text (concat "Clicked: " (to-string (ecs-id entity)))
@@ -34,7 +34,7 @@
 
 (defvar kill-click
   (ecs-new-system
-   (Physics) (and Pos Radius (with Colour) (with Vel)) (pos radius)
+   (Physics) (and Pos Radius (has Colour) (has Vel)) (pos radius)
    (when (and (is-mouse-pressed 'right)
               (point-in-circle pos radius (make-v2 (get-mouse-x) (get-mouse-y))))
      (ecs-destroy entity))))
