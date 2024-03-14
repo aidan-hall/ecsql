@@ -246,10 +246,11 @@ int main(int argc, char *argv[]) {
   Object physics_component = ecs_lookup_by_name(world, SYM(lisp, "Physics"));
   Object graphics_component = ecs_lookup_by_name(world, SYM(lisp, "Graphics"));
 
-  ecs_add(
-      world,
-      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel)"), move, NULL),
-      physics_component);
+  Object move_system =
+      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel)"), move, NULL);
+
+  ecs_add(world, move_system, physics_component);
+  assert(ecs_set_name(world, move_system, SYM(lisp, "Move")));
   ecs_add(world,
           ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Colour)"),
                          mouse_gravity, NULL),
