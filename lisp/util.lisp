@@ -235,6 +235,10 @@ Incremented upon each call to gensym.")
       (setq as (cdr as)))
     m))
 
+(defun float (x)
+  "Convert X into an f32."
+  (+ 0.0 x))
+
 (defun negated (f)
   (lambda (x)
     (not (funcall f x))))
