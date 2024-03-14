@@ -18,8 +18,8 @@
 
 #define FPS (60)
 #define FRAMELEN (1.0 / FPS)
-#define SCREEN_HEIGHT (720)
-#define SCREEN_WIDTH (1280)
+#define SCREEN_HEIGHT (480)
+#define SCREEN_WIDTH (640)
 
 typedef struct Vec4i {
   i32 x;
@@ -122,12 +122,10 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
     for (size j = ecs_iter_same_archetype(iter[0], iter[1]) ? i + 1 : 0; j < M;
          ++j) {
       Vector2 diff = Vector2Subtract(possm[j], possn[i]);
-      float dist2 = Vector2LengthSqr(diff);
-      float threshold = powf(radiin[i], 2) + powf(radiim[j], 2);
-      if (dist2 <= threshold) {
+      if (CheckCollisionCircles(possn[i], radiin[i], possm[j], radiim[j])) {
         Vector2 dir = Vector2Normalize(diff);
         Vector2 intersection =
-            Vector2Scale(dir, radiim[j] + radiin[i] - sqrtf(dist2));
+          Vector2Scale(dir, radiim[j] + radiin[i] - Vector2Length(diff));
         Vector2 half_collision = Vector2Scale(intersection, 0.5);
         Vector2 relative_velocity = Vector2Subtract(velsn[i], velsm[j]);
         /* printf("collision (%f, %f): %u in %u & %u in %u\n", diff.x, diff.y,
