@@ -1,4 +1,4 @@
-;; Define 
+;; Define some Components for demo.
 (load "examples/planets-components.lisp")
 
 
@@ -8,7 +8,7 @@
 (defvar e
   (ecs-add* (ecs-new)
             (Pos 200.0 200.0)
-            (Vel 50. 100.)
+            (Vel 100. 200.)
             (Radius 10.0)
             (Colour 255 0 0 255)))
 
@@ -73,7 +73,7 @@
    (draw-text (to-string
                (list (floor (v2-x pos)) (floor (v2-y pos))))
               (+ (v2-x pos) radius)
-              (- (v2-y pos) radius) 8)))
+              (- (v2-y pos) radius) 16)))
 
 
 (defun point-in-circle (centre radius point)
