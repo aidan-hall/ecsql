@@ -96,7 +96,7 @@ This comprises its value, its type, and its docstring if it has one."
 
 
 
-;;; Common shorthands for accessing the contents of
+;;; Common shorthands for accessing the contents of lists
 (defun cadr (x)
   (car (cdr x)))
 
