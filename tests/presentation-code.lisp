@@ -63,17 +63,20 @@
    (Physics (name 'WizardFollow))
    (and (has Wizard) Pos) (pos)
    (set-v2 pos
-           (+ (get-mouse-x) 30.0) (float (get-mouse-y)))))
+           (+ (get-mouse-x) 30.0)
+           (float (get-mouse-y)))))
 
 
 (defvar pos-label
   (ecs-new-system
    (Graphics)
-   (and Pos Radius (has Colour) (has Vel)) (pos radius)
+   (and Pos Radius (has Colour) (has Vel))
+   (pos radius)
    (draw-text (to-string
-               (list (floor (v2-x pos)) (floor (v2-y pos))))
+               (list (floor (v2-x pos))
+                     (floor (v2-y pos))))
               (+ (v2-x pos) radius)
-              (- (v2-y pos) radius) 16)))
+              (- (v2-y pos) radius) 8)))
 
 
 (defun point-in-circle (centre radius point)
@@ -89,7 +92,8 @@
 (defvar clicked-me
   (ecs-new-system
    (Graphics)
-   (and Pos Radius (has Colour) (has Vel)) (pos radius)
+   (and Pos Radius (has Colour) (has Vel))
+   (pos radius)
    (when (and (is-mouse-down 'left)
               (point-in-circle
                pos radius
