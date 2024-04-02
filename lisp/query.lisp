@@ -11,7 +11,7 @@
                           ;; Treat a not as "none of the supplied arguments"
                           (translate-predicate
                            (cons 'and (cdr predicate)))))))
-       ((and or)
+       ((and)
         (let ((children
                (mapcar (function translate-predicate)
                        (cdr predicate))))
@@ -20,11 +20,25 @@
             (function union)
             nil
             (mapcar (function car) children))
-           (cons (car predicate) (mapcar (function cdr) children)))))
+           (cons 'and (mapcar (function cdr) children)))))
+       ((or)
+        ;; Assume a single level of Components in a binding or expression.
+        ;; Supporting arbitrary sub-structure would be extremely complex and inefficient,
+        ;; and would deliver little value.
+        (let ((children
+               (mapcar #'translate-predicate
+                       (cdr predicate))))
+          (cons
+           (list (cons 'or (apply #'nconc (mapcar #'car children))))
+           (cons 'or (mapcar #'cdr children)))))
        ;; Make a Component bound but not required.
        ;; TODO: Make this work.
        ((opt)
-        (cons (car (translate-predicate (cadr predicate))) '(and)))
+        (let ((child (translate-predicate (cadr predicate))))
+          (cons (list (cons 'opt (car (car child))))
+                ;; An opt clause does not require matches.
+                ;; (and) is a no-op predicate.
+                '(and))))
        ;; Allow Components to be required but not fetched.
        ((with has)
         (cons nil (cdr (translate-predicate (cadr predicate)))))
@@ -63,7 +77,19 @@ See (describe (macro ecsql)) for detail on the form of PREDICATE."
      ((lambda ,names
         . ,body)
       . ,(mapcar (lambda (component)
-                   `(ecs-get entity ',component))
+                   (case (type-of component)
+                     ((entity relation)
+                      `(ecs-get entity ',component))
+                     ((pair)
+                      (case (car component)
+                        ((opt) `(when (ecs-has entity ',(cdr component))
+                                  (ecs-get entity ',(cdr component))))
+                        ((or) `(or
+                                . ,(mapcar (lambda (subcomponent)
+                                             `(when (ecs-has entity ',subcomponent)
+                                                (ecs-get entity ',subcomponent)))
+                                           (cdr component))))
+                        (otherwise (wrong "Invalid Component expression" component))))))
                  components))))
 
 (defmacro ecsql (predicate names . body)
