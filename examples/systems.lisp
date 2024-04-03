@@ -28,7 +28,9 @@
   (ecs-new-system
    (Graphics) (and Pos Radius (has Colour) (has Vel)) (pos radius)
    (when (and (is-mouse-down 'left)
-              (point-in-circle pos radius (make-v2 (get-mouse-x) (get-mouse-y))))
+              (point-in-circle pos radius
+                               (make-v2 (float (get-mouse-x))
+                                        (float (get-mouse-y)))))
      (draw-text (concat "Clicked: " (to-string (ecs-id entity)))
                 10. 10. 20))))
 
@@ -36,5 +38,7 @@
   (ecs-new-system
    (Physics) (and Pos Radius (has Colour) (has Vel)) (pos radius)
    (when (and (is-mouse-pressed 'right)
-              (point-in-circle pos radius (make-v2 (get-mouse-x) (get-mouse-y))))
+              (point-in-circle pos radius
+                               (make-v2 (float (get-mouse-x))
+                                        (float (get-mouse-y)))))
      (ecs-destroy entity))))
