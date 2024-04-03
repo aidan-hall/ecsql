@@ -40,9 +40,9 @@ Macro arguments: "
       (cons 'defmacro* (cons name (cons params body)))))
 
 ;; Doc strings for that things that had to be defined before the docstring-enabled definers.
-(add-doc-string (function add-doc-string)
+(add-doc-string 'add-doc-string
                 "Add a documentation STRING for the given name.")
-(add-doc-string (function not)
+(add-doc-string 'not
                 "Returns t iff OBJECT is nil.")
 (add-doc-string
  'defmacro
