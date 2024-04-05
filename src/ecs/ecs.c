@@ -414,6 +414,8 @@ bool ecs_has(World *world, Object entity, Object component) {
   return ecs_archetype_has(world, archetype->id, component);
 }
 
+/** Returns index of the column in the given Archetype storing the given
+ * Component, or NOT_PRESENT if not present. */
 size ecs_archetype_component_column(struct World *world, Archetype *archetype,
                                     Object component) {
   ArchetypeMap *archetypes = component_archetypes(world, component);
