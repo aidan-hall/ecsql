@@ -32,10 +32,9 @@
            (list (cons 'or (apply #'nconc (mapcar #'car children))))
            (cons 'or (mapcar #'cdr children)))))
        ;; Make a Component bound but not required.
-       ;; TODO: Make this work.
        ((opt)
-        (let ((child (translate-predicate (cadr predicate))))
-          (cons (list (cons 'opt (car (car child))))
+        (let ((children (mapcar #'translate-predicate (cdr predicate))))
+          (cons (mapcar (lambda (child) (cons 'opt (car child))) children)
                 ;; An opt clause does not require matches.
                 ;; (and) is a no-op predicate.
                 '(and))))

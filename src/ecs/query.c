@@ -149,8 +149,45 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
       /* Produce the array of Component columns */
       for (size j = 0; j < foo.n_columns; ++j) {
         Object the_component = LISP_CAR(lisp, traversal_components);
-        foo.columns[j] =
-            ecs_archetype_component_column(world, archetype, the_component);
+        size column;
+        switch (OBJ_TYPE(the_component)) {
+        case OBJ_RELATION_TAG:
+        case OBJ_ENTITY_TAG:
+          column =
+              ecs_archetype_component_column(world, archetype, the_component);
+          break;
+        case OBJ_PAIR_TAG: {
+          Object car = LISP_CAR(lisp, the_component);
+          Object options = LISP_CDR(lisp, the_component);
+          if (EQ(car, lisp->keysyms.or)) {
+            for (column = NOT_PRESENT;
+                 column == NOT_PRESENT && OBJ_TYPE(options) == OBJ_PAIR_TAG;
+                 options = LISP_CDR(lisp, options)) {
+              column = ecs_archetype_component_column(world, archetype,
+                                                      LISP_CAR(lisp, options));
+            }
+          } else if (EQ(car, lisp->keysyms.opt)) {
+            if (OBJ_TYPE(options) != OBJ_PAIR_TAG) {
+              WRONG(
+                  "An opt Component expression must have exactly one argument",
+                  the_component);
+              column = NOT_PRESENT;
+            } else {
+              column = ecs_archetype_component_column(world, archetype,
+                                                      LISP_CAR(lisp, options));
+            }
+          } else {
+            column = NOT_PRESENT;
+            WRONG("Invalid Component expression in compiled Query",
+                  the_component);
+          }
+          break;
+        }
+        default:
+          column = NOT_PRESENT;
+          break;
+        }
+        foo.columns[j] = column;
         traversal_components = LISP_CDR(lisp, traversal_components);
       }
       func(lisp, &foo, data);

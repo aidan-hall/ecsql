@@ -27,6 +27,7 @@
   F(stdout)                                                                    \
   F(stderr)                                                                    \
   F(or)                                                                        \
+  F(opt)                                                                       \
   F(cond)                                                                      \
   F(and)                                                                       \
   F(progn)                                                                     \
