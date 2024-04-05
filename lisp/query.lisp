@@ -1,4 +1,15 @@
 (defun translate-predicate (predicate)
+  "Translate PREDICATE from user-facing to internal query representation.
+PREDICATE takes the form described in (describe 'ecsql).
+
+Returns a pair: (BINDINGS . CONDITION),
+where BINDINGS is the list of Components whose values are automatically bound in Lisp queries
+and CONDITION is the predicate that must satisfy src/ecs/query.c:ecs_query_matches
+for a System to run on a given Archetype.
+
+Most values in BINDINGS will be single Components, with the following exceptions:
+• (opt COMPONENT ...): Each COMPONENT is bound if an Entity has it, otherwise nil is used.
+• (or COMPONENT ...): The first of these Components that an Entity has will be bound."
   (case (type-of predicate)
     ((nil) (cons nil nil))
     ((pair)
@@ -65,13 +76,15 @@
 
 (defmacro select predicate
   "Convert PREDICATE to a form usable by the Query engine.
-See (describe (macro ecsql)) for detail on the form of PREDICATE."
+Run (describe 'ecsql) for detail on the form of PREDICATE."
   ;; Implicit and form at top level.
   (let ((res (fixup-predicate (cons 'and predicate))))
     `',res))
 
 (defun create-system-function (names body components)
-  "Generate a function that evaluates BODY on an Entity, with the given COMPONENTS bound to NAMES."
+  "Generate a function that evaluates BODY on an Entity, with the given COMPONENTS bound to NAMES.
+
+The COMPONENTS list is a value of the form returned as BINDINGS from translate-predicate."
   `(lambda (entity)
      ((lambda ,names
         . ,body)
