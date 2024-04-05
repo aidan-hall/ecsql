@@ -1,6 +1,10 @@
-;; Define some Components for demo.
-(load "examples/planets-components.lisp")
+(progn
+  ;; Define some Components for demo.
+  (load "examples/planets-components.lisp")
 
+
+  ;; Load a complex pre-defined scene.
+  (load "examples/planets-scene.lisp"))
 
 
 
@@ -16,9 +20,6 @@
 (ecs-add* e (Bounce 0.8))
 
 
-
-;; Load a complex pre-defined scene.
-(load "examples/planets-scene.lisp")
 
 
 
@@ -48,7 +49,7 @@
 (defvar move-system
   (ecs-new-system
    (Physics (name 'Move))
-   (and Pos Vel)
+   (and (or RelPos Pos) Vel)
    (pos vel)
    (let ((delta (get-delta)))
      (set-v2 pos
