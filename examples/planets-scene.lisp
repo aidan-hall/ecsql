@@ -24,3 +24,26 @@
                  (Colour : species)
                  (Mass : species))
        species))))
+
+;;; A child Entity
+(defun v2-add (a b)
+  (make-v2 (+ (v2-x a) (v2-x b))
+           (+ (v2-y a) (v2-y b))))
+(defun hierarchy-pos (e)
+    (if (and (ecs-has e Parent) (ecs-has e RelPos))
+        (let ((pos (ecs-get e RelPos)))
+          (v2-add pos (hierarchy-pos (ecs-get e Parent))))
+      (ecs-get e Pos)))
+(defvar pos-from-relpos-system
+    (ecs-new-system
+     (Physics (name 'Pos2RelPos))
+     (and Pos (has RelPos))
+     (abs)
+     (copy-v2 abs (hierarchy-pos entity))))
+
+(ecs-add* (ecs-new)
+          (Parent = (ecs-resolve 'Gandalf))
+          Pos
+          (RelPos 20. 20.)
+          (Radius 5.)
+          (Colour 255 255 0 255))
