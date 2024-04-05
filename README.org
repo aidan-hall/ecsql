@@ -80,8 +80,10 @@ we will use the most reliable one (in terms of longevity): Emacs.
 - [ ] FFI to Systems written in host language
 - [ ] Deferred event queue
 - [ ] BNF grammar
-*** DOING Many Languages
+*** CANCELLED Many Languages
 :LOGBOOK:
+- State "CANCELLED"  from "DOING"      [2024-04-05 Fri 18:10] \\
+  Didn't have time for it.
 - State "DOING"      from "TODO"       [2024-01-15 Mon 11:06]
 :END:
 If ECSQL is implemented with heavy use of macros, a relatively small
