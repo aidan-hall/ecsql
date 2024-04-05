@@ -220,7 +220,11 @@ void *ecs_iter_get(struct EcsIter *iter, size index) {
   if (index == NOT_PRESENT) {
     return NULL;
   }
-  return kv_A(iter->archetype->columns, iter->columns[index]).elements;
+  size column = iter->columns[index];
+  if (column == NOT_PRESENT) {
+    return NULL;
+  }
+  return kv_A(iter->archetype->columns, column).elements;
 }
 
 bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component) {
