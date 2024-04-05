@@ -45,5 +45,4 @@
           (Parent = (ecs-resolve 'Gandalf))
           Pos
           (RelPos 20. 20.)
-          (Radius 5.)
-          (Colour 255 255 0 255))
+          (Radius 5.))
