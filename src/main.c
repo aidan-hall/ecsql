@@ -157,13 +157,20 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
 }
 
 void draw_movers(LispEnv *lisp, struct EcsIter *iter, void *data) {
+  /* (select Pos (opt Colour) Radius) */
   struct Vector2 *poss = ecs_iter_get(iter, 0);
   struct Vec4i *colours = ecs_iter_get(iter, 1);
   float *radii = ecs_iter_get(iter, 2);
   size N = ecs_iter_count(iter);
-  for (size i = 0; i < N; ++i) {
-    Color colour = colours != NULL ? vec4i_to_colour(colours[i]) : WHITE;
-    DrawCircle(poss[i].x, poss[i].y, radii[i], colour);
+  if (colours == NULL) {
+    for (size i = 0; i < N; ++i) {
+      DrawCircle(poss[i].x, poss[i].y, radii[i], WHITE);
+    }
+  } else {
+    for (size i = 0; i < N; ++i) {
+      Color colour = vec4i_to_colour(colours[i]);
+      DrawCircle(poss[i].x, poss[i].y, radii[i], colour);
+    }
   }
 }
 
@@ -216,9 +223,9 @@ int main(int argc, char *argv[]) {
   ecs_add(world, mouse_gravity_system, physics_component);
   assert(ecs_set_name(world, mouse_gravity_system, SYM(lisp, "MouseGravity")));
 
-  Object draw_movers_system =
-      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Colour Radius)"),
-                     draw_movers, NULL);
+  Object draw_movers_system = ecs_new_system(
+      lisp, LISP_EVAL_STR(lisp, "(select Pos (opt Colour) Radius)"),
+      draw_movers, NULL);
   ecs_add(world, draw_movers_system, graphics_component);
   assert(ecs_set_name(world, draw_movers_system, SYM(lisp, "DrawMovers")));
   Object bounce_system = ecs_new_system(
