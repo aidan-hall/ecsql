@@ -469,6 +469,8 @@ each other, and the canonical symbol with that name.")
  (eql "Return t iff the arguments are equal.
 • Numbers: Numerically equal.
 • Strings: Same length, and all characters the same.")
+ (assoc "Returns first key-value pair in LIST whose car is eq to KEY, if any, else nil."
+        (key list))
  (length "Returns the length of the given list, vector or string.")
  (to-string "Returns the printed representation of the argument as a string.")
  (type-of "Returns the symbol representing the type of the argument.")
@@ -479,7 +481,11 @@ Note that all structs have the same type tag.")
 The last argument is a list of arguments to pass to the function.
 E.g. (apply #'+ 4 '(1 2 3)) => 10.")
  (eval "Evaluate the argument form.
-It is preferable to use macros or other language features over this function where possible.")
+It is preferable to use macros or other language features over this function where possible."
+       (form))
+ (read-stream "Read one Lisp object from the supplied FILE." (file))
+ (fopen "Open a file with the given r/w setting. See fopen(3)." (file r/w))
+ (getc "See getc(3)." (file))
  (macroexpand-1 "Expand the top-level macro in the argument form, if there is one.")
  (macroexpand "Recursively expand out all macros in the argument form.")
  (wrong "Signal an error, displaying a message and the value of the second argument.")
