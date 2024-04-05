@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
   assert(ecs_set_name(world, move_system, SYM(lisp, "Move")));
 
   Object mouse_gravity_system =
-      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Colour)"),
+      ecs_new_system(lisp, LISP_EVAL_STR(lisp, "(select Pos Vel (has Mass))"),
                      mouse_gravity, NULL);
   ecs_add(world, mouse_gravity_system, physics_component);
   assert(ecs_set_name(world, mouse_gravity_system, SYM(lisp, "MouseGravity")));
