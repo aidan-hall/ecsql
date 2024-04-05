@@ -133,6 +133,8 @@ Also define a variable bound to that Entity."
 
 (defcomponent Pos v2)
 (defcomponent Vel v2)
+(defcomponent RelPos v2)
+(defcomponent Parent entity)
 (defcomponent Orientation v3)
 (defcomponent Health i32)
 (defcomponent Mass f32)
