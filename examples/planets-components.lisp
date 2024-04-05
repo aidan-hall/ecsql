@@ -6,10 +6,13 @@
 
 (ecs-add* (defcomponent Dwarf nil)
           (Colour = col-red)
-          (Radius 15.0))
+          (Radius 15.0)
+          (Mass 1.5))
 (ecs-add* (defcomponent Elf nil)
           (Colour 0 0 255 255)          ; Can also use literal values.
-          (Radius 10.0))
+          (Radius 10.0)
+          (Mass 1.0))
 (ecs-add* (defcomponent Goblin nil)
           (Colour = col-green)
-          (Radius 5.0))
+          (Radius 5.0)
+          (Mass 0.5))
