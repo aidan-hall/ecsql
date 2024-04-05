@@ -110,12 +110,14 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
   struct Vector2 *velsn = ecs_iter_get(iter[0], 1);
   float *radiin = ecs_iter_get(iter[0], 2);
   float *bouncen = ecs_iter_get(iter[0], 3);
+  float *massn = ecs_iter_get(iter[0], 4);
 
   size M = ecs_iter_count(iter[1]);
   struct Vector2 *possm = ecs_iter_get(iter[1], 0);
   struct Vector2 *velsm = ecs_iter_get(iter[1], 1);
   float *radiim = ecs_iter_get(iter[1], 2);
   float *bouncem = ecs_iter_get(iter[1], 3);
+  float *massm = ecs_iter_get(iter[1], 4);
 
   for (size i = 0; i < N; ++i) {
     /* Skip indistinct pairs of Entities in the same archetype */
@@ -124,8 +126,8 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
       Vector2 diff = Vector2Subtract(possm[j], possn[i]);
       if (CheckCollisionCircles(possn[i], radiin[i], possm[j], radiim[j])) {
         Vector2 dir = Vector2Normalize(diff);
-        Vector2 intersection =
-          Vector2Scale(dir, radiim[j] + radiin[i] - Vector2Length(diff));
+        float dist = Vector2Length(diff);
+        Vector2 intersection = Vector2Scale(dir, radiim[j] + radiin[i] - dist);
         Vector2 half_collision = Vector2Scale(intersection, 0.5);
         Vector2 relative_velocity = Vector2Subtract(velsn[i], velsm[j]);
         /* printf("collision (%f, %f): %u in %u & %u in %u\n", diff.x, diff.y,
@@ -134,17 +136,21 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
         possn[i] = Vector2Subtract(possn[i], half_collision);
         possm[j] = Vector2Add(possm[j], half_collision);
 
+        /* https://en.wikipedia.org/wiki/Elastic_collision */
+
+        float total_mass = massn[i] + massm[j];
+
         velsm[j] = Vector2Subtract(
             velsm[j],
             Vector2Scale(dir, -(1 + bouncem[j]) *
-                                  Vector2DotProduct(relative_velocity, dir) /
-                                  2));
+                                  Vector2DotProduct(relative_velocity, dir) *
+                                  massn[i] / (2 * total_mass)));
 
         velsn[i] = Vector2Subtract(
             velsn[i],
             Vector2Scale(dir, (1 + bouncen[i]) *
-                                  Vector2DotProduct(relative_velocity, dir) /
-                                  2));
+                                  Vector2DotProduct(relative_velocity, dir) *
+                                  massm[j] / (2 * total_mass)));
       }
     }
   }
@@ -220,7 +226,7 @@ int main(int argc, char *argv[]) {
   ecs_add(world, bounce_system, physics_component);
   assert(ecs_set_name(world, bounce_system, SYM(lisp, "DoBounce")));
   Object collision_system = ecs_new_self_join_system(
-      lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Radius Bounce)"),
+      lisp, LISP_EVAL_STR(lisp, "(select Pos Vel Radius Bounce Mass)"),
       (NWiseSystem){detect_collisions_and_bounce, NWISE_DISTINCT}, NULL);
   assert(ecs_set_name(world, collision_system, SYM(lisp, "DoCollision")));
   ecs_add(world, collision_system, physics_component);
