@@ -453,6 +453,21 @@ number of such invalid conversions (<2024-02-08 Thu>).
 000000000000000000000000000<---------Float (32b)----------><typ>
 <-----------Index   (43b)-----------------><-Metadata(16b)><typ>
 #+end_example
+***** Mark-Sweep Tricolour Representation
+:PROPERTIES:
+:ID:       fd525dbe-1922-4c97-be94-e28b9ed4f106
+:END:
+#+begin_example
++-------------------------------+-----------------------------++
+<----------------------Data (59b)-------------------------**<ty>
+<-------Entity (32b)-----------><---Gen (16b)-->0000000000**<ty>
+<--Relation Target--(32b)------><---Relation (23b)----><->**<ty>
+00000000000000000000000000<---------Integer (32b)-------->**<ty>
+00000000000000000000000000<----------Float (32b)--------->**<ty>
+<----------Index   (42b)-----------------><-Metadata(16b)>**<ty>
+#+end_example
+- The ~**~ bits are used to store the mark value of an Object in Lisp
+  memory: black, grey or white.
 
 **** DONE Scope, Namespaces etc.
 :LOGBOOK:
@@ -986,6 +1001,26 @@ manipulate) initial scene data.
   documentation for most notable Lisp code.
 :END:
 
+*** TODO Garbage Collection
+- [ ] Use mark-sweep collection so we don't have to modify Objects.
+- [ ] Use [[id:fd525dbe-1922-4c97-be94-e28b9ed4f106][Mark-Sweep Tricolour Representation]] for Objects.
+- [ ] Use a "contexts" array in LispEnv to keep track of live
+  evaluation contexts.
+  - Allocate a new context in eval, and deallocate at the end.
+  - Could *possibly* work as (a) stack(s), with some hacking.
+  - The fact that ~wrong~ sort of "works" with the hard-coded
+    assumption that there's always a single correct ~error_loc~, we
+    can probably hack it to make sure contexts are cleaned up
+    properly.
+    - [ ] Properly handle errors in Lisp run in the main game thread?
+- [ ] Generate an array of (# objects) offsets into struct types where
+  Objects are stored.
+- It might actually be easier to fully commit and implement explicit
+  support for multiple concurrent Lisp threads.
+**** Tracking Execution Contexts
+Options:
+- Pass a reference to the contexts array around the evaluation functions
+- Use an execution context wrapper struct (holding said reference)
 ** Improvement Ideas
 - Lisp system function argument list can be constructed once, with
   stored pointers at known places
