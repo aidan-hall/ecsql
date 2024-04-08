@@ -144,13 +144,13 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
             velsm[j],
             Vector2Scale(dir, -(1 + bouncem[j]) *
                                   Vector2DotProduct(relative_velocity, dir) *
-                                  massn[i] / (2 * total_mass)));
+                                  massn[i] / total_mass));
 
         velsn[i] = Vector2Subtract(
             velsn[i],
             Vector2Scale(dir, (1 + bouncen[i]) *
                                   Vector2DotProduct(relative_velocity, dir) *
-                                  massm[j] / (2 * total_mass)));
+                                  massm[j] / total_mass));
       }
     }
   }
