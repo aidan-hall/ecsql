@@ -41,7 +41,7 @@ Each form of components may take one of the following forms, with the following 
   (* = *) → Adds the Component specified in the car,
             and assigns it the value of the expression after the = sign.
   (* : *) → Adds the Component specified in the car,
-            and copies the value of that Component from the Entity after the = sign.
+            and copies the value of that Component from the Entity after the : sign.
 
 Example:
 (ecs-add*
