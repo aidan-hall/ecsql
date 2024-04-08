@@ -5,7 +5,7 @@
           (Colour = raylib-orange)
           (Radius 20.0)
           (Pos 100. 100.)
-          (Bounce 0.9)
+          (Bounce 0.5)
           (Mass 2.0)
           Vel)
 
@@ -19,7 +19,7 @@
                  (Pos (+ 0.(% (* 20 i) screen-width))
                       (+ 0. (% (* 30 i) screen-height)))
                  (Vel (* 20. (+ 1 i)) (* 15. (+ 1 i)))
-                 (Bounce 0.95)
+                 (Bounce 0.8)
                  (Radius : species)
                  (Colour : species)
                  (Mass : species))
