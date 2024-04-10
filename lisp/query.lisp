@@ -94,8 +94,8 @@ The COMPONENTS list is a value of the form returned as BINDINGS from translate-p
                       `(ecs-get entity ',component))
                      ((pair)
                       (case (car component)
-                        ((opt) `(when (ecs-has entity ',(cdr component))
-                                  (ecs-get entity ',(cdr component))))
+                        ((opt) `(when (ecs-has entity ',(cadr component))
+                                  (ecs-get entity ',(cadr component))))
                         ((or) `(or
                                 . ,(mapcar (lambda (subcomponent)
                                              `(when (ecs-has entity ',subcomponent)
