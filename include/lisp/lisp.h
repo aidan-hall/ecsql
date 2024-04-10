@@ -125,7 +125,7 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
   do {                                                                         \
     if (OBJ_TYPE(OBJ) != TYPE) {                                               \
       WRONG("FATAL: Wrong type of " #OBJ ": expected " #TYPE ", got",          \
-            lisp_type_name(lisp, OBJ_TYPE(OBJ)));                              \
+            lisp_tag_name(lisp, OBJ_TYPE(OBJ)));                               \
       exit(1); /* Should be unreachable */                                     \
     }                                                                          \
   } while (0)

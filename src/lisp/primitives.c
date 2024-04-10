@@ -903,7 +903,7 @@ static Object prim_ecs_set(LispEnv *lisp, Object args) {
         lisp_storage->object_type != OBJ_UNDEFINED_TAG) {
       WRONG("Attempt to store incorrect type of object in a Component "
             "(expected . actual)",
-            lisp_cons(lisp, lisp_type_name(lisp, lisp_storage->object_type),
+            lisp_cons(lisp, lisp_tag_name(lisp, lisp_storage->object_type),
                       lisp_type_of(lisp, component)));
       return UNDEFINED;
     }
@@ -953,7 +953,7 @@ static Object prim_ecs_storage_type(LispEnv *lisp, Object args) {
   struct LispComponentStorage storage = *(struct LispComponentStorage *)ecs_get(
       world, entity, lisp->comp.lisp_component_storage);
   if (storage.type != STORE_STRUCT) {
-    return lisp_type_name(lisp, storage.object_type);
+    return lisp_tag_name(lisp, storage.object_type);
   }
   u16 id = storage.struct_id;
   khiter_t iter = kh_get(struct_ids, lisp->struct_ids, id);

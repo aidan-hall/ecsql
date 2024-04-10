@@ -39,7 +39,7 @@ enum ObjectTag lisp_type_tag(LispEnv *lisp, Object obj) {
   return OBJ_UNDEFINED_TAG;
 }
 
-Object lisp_type_name(LispEnv *lisp, enum ObjectTag tag) {
+Object lisp_tag_name(LispEnv *lisp, enum ObjectTag tag) {
   switch (tag) {
   case OBJ_NIL_TAG:
     return lisp->keysyms.nil;
@@ -88,7 +88,7 @@ Object lisp_type_of(struct LispEnv *lisp, Object obj) {
     return kh_value(lisp->struct_ids, iter);
   }
   default:
-    return lisp_type_name(lisp, OBJ_TYPE(obj));
+    return lisp_tag_name(lisp, OBJ_TYPE(obj));
   }
 }
 
