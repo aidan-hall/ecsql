@@ -69,6 +69,8 @@ static Object prim_assoc(LispEnv *lisp, Object args) {
 static Object prim_length(LispEnv *lisp, Object args) {
   Object obj = FIRST;
   switch (OBJ_TYPE(obj)) {
+  case OBJ_NIL_TAG:
+    return OBJ_IMM(0);
   case OBJ_PAIR_TAG:
     return OBJ_BOX(lisp_length(lisp, FIRST), INT);
   case OBJ_VECTOR_TAG:
@@ -1232,7 +1234,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("setcdr", "(pair t)", prim_setcdr);
   DEFPRIMFUN("cons", "(t t)", prim_cons);
   DEFPRIMFUN("list", "t", prim_list);
-  DEFPRIMFUN("length", "((or pair vector string))", prim_length);
+  DEFPRIMFUN("length", "((or pair vector string nil))", prim_length);
   DEFPRIMFUN("make-vector", "(i32 t)", prim_make_vector);
   DEFPRIMFUN("vector", "t", prim_vector);
   DEFPRIMFUN("aref", "(vector i32)", prim_aref);
