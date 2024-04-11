@@ -44,6 +44,10 @@ size lisp_allocate_bytes(struct LispEnv *lisp, size count) {
 
 Object lisp_cons(LispEnv *lisp, Object car, Object cdr) {
   size location = lisp_allocate_cells(lisp, 2);
+  if (location == -1) {
+    WRONG("Failed to cons.");
+    return UNDEFINED;
+  }
   Object *data = lisp_cell_at(lisp, location);
   data[LISP_CAR_INDEX] = car;
   data[LISP_CDR_INDEX] = cdr;
