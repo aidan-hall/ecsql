@@ -10,7 +10,8 @@
 
 /* Entity ID → newest generation. */
 KHASH_MAP_INIT_INT(gen, u16);
-/* Entity IDs of live entities. */
+/* Entity IDs of live entities.
+ * Only stores IDs so we can use it when generating a new Entity ID. */
 KHASH_SET_INIT_INT(live);
 
 struct World;
