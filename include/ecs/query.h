@@ -10,10 +10,13 @@ struct EcsIter;
 
 void *ecs_iter_get(struct EcsIter *iter, size index);
 bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component);
+Object ecs_iter_component(struct EcsIter *iter, size index);
 
 EntityID *ecs_iter_ids(struct EcsIter *iter);
 size ecs_iter_count(struct EcsIter *iter);
+size ecs_iter_columns(struct EcsIter *iter);
 bool ecs_iter_same_archetype(struct EcsIter *a, struct EcsIter *b);
+size ecs_iter_pairwise_inner_start(struct EcsIter *outer, struct EcsIter *inner, size outer_iter);
 
 typedef void(SystemFunc)(LispEnv *lisp, struct EcsIter *iter, void *data);
 typedef void(NWiseSystemFunc)(LispEnv *lisp, struct EcsIter **iter, void *data);

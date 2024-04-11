@@ -245,12 +245,25 @@ EntityID *ecs_iter_ids(struct EcsIter *iter) {
   return &kv_A(iter->archetype->entities, 0);
 }
 
+size ecs_iter_columns(struct EcsIter *iter) {
+  return iter->n_columns;
+}
+
 size ecs_iter_count(struct EcsIter *iter) {
   return kv_size(iter->archetype->entities);
 }
 
 bool ecs_iter_same_archetype(struct EcsIter *a, struct EcsIter *b) {
   return a->archetype == b->archetype;
+}
+
+size ecs_iter_pairwise_inner_start(struct EcsIter *outer, struct EcsIter *inner,
+                                   size outer_iter) {
+  if (ecs_iter_same_archetype(outer, inner)) {
+    return outer_iter + 1;
+  } else {
+    return 0;
+  }
 }
 
 void *ecs_iter_get(struct EcsIter *iter, size index) {
@@ -262,6 +275,22 @@ void *ecs_iter_get(struct EcsIter *iter, size index) {
     return NULL;
   }
   return kv_A(iter->archetype->columns, column).elements;
+}
+
+/* Get the Component type bound at 'index' in the iterator. */
+Object ecs_iter_component(struct EcsIter *iter, size index) {
+  if (index < 0 || index >= iter->n_columns) {
+    return NIL;
+  } else if (iter->columns[index] == NOT_PRESENT) {
+    return NIL;
+  } else {
+    for (size i = 0; i < kv_size(iter->archetype->component_columns); ++i) {
+      if (kv_A(iter->archetype->component_columns, i) == iter->columns[index]) {
+        return kv_A(iter->archetype->type, i);
+      }
+    }
+    return NIL;
+  }
 }
 
 bool ecs_iter_has(LispEnv *lisp, struct EcsIter *iter, Object component) {
