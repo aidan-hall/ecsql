@@ -81,28 +81,12 @@ Run (describe 'ecsql) for detail on the form of PREDICATE."
   (let ((res (fixup-predicate (cons 'and predicate))))
     `',res))
 
-(defun create-system-function (names body components)
+(defun create-system-function (names body)
   "Generate a function that evaluates BODY on an Entity, with the given COMPONENTS bound to NAMES.
 
 The COMPONENTS list is a value of the form returned as BINDINGS from translate-predicate."
-  `(lambda (entity)
-     ((lambda ,names
-        . ,body)
-      . ,(mapcar (lambda (component)
-                   (case (type-of component)
-                     ((entity relation)
-                      `(ecs-get entity ',component))
-                     ((pair)
-                      (case (car component)
-                        ((opt) `(when (ecs-has entity ',(cadr component))
-                                  (ecs-get entity ',(cadr component))))
-                        ((or) `(or
-                                . ,(mapcar (lambda (subcomponent)
-                                             `(when (ecs-has entity ',subcomponent)
-                                                (ecs-get entity ',subcomponent)))
-                                           (cdr component))))
-                        (otherwise (wrong "Invalid Component expression" component))))))
-                 components))))
+  `(lambda (entity . ,names)
+     . ,body))
 
 (defmacro ecsql (predicate names . body)
   "Evaluate BODY for each Entity that matches PREDICATE,
@@ -134,7 +118,7 @@ Components inside a (with PREDICATE) form must match, but do not get bound.
 E.g. Make all Entities with Vel and Colour stop moving:
 (ecsql (and (with Colour) Vel) (vel) (set-v2 vel 0. 0.))"
   (let* ((query (fixup-predicate predicate))
-         (code (create-system-function names body (car query))))
+         (code (create-system-function names body)))
     `(ecs-do-query ',query ,code)))
 
 (defmacro ecs-new-system (components predicate names . body)
@@ -155,7 +139,7 @@ E.g. A system to move Entities with Pos and Vel:
              (+ (v2-x pos) (* (v2-x vel) delta))
              (+ (v2-y pos) (* (v2-y vel) delta))))))"
   (let* ((query (fixup-predicate predicate))
-         (code (create-system-function names body (car query))))
+         (code (create-system-function names body)))
     `(ecs-add*
       (ecs-register-system ',query ,code)
       . ,components)))
