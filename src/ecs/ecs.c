@@ -519,16 +519,13 @@ static void move_entity(World *world, ArchetypeID from_id, size from_row,
    * when they match. */
   for (size f = 0, t = 0; f < kv_size(from->type) && t < kv_size(to->type);) {
     if (COMP_EQUIV(kv_A(from->type, f), kv_A(to->type, t))) {
-      Object component = kv_A(from->type, f);
-      if (kv_A(from->component_columns, f) != NOT_PRESENT) {
-        size from_col = kv_A(from->component_columns, f);
+      size from_col = kv_A(from->component_columns, f);
+      if (from_col != NOT_PRESENT) {
         size to_col = kv_A(to->component_columns, t);
 
-        struct Storage *storage =
-            ecs_get(world, component, world->comp.storage);
         memcpy(column_at(&kv_A(to->columns, to_col), to_row),
                column_at(&kv_A(from->columns, from_col), from_row),
-               storage->size);
+               kv_A(from->columns, from_col).element_size);
       }
       f++;
       t++;
