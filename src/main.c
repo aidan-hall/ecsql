@@ -121,7 +121,7 @@ void detect_collisions_and_bounce(LispEnv *lisp, struct EcsIter **iter,
 
   for (size i = 0; i < N; ++i) {
     /* Skip indistinct pairs of Entities in the same archetype */
-    for (size j = ecs_iter_same_archetype(iter[0], iter[1]) ? i + 1 : 0; j < M;
+    for (size j = ecs_iter_pairwise_inner_start(iter[0], iter[1], i); j < M;
          ++j) {
       Vector2 diff = Vector2Subtract(possm[j], possn[i]);
       if (CheckCollisionCircles(possn[i], radiin[i], possm[j], radiim[j])) {
