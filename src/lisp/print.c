@@ -100,8 +100,10 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
     fputs(")", stream);
     return;
   case OBJ_ENTITY_TAG:
+    fprintf(stream, "#*entity(%d %d)", object.id.val, object.gen);
+    return;
   case OBJ_RELATION_TAG:
-    fprintf(stream, "#!unprintable");
+    fprintf(stream, "#*relation(%d %d)", object.relation, object.entity.val);
     return;
   }
   /* Should be unreachable. */
