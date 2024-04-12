@@ -350,11 +350,15 @@ Elements are compared with eql."
       (prin1-struct-to stream form)
       (case (type-of form)
         ((pair)
-         (if (eq (car form) 'quote)
-             (progn
-               (fputc #\' stream)
-               (prin1-to stream (cadr form)))
-             (prin1-list stream form)))
+         (let ((rmacro (assoc (car form)
+                              '((quote . #\')
+                                (quasiquote . #\`)
+                                (unquote . #\,)))))
+           (if rmacro
+               (progn
+                 (fputc (cdr rmacro) stream)
+                 (prin1-to stream (cadr form)))
+               (prin1-list stream form))))
         ((nil)
          (fputs "()" stream))
         ((character)                    ; #\c escape
