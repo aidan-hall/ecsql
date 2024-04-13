@@ -665,9 +665,16 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
         WRONG("Invalid function form.");
         return UNDEFINED;
       }
-      return lisp_apply(
-          lisp, lisp_make_closure(lisp, LISP_CDR(lisp, tmp), context),
-          lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
+      if (lisp_length(lisp, tmp) < 1) {
+        WRONG("A lambda application form needs an argument list form.");
+        return UNDEFINED;
+      }
+      return lisp_evaluate_sequence(
+          lisp, LISP_CDR(lisp, LISP_CDR(lisp, tmp)),
+          lisp_bind(lisp, LISP_CAR(lisp, LISP_CDR(lisp, tmp)),
+                    lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression),
+                                            context),
+                    tmp, context));
     } else {
       tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(
