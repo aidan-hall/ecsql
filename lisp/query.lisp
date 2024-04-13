@@ -82,9 +82,7 @@ Run (describe 'ecsql) for detail on the form of PREDICATE."
     `',res))
 
 (defun create-system-function (names body)
-  "Generate a function that evaluates BODY on an Entity, with the given COMPONENTS bound to NAMES.
-
-The COMPONENTS list is a value of the form returned as BINDINGS from translate-predicate."
+  "Generate a function with BODY, and (entity . NAMES) as the parameter list."
   `(lambda (entity . ,names)
      . ,body))
 
