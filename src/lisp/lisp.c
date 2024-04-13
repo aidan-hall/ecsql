@@ -569,13 +569,18 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
   case OBJ_FILE_PTR_TAG:
   case OBJ_PRIMITIVE_TAG:
   case OBJ_VECTOR_TAG:
+  case OBJ_STRUCT_TAG:
+  case OBJ_CLOSURE_TAG:
+  case OBJ_ENTITY_TAG:
+  case OBJ_UNDEFINED_TAG:
+  case OBJ_RELATION_TAG:
     return expression;
   case OBJ_SYMBOL_TAG:
     /* Variable name */
     tmp_ptr = lisp_lookup_variable(lisp, expression, context);
     if (tmp_ptr == NULL) {
       WRONG("Undefined variable", expression);
-      break;
+      return UNDEFINED;
     }
     return *tmp_ptr;
   case OBJ_PAIR_TAG:
@@ -669,12 +674,10 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
           lisp, tmp,
           lisp_eval_argument_list(lisp, LISP_CDR(lisp, expression), context));
     }
-  default:
-    WRONG("Cannot evaluate object: unhandled type",
-          lisp_type_of(lisp, expression));
-    break;
   }
 
+  WRONG("IMPOSSIBLE: Attempted to evaluate expression of unknown type:",
+        OBJ_IMM((i32)expression.tag));
   return UNDEFINED;
 }
 
