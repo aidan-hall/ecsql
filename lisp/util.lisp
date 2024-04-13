@@ -86,10 +86,11 @@ This comprises its value, its type, and its docstring if it has one."
   (print object)
   (print (type-of object))
   ((lambda (docform)
-     (when docform
-       (puts (cdr docform))
-       (puts "
-")))
+     (if docform
+         (progn
+           (puts (cdr docform))
+           (puts "
+"))))
    (assoc object *doc-strings*))
   nil)
 
