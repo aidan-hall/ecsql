@@ -469,7 +469,7 @@ Object lisp_make_closure(LispEnv *lisp, Object body, Object context) {
   if (OBJ_TYPE(body) != OBJ_PAIR_TAG) {
     WRONG("Lambda forms require an argument list and body.");
   }
-  Object expanded = lisp_macroexpand_list(lisp, LISP_CDR(lisp, body));
+  Object expanded = LISP_CDR(lisp, body);
   return OBJ_REINTERPRET(
       lisp_cons(lisp, context, lisp_cons(lisp, LISP_CAR(lisp, body), expanded)),
       CLOSURE);
