@@ -80,6 +80,24 @@ we will use the most reliable one (in terms of longevity): Emacs.
 - [ ] FFI to Systems written in host language
 - [ ] Deferred event queue
 - [ ] BNF grammar
+
+**** BNF Grammar
+#+begin_src bnf
+<query> ::= (and <query> <query>*)
+         |  (not <query>)
+         |  (or <query> <query>*)
+         |  (opt <query>) ; Optional
+         |  (has <query>) ; Matches without loading data.
+         |  <component>
+
+<component> ::= <symbol>  ; An Entity/Component name.
+             |  <integer> ; An Entity/Component ID.
+
+<argument> ::= ?<symbol>  ; Query variable
+            |  *          ; Wildcard
+            |  <literal>  ; Matches with equal(p?) (ACL p. 318)
+#+end_src
+
 *** CANCELLED Many Languages
 :LOGBOOK:
 - State "CANCELLED"  from "DOING"      [2024-04-05 Fri 18:10] \\
@@ -436,7 +454,7 @@ The bare essential built-in types are:
 - [X] Closure (lambda)
 - [ ] Compiled Closure(?)
 - [X] Fixed-length vectors(?)
-- [ ] Struct
+- [X] Struct
 
 We initially used a simple ~typedef~ for the Lisp object type, but
 this was error prone, since C was allowing implicit conversions
@@ -633,12 +651,16 @@ Lisp Representation:
   (name string)
   (pos v2)) ; Recursive structs
 
-(make-player 90.0 "Aidan" (make-v2 -20.0 42.1))
-
+(defvar a
+  (make-player 90.0 "Aidan" (make-v2 -20.0 42.1)))
 => #*player(90.0 "Aidan" #*v2(-20.0 42.1))
-(defstruct node
-  (car t)
-  (cdr t))
+
+(player-name a)
+=> "Aidan"
+
+(set-player-pos-x a 99.9)
+a
+=> #*player(90.0 "Aidan" #*v2(-20.0 99.9))
   #+end_src
 - API :: As below:
   #+begin_src lisp
