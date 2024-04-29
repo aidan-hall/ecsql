@@ -1,3 +1,4 @@
+;;; planets-components.lisp must be loaded first.
 (defvar raylib-orange (make-colour 255 161 0 255))
 (ecs-add* (ecs-new)
           (name 'Gandalf)
@@ -14,16 +15,15 @@
     (let ((species (aref species-vec (% i (length species-vec))))
           (screen-width (get-screen-width))
           (screen-height (get-screen-height)))
-      (ecs-add
-       (ecs-add* (ecs-new)
-                 (Pos (+ 0.(% (* 20 i) screen-width))
-                      (+ 0. (% (* 30 i) screen-height)))
-                 (Vel (* 20. (+ 1 i)) (* 15. (+ 1 i)))
-                 (Bounce 0.8)
-                 (Radius : species)
-                 (Colour : species)
-                 (Mass : species))
-       species))))
+      (ecs-add* (ecs-new)
+                (expr species)
+                (Pos (+ 0.(% (* 20 i) screen-width))
+                     (+ 0. (% (* 30 i) screen-height)))
+                (Vel (* 20. (+ 1 i)) (* 15. (+ 1 i)))
+                (Bounce 0.8)
+                (Radius : species)
+                (Colour : species)
+                (Mass : species)))))
 
 ;;; A child Entity
 (defun v2-add (a b)

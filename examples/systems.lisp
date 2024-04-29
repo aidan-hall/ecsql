@@ -26,7 +26,7 @@
 
 (defvar clicked-me
   (ecs-new-system
-   (Graphics) (and Pos Radius (has Colour) (has Vel)) (pos radius)
+   (Graphics) (and Pos Radius) (pos radius)
    (when (and (is-mouse-down 'left)
               (point-in-circle pos radius
                                (make-v2 (float (get-mouse-x))
