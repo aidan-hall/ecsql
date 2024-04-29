@@ -71,7 +71,7 @@ Most values in BINDINGS will be single Components, with the following exceptions
   "Reverse the list L."
   (reduce (lambda (acc elem) (cons elem acc)) nil l))
 (defun fixup-predicate (predicate)
-  (let ((res (translate-predicate predicate)))
+  (let* ((res (translate-predicate predicate)))
     (cons (reverse (car res)) (cdr res))))
 
 (defmacro select predicate
@@ -85,6 +85,34 @@ Run (describe 'ecsql) for detail on the form of PREDICATE."
   "Generate a function with BODY, and (entity . NAMES) as the parameter list."
   `(lambda (entity . ,names)
      . ,body))
+
+(defmacro ecs-codegen-if-valid (gen)
+  "Only expand to GEN if the Query matches the parameter list, and all bound Components have LispStorage."
+  `(let* ((binds (car query))
+          (n-binds (length binds))
+          (params (cdadr code)) ; Exclude entity when counting params
+          (n-params (length params))
+          (LispStorage (ecs-resolve 'LispStorage))
+          (assert-has-lisp-storage
+           (lambda (entity)
+             (unless (ecs-has entity LispStorage)
+               (wrong
+                "Attempted to create binding for a Component that doesn't have LispStorage" entity)))))
+     (mapcar
+      (lambda (bind)
+        (case (type-of bind)
+          ((pair)
+           (if (memql (car bind) '(opt or))
+               (mapcar assert-has-lisp-storage (cdr bind))
+               (wrong "Invalid ECSQL binding list form" bind)))
+          ((entity relation)
+           (funcall assert-has-lisp-storage bind))))
+      binds)
+     (if (eql n-binds n-params)
+         ,gen
+         (wrong (concat "Query binds " (to-string n-binds) " Components, but there are "
+                        (to-string n-params) " parameters")
+                (list predicate names)))))
 
 (defmacro ecsql (predicate names . body)
   "Evaluate BODY for each Entity that matches PREDICATE,
@@ -117,7 +145,7 @@ E.g. Make all Entities with Vel and Colour stop moving:
 (ecsql (and (with Colour) Vel) (vel) (set-v2 vel 0. 0.))"
   (let* ((query (fixup-predicate predicate))
          (code (create-system-function names body)))
-    `(ecs-do-query ',query ,code)))
+    (ecs-codegen-if-valid `(ecs-do-query ',query ,code))))
 
 (defmacro ecs-new-system (components predicate names . body)
   "Produces a System with the supplied COMPONENTS.
@@ -137,10 +165,14 @@ E.g. A system to move Entities with Pos and Vel:
              (+ (v2-x pos) (* (v2-x vel) delta))
              (+ (v2-y pos) (* (v2-y vel) delta))))))"
   (let* ((query (fixup-predicate predicate))
-         (code (create-system-function names body)))
-    `(ecs-add*
-      (ecs-register-system ',query ,code)
-      . ,components)))
+         (code (create-system-function names body))
+         (binds (car query))
+         (n-binds (length binds))
+         (params (cdadr code)) ; Exclude entity when counting params
+         (n-params (length params)))
+    (ecs-codegen-if-valid `(ecs-add*
+                            (ecs-register-system ',query ,code)
+                            . ,components))))
 
 ;;; Example:
 ;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))
