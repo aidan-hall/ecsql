@@ -65,6 +65,9 @@ Example:
                    `(ecs-add ,esym ',(ecs-resolve component-form))
 
                    (case (car component-form)
+                     ((expr)
+                      ;; Add the result of an expression.
+                      `(ecs-add ,esym ,(cadr component-form)))
                      ((name)
                       ;; Set the name of an Entity.
                       `(ecs-set-name ,esym ,(cadr component-form)))
