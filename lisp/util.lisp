@@ -2,6 +2,7 @@
 (defname 'macro 'defmacro*
   (lambda (name params . body)
     (list
+     ;; The macro symbol must be quoted in the output, so double-quote it.
      'defname ''macro (list 'quote name) (cons 'lambda (cons params body)))))
 
 (defmacro* defun* (name params . body)
@@ -11,10 +12,8 @@
 (defmacro* defvar* (name value)
   (list 'defname ''global (list 'quote name) value))
 
-;;; Doc string-enabled definers.
 
-(defun* not (object)
-  (eq object nil))
+;;; Doc (documentation) string facility.
 
 (defvar* *doc-strings* nil)
 (defun* add-doc-string (object string)
@@ -23,36 +22,50 @@
       (wrong "Attempted to pass non-string as docstring" string))
   string)
 
+(add-doc-string 'add-doc-string
+                "Function, arguments: (name string)
+
+Add documentation STRING for the given NAME (which should probably be a symbol).
+When referring to function or macro parameters in a documentation string,
+we capitalise their names.")
+(add-doc-string '*doc-strings*
+                "An alist mapping names to documentation strings.
+See (describe 'add-doc-string).")
+
+;;; Definers with support for doc strings.
+
 (defmacro* defmacro (name params . body)
+  ;; If the first element of body is a string, use it as the doc string.
   (if (and (eq (type-of body) 'pair)
            (eq (type-of (cdr body)) 'pair)
            (eq (type-of (car body)) 'string))
       (list 'progn
             (list 'add-doc-string
+                  ;; We need the *value* of name to be quoted in the output.
                   (list 'quote name)
                   (concat
-                   (car body)
+                   "Macro, arguments: "
+                   (to-string params)
                    "
 
-Macro arguments: "
-                   (to-string params)))
+"
+                   (car body)))
+            ;; Defer to defun* for creating the definition in either case.
             (cons 'defmacro* (cons name (cons params (cdr body)))))
       (cons 'defmacro* (cons name (cons params body)))))
 
-;; Doc strings for that things that had to be defined before the docstring-enabled definers.
-(add-doc-string 'add-doc-string
-                "Add a documentation STRING for the given name.")
-(add-doc-string 'not
-                "Returns t iff OBJECT is nil.")
 (add-doc-string
  'defmacro
- "Define a macro with the given NAME, PARAMS and BODY in global scope.
+ "Macro, arguments: (name params . body)
+
+Define a macro with the given NAME, PARAMS and BODY in global scope.
 If the first form of BODY is a string, it will be used as the docstring for this macro.")
 
 (defmacro defun (name params . body)
   "Define a function with the given NAME, PARAMS and BODY in global scope.
 If the first form of BODY is a string,
 it will be used as the docstring for this function."
+  ;; See defmacro.
   (if (and (eq (type-of body) 'pair)
            (eq (type-of (cdr body)) 'pair)
            (eq (type-of (car body)) 'string))
@@ -60,17 +73,19 @@ it will be used as the docstring for this function."
             (list 'add-doc-string
                   (list 'quote name)
                   (concat
-                   (car body)
+                   "Function, arguments: "
+                   (to-string params)
                    "
 
-Function arguments: "
-                   (to-string params)))
+ "
+                   (car body)))
             (cons 'defun* (cons name (cons params (cdr body)))))
       (cons 'defun* (cons name (cons params body)))))
 
 (defmacro defvar (name value . docstring?)
   "Define a variable with the given NAME and VALUE.
 Use the optional third argument to document the variable."
+  ;; See defmacro.
   (list 'progn
         (list 'defvar* name value)
         (list 'add-doc-string
@@ -94,27 +109,36 @@ This comprises its value, its type, and its docstring if it has one."
    (assoc object *doc-strings*))
   nil)
 
-
-
-
 ;;; Common shorthands for accessing the contents of lists
+
 (defun cadr (x)
   (car (cdr x)))
+
+(defun cdar (x)
+  (cdr (car x)))
+(defun caar (x)
+  (car (car x)))
+(defun cddr (x)
+  (cdr (cdr x)))
 
 (defun caddr (x)
   (car (cdr (cdr x))))
 
 (defun cadddr (x)
   (car (cdr (cdr (cdr x)))))
-(defun cddr (x)
-  (cdr (cdr x)))
+
+(defun caadr (x)
+  (car (car (cdr x))))
+
+(defun cdadr (x)
+  (cdr (car (cdr x))))
 
 ;;; Type Predicates
 
 (defmacro def-type-predicate (name type)
   "Define function NAME that returns t iff its argument has type TYPE."
   (list 'defun name (list 'object)
-        (concat "Returns t iff OBJECT is a " (symbol-name type) ".")
+        (concat "Returns t iff OBJECT is of type " (symbol-name type) ".")
         (list 'eq '(type-of object) (list 'quote type))))
 
 (def-type-predicate consp pair)
@@ -125,38 +149,53 @@ This comprises its value, its type, and its docstring if it has one."
 (def-type-predicate entityp entity)
 (def-type-predicate stringp string)
 (def-type-predicate vectorp vector)
+(def-type-predicate not nil)
 
 (defun listp (v)
+  "Returns t iff V is a list (i.e. a pair or nil)."
   (or (consp v) (not v)))
 
 ;;; Essential Utility Functions
 
 (defun mapcar (f l)
+  "Apply F to each element of list L, and return the results in a list."
   (if l
       (cons (funcall f (car l))
             (mapcar f (cdr l)))
       nil))
 
 (defun memql (elt list)
+  "Test if ELT is eql to any member of LIST.
+See (describe 'eql)."
   (if (consp list)
       (if (eql elt (car list))
           list
           (memql elt (cdr list)))))
 
 ;;; Common Macros
+
 (defmacro let (binds . body)
   "Generate a set of lexical bindings that cannot refer to one another,
 and are accessible within the BODY code.
-BINDS takes the form: ((name value) (name value) ...)"
+BINDS takes the form: ((name value) (name value) ...).
+Alternatively, a member of BINDS can just be a symbol, to initialise it to nil."
   ((lambda (names values)
      (cons
       (cons 'lambda (cons names body))
       values))
-   (mapcar (lambda (bind) (if (consp bind) (car bind) bind)) binds)
-   (mapcar (lambda (bind) (and (consp bind) (cadr bind))) binds)))
+   ;; Get the list of names.
+   (mapcar (lambda (bind)
+             (if (consp bind) (car bind) bind))
+           binds)
+   ;; Get the list of value forms.
+   (mapcar (lambda (bind)
+             (and (consp bind) (cadr bind)))
+           binds)))
 
 (defmacro let* (binds . body)
-  "Generate a set of lexical bindings where each binding can refer to the previous ones."
+  "Generate a set of lexical bindings where each binding can refer to the previous ones.
+
+See (describe 'let) for the meanings of BINDS and BODY."
   (if binds
       (list 'let (list (car binds))
             (cons 'let* (cons (cdr binds) body)))
@@ -164,27 +203,34 @@ BINDS takes the form: ((name value) (name value) ...)"
 
 (defmacro cond clauses
   "Evaluate the first expression in each clause until one is true,
-then evaluate the rest of that clause."
+then evaluate the rest of that clause in sequence."
   (if (consp clauses)
       (let ((current (car clauses)))
-        (list 'if (car current) (cons 'progn (cdr current))
+        ;; Build an if-else chain with *recursive macro-expansion*.
+        (list 'if (car current)
+              ;; Implicit progn
+              (cons 'progn (cdr current))
               (cons 'cond (cdr clauses))))
       clauses))
 
 (defun qq-list-form (list)
-  ;; Whether a quasiquoted expression can be translated into a call to `list'.
-  (or (not list)
-      (and (consp list) (not (eq (car list) 'unquote)) (qq-list-form (cdr list)))))
+  "Determine whether quasiquoted expression LIST can be translated into a call to the list function.
+Using list instead of cons makes the result of quasiquotation shorter."
+  (or
+   ;; Yes: base case, and we could represent this with the code (list).
+   (not list)
+   ;; Yes: Not an unquote form, and the cdr is also qq-list-form.
+   (and (consp list) (not (eq (car list) 'unquote)) (qq-list-form (cdr list)))))
 
 (defun quasiquote-rec (form level)
-  ;; Expand a quasiquoted form at the given level of nested quasiquotation.
-  ;; One backtick increases `level' by 1, one comma decreases it by 1.
-  ;; Data at level 0 is inserted as code.
+  "Expand a quasiquoted FORM at the given level of nested quasiquotation.
+One backtick increases LEVEL by 1, one comma decreases it by 1.
+Data at level 0 is inserted as code."
   (cond
     ((eq level 0)
      ;; At level 0, the form is unquoted.
      form)
-
+    
     ((not (consp form))
      ;; Non-cons forms don't have sub-structure, so we can simply quote them and stop.
      (list 'quote form))
@@ -214,9 +260,19 @@ then evaluate the rest of that clause."
                     (quasiquote-rec (cdr form) level)))))))))
 
 (defmacro quasiquote (form)
+  "Apply 1 level of quasiquotation to FORM."
   (quasiquote-rec form 1))
 
-;;; Less Essential Utilities (Not Needed by any Common Macros)
+(defmacro assert (spec)
+  `(if (not ,spec)
+       (wrong "ASSERTION FAILURE" ',spec)))
+
+(defmacro incq (var . rest)
+  "Increment VAR by 1, or the second argument if any."
+  (assert (symbolp var))
+  `(setq ,var (+ ,var ,(if (consp rest) (car rest) 1))))
+
+;;; Less Essential Utilities (not needed by any common macros)
 
 (defvar gensym-counter 0
   "Added to the name of each gensym so they all appear distinct.
@@ -227,7 +283,7 @@ Incremented upon each call to gensym.")
   (make-symbol (concat "#g" (to-string gensym-counter))))
 
 (defun max (a . as)
-  "Obtain the maximum value of list (A . AS)."
+  "Obtain the maximum argument value."
   (let ((m a))
     (while (consp as)
       (let ((current (car as)))
@@ -237,44 +293,58 @@ Incremented upon each call to gensym.")
     m))
 
 (defun float (x)
-  "Convert X into an f32."
+  "Convert integer X into an f32."
   (+ 0.0 x))
 
 (defun negated (f)
+  "Create a function that returns nil when F doesn't, and vice versa."
   (lambda (x)
     (not (funcall f x))))
 
+
 ;;; Control Flow macros
+
 (defmacro unless (cond . body)
+  "Evaluate BODY in sequence if COND evaluates to nil."
   `(if ,cond
        nil
        . ,body))
+
 (defmacro when (cond . body)
+  "Evaluate BODY in sequence if COND does not evaluate to nil."
   `(if ,cond
+       ;; Implicit progn
        (progn . ,body)))
 
 (defmacro case (expr . clauses)
-  "Evaluate EXPR. Evaluate the first matching clause in CLAUSES.
+  "Evaluate EXPR, then evaluate the first matching clause in CLAUSES.
 A clause has the form ((forms...) body...).
-A clause matches if the result of evaluating EXPR is eql to one of the forms in its car."
+A clause matches if the result of evaluating EXPR is eql to one of the forms in its car,
+or if one of those forms is t or otherwise.
+
+See (describe 'eql)."
+  ;; Use a gensym to ensure EXPR is only evaluated once.
   (let ((gname (gensym)))
     `(let ((,gname ,expr))
+       ;; case is a special case of cond.
        (cond . ,(mapcar
                  (lambda (clause)
                    ;; Treat t and otherwise as default clauses.
                    (if (memql (car clause) '(t otherwise))
                        (cons t (cdr clause))
                        ;; Use `eql' directly if there is only one item in the clause.
-                       `(,(if (not (cdr (car clause)))
-                              `(eql ,gname ',(car (car clause)))
-                              `(memql ,gname ',(car clause)))
-                          . ,(cdr clause))))
+                       (cons
+                        (if (not (cdar clause))
+                            `(eql ,gname ',(caar clause))
+                            `(memql ,gname ',(car clause)))
+                        ;; Insert the body of the clause.
+                        (cdr clause))))
                  clauses)))))
 
 (defmacro dotimes (iterator . body)
   "Evaluate BODY a given number of times in sequence.
-ITERATOR takes the form (var n).
-Var is bound to 0, 1, ..., n-1 on the corresponding iteration."
+ITERATOR has the form (VAR N).
+VAR is bound to each of 0, 1, ..., N-1 on the corresponding iteration."
   (let ((varname (car iterator)))
     `(let ((,varname 0))
        (while (< ,varname ,(cadr iterator))
@@ -303,28 +373,36 @@ Performs a left fold."
   "Returns the last cons cell in list L, or nil if L is nil."
   (if (and (consp l) (consp (cdr l)))
       (last (cdr l))
+      ;; Here, L is either the last cons cell or nil, so simply return it.
       l))
 
 (defun nconc lists
   "Concatenate LISTS by modifying them. The last list is not modified."
+  ;; Skip any nil lists at the start.
   (while (and lists (not (car lists)))
     (setq lists (cdr lists)))
+  ;; If all lists were nil, return nil.
   (when (consp lists)
     (reduce
      (lambda (front next)
+       ;; Add a pointer to the start of the next list at the end of the current one.
        (if next (setcdr (last front) next)))
      (car lists)
      (cdr lists))
+    ;; We modified the lists, so we can now access the result via the first element.
     (car lists)))
 
 (defun zip (a b)
-  "Zip lists A and B together."
+  "Zip lists A and B together.
+
+E.g. (zip '(1 2 3) '(a b c)) = '((1 . a) (2 . b) (3 . c))."
   (when (and (consp a) (consp b))
     (cons (cons (car a) (car b)) (zip (cdr a) (cdr b)))))
 
 (defun union (a b)
   "Compute the union of lists A & B.
 Elements are compared with eql."
+  ;; O(n^2) linked list traversal. Don't tell Marcin!
   (reduce
    (lambda (acc elem)
      (if (memql elem acc)
@@ -334,6 +412,7 @@ Elements are compared with eql."
    b))
 
 (defun prin1-list (file list)
+  "Print a textual representation of LIST to FILE."
   (fputc #\( file)
   (while (and (consp list) (consp (cdr list)))
     (prin1-to file (car list))
@@ -346,9 +425,10 @@ Elements are compared with eql."
       (prin1-to file (cdr list))))
   (fputc #\) file))
 
-(defun prin1-to (stream form)
+(defun prin1-to (file form)
+  "Print a textual representation of FORM to FILE."
   (if (structp form)
-      (prin1-struct-to stream form)
+      (prin1-struct-to file form)
       (case (type-of form)
         ((pair)
          (let ((rmacro (assoc (car form)
@@ -357,57 +437,52 @@ Elements are compared with eql."
                                 (unquote . #\,)))))
            (if rmacro
                (progn
-                 (fputc (cdr rmacro) stream)
-                 (prin1-to stream (cadr form)))
-               (prin1-list stream form))))
+                 (fputc (cdr rmacro) file)
+                 (prin1-to file (cadr form)))
+               (prin1-list file form))))
         ((nil)
-         (fputs "()" stream))
+         (fputs "()" file))
         ((character)                    ; #\c escape
-         (fputc #\# stream)
-         (fputc #\\ stream)
-         (fputc form stream))
+         (fputc #\# file)
+         (fputc #\\ file)
+         (fputc form file))
         ((entity)
-         (fputs "#*entity" stream)
-         (prin1-to stream (list (ecs-id form) (ecs-gen form))))
+         (fputs "#*entity" file)
+         (prin1-to file (list (ecs-id form) (ecs-gen form))))
         ((relation)
-         (fputs "#*relation" stream)
-         (prin1-to stream (list (ecs-relation form) (ecs-target form))))
+         (fputs "#*relation" file)
+         (prin1-to file (list (ecs-relation form) (ecs-target form))))
         ((vector)
          (let ((len (length form))
                (i 0))
-           (fputs "(vector" stream)
+           (fputs "(vector" file)
            (while (< i len)
-             (fputc #\  stream)
-             (prin1-to stream (aref form i))
+             (fputc #\  file)
+             (prin1-to file (aref form i))
              (incq i))
-           (fputs ")" stream)))
+           (fputs ")" file)))
         (t
-         (prin1-to* stream form)))))
+         (prin1-to* file form)))))
 
 (defun prin1 (form)
+  "Print a textual representation of FORM to stdout."
   (prin1-to stdout form))
 
 (defun print (form)
-  (fputc #\ stdout)
+  "Print a textual representation of FORM to stdout, surrounded by new-line characters."
+  (fputs "
+" stdout)
   (prin1 form)
   (fputs "
 " stdout))
 
 (defun equal (a b)
-  "Return t if `a' and `b' are the same, traversing the sub-structure of `cons' pairs."
-  ;; TODO: Do the right thing for vectors and structs.
+  "Return t if A and B have the same structure, traversing the sub-structure of `cons' cells.
+Leaves are compared with eql."
   (if (and (consp a) (consp b))
       (and (equal (car a) (car b))
            (equal (cdr a) (cdr b)))
       (eql a b)))
-
-(defmacro assert (spec)
-  `(unless ,spec
-     (wrong "ASSERTION FAILURE" ',spec)))
-
-(defmacro incq (var . rest)
-  (assert (symbolp var))
-  `(setq ,var (+ ,var ,(if rest (car rest) 1))))
 
 (defun puts (string)
   "Write STRING to STDOUT."
@@ -431,7 +506,8 @@ Elements are compared with eql."
 
 (defmacro generate-primitive-docstrings entries
   "Generate doc strings for the given primitive functions.
-ENTRIES is a list, with items of the form (name docstring)."
+ENTRIES is a list, with items of the form (name docstring . ?arguments).
+The optional ?arguments form represents the arguments that the function should take."
   (cons
    'progn
    (mapcar
@@ -443,6 +519,7 @@ ENTRIES is a list, with items of the form (name docstring)."
 
 Primitive function.
 "
+                ;; Include the arguments in the doc string if applicable.
                 ,(if (cddr entry)
                      (concat "Arguments: " (to-string (caddr entry)) ".
 ")
@@ -454,6 +531,7 @@ Primitive function.
 (generate-primitive-docstrings
  (* "Multiply a list of numbers.")
  (+ "Add a list of numbers.")
+ (% "Compute X mod Y." (x y))
  (/ "Divide the first argument by each of the remaining arguments.
 With one argument, divide 1 by it.")
  (- "Subtract from the first argument all remaining arguments.
