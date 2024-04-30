@@ -10,9 +10,7 @@
 #define OBJ_FLAGS_LENGTH (4)
 
 #define LISP_INDEX_METADATA_LENGTH (16)
-#define LISP_INDEX_OFFSET (LISP_INDEX_METADATA_LENGTH + OBJ_TAG_LENGTH)
-#define LISP_INDEX_METADATA_MASK (0xffff << OBJ_TAG_LENGTH)
-#define LISP_MAX_STRING_LENGTH ((2 << LISP_INDEX_METADATA_LENGTH) - 2)
+#define LISP_MAX_STRING_LENGTH ((1 << LISP_INDEX_METADATA_LENGTH) - 1)
 
 #define DEF_TYPEID(NAME, REP)                                                  \
   typedef struct NAME##ID {                                                    \
@@ -22,6 +20,7 @@ DEF_TYPEID(CachedQuery, u32);
 DEF_TYPEID(Archetype, u32);
 DEF_TYPEID(Entity, u32);
 
+/* Lisp Object */
 typedef union Object {
   u64 bits;
   struct {
@@ -73,6 +72,8 @@ enum ObjectTag {
   OBJ_RELATION_TAG
 };
 
+/* Operators for manipulating the representation of Lisp Objects. */
+
 /* Filter out just the type tag of an object */
 #define OBJ_TAG_NAME(NAME) (OBJ_##NAME##_TAG)
 
@@ -104,6 +105,7 @@ static inline u64 OBJ_UNBOX(Object obj) { return obj.val; }
 static inline u64 OBJ_UNBOX_INDEX(Object obj) { return obj.index; }
 static inline u16 OBJ_UNBOX_METADATA(Object obj) { return obj.metadata; }
 
+/* Re-interpret the data of obj as a new Lisp type (based on newtag). */
 static inline Object OBJ_REINTERPRET_RAWTAG(Object obj, enum ObjectTag newtag) {
   obj.tag = newtag;
   return obj;
@@ -121,6 +123,9 @@ static inline float lisp_unbox_float(Object box) {
   } else if (OBJ_TYPE(box) == OBJ_INT_TAG) {
     return (float)(i32)OBJ_UNBOX(box);
   } else {
+    /* It would be preferable to use wrong here,
+     * but there's a bug in our code if control ever gets here anyway,
+     * and it's convenient to not have to pass lisp to *quite* every function. */
     fprintf(stderr, "Attempted to unbox non-float as float\n");
     exit(1);
   }
@@ -131,6 +136,8 @@ static inline size lisp_vector_length(Object vector) {
 }
 
 static inline bool EQ(Object x, Object y) { return x.bits == y.bits; }
+
+/* Cons cell accessors */
 
 #define LISP_CAR_INDEX (0)
 #define LISP_CDR_INDEX (1)

@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <uchar.h>
 
+/* Integer aliases and string slice type, from here:
+ * https://nullprogram.com/blog/2023/10/08/ */
 typedef uint8_t u8;
 typedef int8_t i8;
 typedef uint16_t u16;
@@ -36,7 +38,9 @@ static inline void print_s8(FILE *stream, s8 s) {
   }
 }
 
+/* Suppress unused variable warnings about X. */
 #define IGNORE(X) ((void)(X))
+/* Re-interpret the bits of VALUE as type TO. */
 #define BIT_CAST(TO, VALUE)                                                    \
   (((union {                                                                   \
      typeof(VALUE) from;                                                       \

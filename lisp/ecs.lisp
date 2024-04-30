@@ -114,7 +114,7 @@ Example:
                                                            (cons 'vector (cdr component-form)))
                                                           (t
                                                            ;; Other types just need the one value.
-                                                           (car rest))))))))))))))))
+                                                           (car rest)))))))))))))))) ; 16 lol
              components))
        ,esym)))
 
@@ -134,6 +134,7 @@ Also define a variable bound to that Entity."
              ;; Clean up the Entity if we failed to assign the name.
              (ecs-destroy comp)))))
 
+;;; Define some standard Components
 (defcomponent Pos v2)
 (defcomponent Vel v2)
 (defcomponent RelPos v2)
@@ -145,15 +146,4 @@ Also define a variable bound to that Entity."
 (defcomponent Radius f32)
 (defcomponent Physics nil)
 (defcomponent Graphics nil)
-(defstruct colour
-  (r i32)
-  (g i32)
-  (b i32)
-  (a i32))
 (defcomponent Colour colour)
-
-(let ((delta (/ 1.0 120)))
-  (defun move-system (e)
-    (let ((pos (ecs-get e Pos)) (vel (ecs-get e Vel)))
-      (set-v2-x pos (+ (v2-x pos) (* (v2-x vel) delta)))
-      (set-v2-y pos (+ (v2-y pos) (* (v2-y vel) delta))))))

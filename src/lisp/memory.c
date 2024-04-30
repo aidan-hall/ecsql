@@ -8,12 +8,12 @@
 Memory new_lisp_memory(size capacity) {
   /* Allocate enough space for the active and inactive stores. */
   Memory memory;
-  memory.space = new_arena(capacity);
-  if (memory.space.end == NULL) {
+  memory.active = new_arena(capacity);
+  if (memory.active.end == NULL) {
     fputs("Failed to allocate memory for Lisp.", stderr);
     exit(EXIT_FAILURE);
   }
-  memory.active = (Arena){memory.space.begin, memory.space.begin + capacity};
+  memory.base = memory.active.begin;
 
   return memory;
 }
@@ -25,6 +25,8 @@ size lisp_allocate_cells(struct LispEnv *lisp, size cells) {
     return -1;
   }
 
+  /* Lock memory while allocating, to prevent multiple threads from acquiring
+   * the same memory region. */
   mtx_lock(&lisp->memory_lock);
   Object *start = ALLOC(&lisp->memory.active, Object, cells);
   mtx_unlock(&lisp->memory_lock);
@@ -34,7 +36,7 @@ size lisp_allocate_cells(struct LispEnv *lisp, size cells) {
     return -1;
   }
 
-  return start - (Object *)lisp->memory.space.begin;
+  return start - (Object *)lisp->memory.base;
 }
 
 size lisp_allocate_bytes(struct LispEnv *lisp, size count) {

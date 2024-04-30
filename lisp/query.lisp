@@ -67,9 +67,7 @@ Most values in BINDINGS will be single Components, with the following exceptions
     ((entity relation)
      (cons (list predicate) predicate))
     ((t) (wrong "Invalid form of query" predicate))))
-(defun reverse (l)
-  "Reverse the list L."
-  (reduce (lambda (acc elem) (cons elem acc)) nil l))
+
 (defun fixup-predicate (predicate)
   (let* ((res (translate-predicate predicate)))
     (cons (reverse (car res)) (cdr res))))
@@ -79,7 +77,7 @@ Most values in BINDINGS will be single Components, with the following exceptions
 Run (describe 'ecsql) for detail on the form of PREDICATE."
   ;; Implicit and form at top level.
   (let ((res (fixup-predicate (cons 'and predicate))))
-    `',res))
+    (list 'quote res)))
 
 (defun create-system-function (names body)
   "Generate a function with BODY, and (entity . NAMES) as the parameter list."
@@ -88,9 +86,11 @@ Run (describe 'ecsql) for detail on the form of PREDICATE."
 
 (defmacro ecs-codegen-if-valid (gen)
   "Only expand to GEN if the Query matches the parameter list, and all bound Components have LispStorage."
+  ;; This macro captures the definition of query from the calling scope,
+  ;; because I couldn't be bothered to pass it as an argument.
   `(let* ((binds (car query))
           (n-binds (length binds))
-          (params (cdadr code)) ; Exclude entity when counting params
+          (params (cdadr code)) ; Exclude entity when counting parameters.
           (n-params (length params))
           (LispStorage (ecs-resolve 'LispStorage))
           (assert-has-lisp-storage
@@ -99,6 +99,7 @@ Run (describe 'ecsql) for detail on the form of PREDICATE."
                (wrong
                 "Attempted to create binding for a Component that doesn't have LispStorage" entity)))))
      (mapcar
+      ;; Validate that each form in the binding list is valid.
       (lambda (bind)
         (case (type-of bind)
           ((pair)
@@ -108,6 +109,7 @@ Run (describe 'ecsql) for detail on the form of PREDICATE."
           ((entity relation)
            (funcall assert-has-lisp-storage bind))))
       binds)
+     ;; Ensure the binding and parameter lists are the same length.
      (if (eql n-binds n-params)
          ,gen
          (wrong (concat "Query binds " (to-string n-binds) " Components, but there are "
@@ -165,14 +167,7 @@ E.g. A system to move Entities with Pos and Vel:
              (+ (v2-x pos) (* (v2-x vel) delta))
              (+ (v2-y pos) (* (v2-y vel) delta))))))"
   (let* ((query (fixup-predicate predicate))
-         (code (create-system-function names body))
-         (binds (car query))
-         (n-binds (length binds))
-         (params (cdadr code)) ; Exclude entity when counting params
-         (n-params (length params)))
+         (code (create-system-function names body)))
     (ecs-codegen-if-valid `(ecs-add*
                             (ecs-register-system ',query ,code)
                             . ,components))))
-
-;;; Example:
-;;; (select Pos Vel) → ((vector Pos Vel) . (and Pos Vel))

@@ -5,10 +5,9 @@
 #include <ecs/ecs_internal.h>
 #include <ecs/query.h>
 
-/* Query: (components-to-get . predicate)
- * Predicate: Component | Relation | (and ...) | (or ...) | (not Predicate)
+/* Predicate: Component | Relation | (and ...) | (or ...) | (not Predicate)
+ * Determines whether 'archetype' satisfies 'predicate'.
  */
-
 static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
                               Object predicate) {
   struct World *world = lisp->world;
@@ -16,6 +15,7 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
   case OBJ_PAIR_TAG: {
     Object car = LISP_CAR(lisp, predicate);
     if (EQ(car, lisp->keysyms.and)) {
+      /* and: all child predicates must match */
       predicate = LISP_CDR(lisp, predicate);
       while (OBJ_TYPE(predicate) == OBJ_PAIR_TAG) {
         if (!ecs_query_matches(lisp, archetype, LISP_CAR(lisp, predicate))) {
@@ -26,9 +26,11 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
       }
       return true;
     } else if (EQ(car, lisp->keysyms.not_k)) {
+      /* not: child predicate must not match */
       return !ecs_query_matches(lisp, archetype,
                                 LISP_CAR(lisp, LISP_CDR(lisp, predicate)));
     } else if (EQ(car, lisp->keysyms.or)) {
+      /* or: any child predicate must match */
       predicate = LISP_CDR(lisp, predicate);
       while (OBJ_TYPE(predicate) == OBJ_PAIR_TAG) {
         if (ecs_query_matches(lisp, archetype, LISP_CAR(lisp, predicate))) {
@@ -44,12 +46,14 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
   }
   case OBJ_ENTITY_TAG:
   case OBJ_RELATION_TAG:
+    /* Component: archetype must have it. */
     return ecs_archetype_has(world, archetype, predicate);
   default:
     WRONG("Malformed query: invalid object type", predicate);
     return false;
   }
 
+  /* Did not match (this should probably be unreachable...) */
   return false;
 }
 
@@ -90,6 +94,8 @@ void ecs_do_pairwise_query(LispEnv *lisp, Object query0, Object query1,
        * factor in the behaviour-> 0: ordered pairs of *archetypes*, i:
        * "unordered" pairs: never do (a, b) and (b, a) for distinct a & b. i +
        * 1: unordered pairs, also excluding (a, a) for any archetype a.
+       *
+       * Ultimately, the N-Wise Queries functionality isn't very important, so it doesn't matter.
        */
       size j;
       switch (system.behaviour) {
@@ -146,19 +152,22 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
     Object traversal_components = components;
     if (ecs_query_matches(lisp, id, predicate)) {
       foo.archetype = archetype;
-      /* Produce the array of Component columns */
+      /* Produce the array of Component Columns for use in the EcsIter(ator).
+       * These provide the System access to the Component data bound by its Query. */
       for (size j = 0; j < foo.n_columns; ++j) {
         Object the_component = LISP_CAR(lisp, traversal_components);
         size column;
         switch (OBJ_TYPE(the_component)) {
         case OBJ_RELATION_TAG:
         case OBJ_ENTITY_TAG:
+          /* Single Component: bind its column */
           column =
               ecs_archetype_component_column(world, archetype, the_component);
           break;
         case OBJ_PAIR_TAG: {
           Object car = LISP_CAR(lisp, the_component);
           Object options = LISP_CDR(lisp, the_component);
+          /* or and opt forms: bind the column of the first matching Component, if any. */
           if (EQ(car, lisp->keysyms.or)) {
             for (column = NOT_PRESENT;
                  column == NOT_PRESENT && OBJ_TYPE(options) == OBJ_PAIR_TAG;
@@ -197,6 +206,7 @@ void ecs_do_query(LispEnv *lisp, Object query, SystemFunc *func, void *data) {
   free(foo.columns);
 }
 
+/* Run a Cached Query on the Archetypes it stored. */
 void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query_id,
                          SystemFunc *func, void *data) {
   CachedQuery *query = &kv_A(lisp->world->cached_queries, query_id.val);
@@ -212,6 +222,7 @@ void ecs_do_cached_query(LispEnv *lisp, CachedQueryID query_id,
   }
 }
 
+/* A System Function that adds the matched Archetype to a cache passed via data. */
 static void add_archetype_to_cache(LispEnv *lisp, EcsIter *iter, void *data) {
   CachedQuery *cache = (CachedQuery *)data;
   if (iter->n_columns != cache->n_columns) {
@@ -277,7 +288,6 @@ void *ecs_iter_get(struct EcsIter *iter, size index) {
   return kv_A(iter->archetype->columns, column).elements;
 }
 
-/* Get the Component type bound at 'index' in the iterator. */
 Object ecs_iter_component(struct EcsIter *iter, size index) {
   if (index < 0 || index >= iter->n_columns) {
     return NIL;

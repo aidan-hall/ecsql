@@ -10,3 +10,8 @@
 (defstruct v2
   (x f32)
   (y f32))
+(defstruct colour
+  (r i32)
+  (g i32)
+  (b i32)
+  (a i32))

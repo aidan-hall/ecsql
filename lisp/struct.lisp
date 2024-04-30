@@ -18,7 +18,7 @@
   (let ((metadata (struct-metadata type)))
     (if metadata
         (struct-metadata-alignment metadata)
-        ;; Primitives' alignment is the same as their size.
+        ;; The alignment of a primitive type is the same as its size.
         (size-of type))))
 
 ;;; → (list total-size offsets alignment)
@@ -28,15 +28,17 @@ A padding algorithm is used to generate aligned offsets that match those of C."
   (let ((offsets nil)
         (alignment 1))
 
+    ;; Traverse the set of members.
     (while members
       (let* ((elt (car members))
              (type (cadr elt))
              (member-size (size-of type))
              (member-alignment (align-of type))
              (size 0)
+             ;; The name of an accessor function to get this member.
              (name (concat prefix "-" (car elt))))
 
-        ;; A struct's alignment is the maximum of its members' alignments, probably.
+        ;; A struct's alignment is the maximum of its members' alignments.
         (if (> member-alignment alignment)
             (setq alignment member-alignment))
 
@@ -45,6 +47,7 @@ A padding algorithm is used to generate aligned offsets that match those of C."
               ;; Add padding so this member is aligned
               (incq offset (- member-alignment misalignment))))
 
+        ;; Add offset metadata for the current member (elt).
         (setq offsets (cons (list
                              offset
                              name
@@ -52,6 +55,8 @@ A padding algorithm is used to generate aligned offsets that match those of C."
                              member-size
                              (car elt))
                             offsets))
+        ;; For members that are structs,
+        ;; also generate offsets for all the members of the child struct, recursively.
         (if (struct-metadata type)
             (setq offsets
                   (nconc (cadr (struct-generate-offsets
@@ -81,11 +86,13 @@ A padding algorithm is used to generate aligned offsets that match those of C."
   `(defun ,(intern (concat "print-" name-string "-to")) (stream obj)
      ,(concat "Print OBJ of type " name-string " to STREAM.")
      (assert (eq (type-of obj) ',struct-type))
+     ;; Print the make- shorthand, so we can make a new struct with the same member values when we
+     ;; read this back in.
      (fputs ,(concat "#*" name-string) stream)
      (prin1-to stream
                (list . ,(mapcar
                          (lambda (member)
-                           `(,(intern (concat name-string "-" (car member))) obj))
+                           (list (intern (concat name-string "-" (car member))) 'obj))
                          members)))))
 
 (defun struct-member-types-string (stringy-members)

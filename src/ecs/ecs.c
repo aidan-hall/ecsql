@@ -48,7 +48,6 @@ static void column_add(Column *column, size n) {
 
 static inline void *column_at(Column *column, size row) {
   return (void *)&(column->elements[row * column->element_size]);
-  /* return col->data.begin + (col->element_size * record->row); */
 }
 
 static inline bool types_match(Type a, Type b) {
@@ -92,6 +91,8 @@ static inline Record *entity_record(World *world, EntityID id) {
                    kh_get(entity_data, world->entity_index, id.val));
 }
 
+/* Gets the Type vector (sorted array of Components) of entity.
+ * This vector comes from entity's current Archetype. */
 Type ecs_type(World *world, Object entity) {
   u32 aid = entity_record(world, entity.id)->archetype.val;
   assert(aid < kv_size(world->archetypes));
@@ -99,6 +100,7 @@ Type ecs_type(World *world, Object entity) {
   return kv_A(world->archetypes, aid).type;
 }
 
+/* Generate a new Entity with an ID between low and high, if possible. */
 static Object new_entity_id_partitioned(World *world, u32 *start, u32 low,
                                         u32 high) {
   /* Find a free ID within the range [low,high), starting from *start. */
@@ -258,6 +260,8 @@ void ecs_destroy(World *world, Object entity) {
   *ecs_generation(world, entity.id) += 1;
 }
 
+/* Get the set of Archetypes Component is in, and the Column in each where its
+ * data is stored, if applicable. */
 static inline ArchetypeMap *component_archetypes(World *world,
                                                  Object component) {
   u64 sig = ENT_SIG(component);
@@ -277,6 +281,7 @@ static inline ArchetypeMap *component_archetypes(World *world,
   return kh_value(world->component_index, iter);
 }
 
+/* Create a new Archetype with Type vector type. */
 static Archetype init_archetype(World *world, Type type) {
   Archetype archetype;
   archetype.id = (ArchetypeID){world->next_archetype++};
@@ -317,6 +322,8 @@ static Archetype init_archetype(World *world, Type type) {
   return archetype;
 }
 
+/* Obtains the Archetype with the given Type vector.
+ * Creates the Archetype if it does not exist.x */
 ArchetypeID type_archetype(World *world, Type type) {
   typeof(world->archetypes) as = world->archetypes;
   for (size i = 0; i < kv_size(as); ++i) {
@@ -374,7 +381,8 @@ struct World *init_world() {
   if (absent < 0) {
     fprintf(stderr, "Failed to register the [Storage] archetype for the "
                     "Storage Component.\n");
-    goto err;
+    free(world);
+    return NULL;
   }
   /* We know Storage is the only (i.e. first) Column in the [Storage] archetype,
    * so we can hard-code column index 0. */
@@ -395,10 +403,6 @@ struct World *init_world() {
   world->comp.self_join_system = ecs_new(world);
 
   return world;
-
-err:
-  free(world);
-  return NULL;
 }
 
 bool ecs_archetype_has(World *world, ArchetypeID archetype_id,
@@ -426,15 +430,6 @@ size ecs_archetype_component_column(struct World *world, Archetype *archetype,
   }
   ArchetypeRecord *a_record = &kh_value(archetypes, iter);
   return a_record->column;
-}
-
-void *ecs_archetype_get(struct World *world, ArchetypeID archetype_id,
-                        size col) {
-  Archetype *archetype = get_archetype(world, archetype_id);
-  if (col == NOT_PRESENT) {
-    return NULL;
-  }
-  return kv_A(archetype->columns, col).elements;
 }
 
 /* Get the Component data of the given type for the given Entity.
@@ -476,19 +471,20 @@ ArchetypeID toggle_component(World *world, ArchetypeID archetype_id,
   kv_init(other);
   kv_copy(Object, other, archetype->type);
   if (pos != NOT_PRESENT) {
-    /* Removing the component */
+    /* Removing the Component */
     memmove(&kv_A(other, pos), &kv_A(other, pos + 1),
             (kv_size(other) - pos - 1) * sizeof(Object));
     IGNORE(kv_pop(other));
   } else {
-    /* Adding the component */
+    /* Adding the Component */
     kv_push(Object, other, component);
     ks_introsort(sort_type, kv_size(other), &kv_A(other, 0));
   }
 
   ArchetypeID res_id = type_archetype(world, other);
-  /* The original archetype pointer may have been invalidated if a new archetype
-   * was created. */
+  /* The original Archetype pointer may have been invalidated if a new Archetype
+   * was created, since the Archetype vector may have been reallocated:
+   * Look up the ID again. */
   archetype = get_archetype(world, archetype_id);
   /* Add the archetypes as neighbours */
   int absent;
@@ -508,7 +504,8 @@ ArchetypeID toggle_component(World *world, ArchetypeID archetype_id,
   return res_id;
 }
 
-/* TODO: Refactor to 'move_entities' */
+/* Move the Entity in from_row of Archetype from_id to Archetype to_id, and copy
+ * across the values of any Components present in both Archetypes. */
 static void move_entity(World *world, ArchetypeID from_id, size from_row,
                         ArchetypeID to_id) {
   Archetype *from = get_archetype(world, from_id);

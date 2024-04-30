@@ -411,6 +411,10 @@ Elements are compared with eql."
    a
    b))
 
+(defun reverse (l)
+  "Reverse the list L."
+  (reduce (lambda (acc elem) (cons elem acc)) nil l))
+
 (defun prin1-list (file list)
   "Print a textual representation of LIST to FILE."
   (fputc #\( file)

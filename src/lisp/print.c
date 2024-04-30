@@ -22,9 +22,6 @@ static void lisp_print_list(LispEnv *lisp, Object list, FILE *stream) {
 }
 
 void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
-  /* for (int i = 0; i < depth; i++) { */
-  /*   fputc(' ', stream); */
-  /* } */
   switch (OBJ_TYPE(object)) {
   case OBJ_FLOAT_TAG:
     fprintf(stream, "%f", lisp_unbox_float(object));

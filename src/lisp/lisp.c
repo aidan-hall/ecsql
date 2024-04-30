@@ -34,7 +34,6 @@ const u8 *lisp_string_to_null_terminated(LispEnv *lisp, Object string) {
   }
 }
 
-/* Concatenate a list of strings to produce a new one */
 Object lisp_concat(LispEnv *lisp, Object strings) {
   if (EQ(strings, NIL)) {
     /* Return an empty string: No allocation necessary, memory address
@@ -376,8 +375,6 @@ Object lisp_bind_recur(LispEnv *lisp, Object parameters, Object arguments,
   return lisp_cons(lisp, lisp_cons(lisp, parameters, arguments), NIL);
 }
 
-/* Create a context (alist) on top of 'context' with 'parameters' bound to
- * 'arguments'. */
 Object lisp_bind(LispEnv *lisp, Object parameters, Object arguments,
                  Object function, Object context) {
   return lisp_cons(lisp, lisp_bind_recur(lisp, parameters, arguments, function),
@@ -584,10 +581,9 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
     }
     return *tmp_ptr;
   case OBJ_PAIR_TAG:
-    /* Function call: look up name, then apply it to the argument list. */
-    /* TODO: Add macros. */
     tmp = LISP_CAR(lisp, expression);
 
+    /* Special forms */
     if (EQ(tmp, lisp->keysyms.quote)) {
       tmp = LISP_CDR(lisp, expression);
       LISP_ASSERT_TYPE(tmp, PAIR);
@@ -676,6 +672,7 @@ Object lisp_evaluate(LispEnv *lisp, Object expression, Object context) {
                                             context),
                     tmp, context));
     } else {
+      /* Function call: look up name, then apply it to the argument list. */
       tmp = lisp_lookup_function(lisp, LISP_CAR(lisp, expression));
       return lisp_apply(
           lisp, tmp,

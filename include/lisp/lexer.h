@@ -8,9 +8,6 @@
 #define LEX_COMMENT_CHAR ';'
 #define LEX_COMMENT_END '\n'
 
-/* Characters that should each be treated as an individual lexeme. */
-/* #define LEXEME_CHARS u8"',`@" */
-
 /* Non-space characters that terminate a symbol. */
 #define LEX_SYMBOL_TERMINATORS "\"()"
 
@@ -22,6 +19,8 @@ typedef enum {
   TOK_STRING = '\"',
   TOK_LPAR = '(',
   TOK_RPAR = ')',
+  /* Indicates that the token starts a short-hand form, which should be handled
+     specially. */
   TOK_LEX_CHAR = '\'',
   TOK_POINT = '.'
 } TokenType;
@@ -30,7 +29,8 @@ typedef struct {
   union {
     /* The lexeme string. Persists until the next call to get_token. */
     s8 lexeme;
-    /* Stores the lexeme if it is one of the special single-character tokens. */
+    /* Stores the lexeme if it is one of the special single-character tokens,
+     * such as TOK_LPAR. */
     char lex_char;
   };
   TokenType t;

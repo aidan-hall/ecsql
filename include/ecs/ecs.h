@@ -16,6 +16,7 @@ KHASH_SET_INIT_INT(live);
 
 struct World;
 
+/* Fundamental, built-in, public ECS Components. */
 typedef struct WorldComponents {
   Object storage;
   Object system;
@@ -25,19 +26,13 @@ typedef struct WorldComponents {
   Object query;
 } WorldComponents;
 
-#define ENT_ID_OFFSET (32 - OBJ_TAG_LENGTH)
-#define ENT_GEN_OFFSET (16 - OBJ_TAG_LENGTH)
-
 /* Information about the data storage for a Component. */
 struct Storage {
   size size;
   size alignment;
 };
 
-struct StructMember {
-  size offset;
-};
-
+/* Construct an Object for an Entity with the given ID and Generation. */
 static inline Object ENT_BOX(EntityID id, u16 gen) {
   Object ent = {0};
   ent.id = id;
@@ -46,8 +41,10 @@ static inline Object ENT_BOX(EntityID id, u16 gen) {
   return ent;
 }
 
+/* Obtain a numeric "signature" that uniquely identifies an Entity. */
 static inline u64 ENT_SIG(Object ent) { return ent.bits; }
 
+/* Compare Entities A and B using OP */
 #define COMP_CMP(A, B, OP) (ENT_SIG(A) OP ENT_SIG(B))
 #define COMP_LT(A, B) COMP_CMP((A), (B), <)
 #define COMP_EQUIV(A, B) COMP_CMP((A), (B), ==)
@@ -64,8 +61,9 @@ static inline u64 ENT_SIG(Object ent) { return ent.bits; }
 #define MIN_ENTITY (0)
 #define MAX_ENTITY ((1 << 23))
 
+/* Construct a Relationship pair with the given relationship/type, and
+ * target/Entity. */
 static inline Object ecs_pair(Object relationship, Object entity) {
-  /* TODO: Distinguish from normal Entities? */
   Object obj = {0};
   obj.entity = entity.id;
   obj.relation = relationship.id.val;
@@ -73,28 +71,39 @@ static inline Object ecs_pair(Object relationship, Object entity) {
   return obj;
 }
 
+/* Create a new ECS world. */
 struct World *init_world();
+/* Create a new Entity in the World. */
 Object ecs_new(struct World *world);
 /* Attempts to set a name for the given Entity.  Returns false if the operation
  * failed. */
 [[nodiscard]] bool ecs_set_name(struct World *world, Object entity,
                                 Object name);
+/* Get the Entity with the given name, or NIL if not found. */
 Object ecs_lookup_by_name(struct World *world, Object name);
 void ecs_destroy(struct World *world, Object entity);
 bool ecs_alive(struct World *world, Object entity);
+/* Obtain the value of 'component' for 'entity'.
+ * Returns NULL if 'entity' doesn't have 'component', or 'component' doesn't
+ * have Storage. */
 void *ecs_get(struct World *world, Object entity, Object component);
+/* Test if the supplied Archetype contains the supplied Component. */
 bool ecs_archetype_has(struct World *world, ArchetypeID archetype_id,
                        Object component);
-void *ecs_archetype_get(struct World *world, ArchetypeID archetype_id,
-                        size col);
+/* Get the number of Components in the given Archetype */
 size ecs_archetype_size(struct World *world, ArchetypeID archetype);
 bool ecs_has(struct World *world, Object entity, Object component);
 void ecs_add(struct World *world, Object entity, Object component);
 void ecs_remove(struct World *world, Object entity, Object component);
+/* Create a new Component Entity, with the supplied value of Storage. */
 Object ecs_new_component(struct World *world, struct Storage storage);
+/* Gets the location of the Generation for ID 'id' in 'world's Generation map.
+ */
 u16 *ecs_generation(struct World *world, EntityID id);
+/* Get the WorldComponents of world. */
 WorldComponents *ecs_world_components(struct World *world);
 
+/* Get the live Entity, if any, with the supplied id. */
 static inline Object ecs_object_with_id(struct World *world, EntityID id) {
   u16 gen = *ecs_generation(world, id);
   Object entity = ENT_BOX(id, gen);
@@ -105,18 +114,20 @@ static inline Object ecs_object_with_id(struct World *world, EntityID id) {
   return entity;
 }
 
-/* TODO: Remove from public API */
 typedef ObjectVector Type;
 Type ecs_type(struct World *world, Object entity);
 
+/* Generate a Storage Component value for the given TYPE. */
 #define TYPE_STORAGE(TYPE)                                                     \
   ((struct Storage){.size = sizeof(TYPE), .alignment = alignof(TYPE)})
+/* Create a new Component with values of type TYPE. */
 #define ECS_NEW_COMPONENT(WORLD, TYPE)                                         \
   (ecs_new_component(WORLD, TYPE_STORAGE(TYPE)))
 
+/* Indicates that something is not present in an array. */
 #define NOT_PRESENT (-1)
 
-/* Obtain the position of 'component' in 'a'.
+/* Obtain the position of 'component' in Type 'a'.
  * Returns NOT_PRESENT (-1) if absent. */
 static inline size type_pos(Type a, Object component) {
   /* Type vectors are sorted, so binary search. */
@@ -135,11 +146,5 @@ static inline size type_pos(Type a, Object component) {
 
   return NOT_PRESENT;
 }
-
-struct Partition {
-  size min;
-  size max;
-  size next;
-};
 
 #endif

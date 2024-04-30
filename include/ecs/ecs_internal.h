@@ -1,6 +1,8 @@
 #ifndef ECS_INTERNAL_H
 #define ECS_INTERNAL_H
 
+/* Private information that we should not expose outside the ECS library. */
+
 #include "ecs/query.h"
 #include <ecs/ecs.h>
 #include <klib/khash.h>
@@ -67,6 +69,9 @@ typedef struct EcsIter {
   size *columns;
 } EcsIter;
 
+/* Cached Queries, a mostly abandoned concept.
+ *
+ * They store the set of Archetypes that satisfied a Query when it ran. */
 typedef struct CachedQuery {
   kvec_t(ArchetypeID) archetypes;
   size n_columns;
@@ -75,21 +80,31 @@ typedef struct CachedQuery {
   CachedQueryID id;
 } CachedQuery;
 
+/* An ECS world */
 typedef struct World {
+  /* Stores the Generation for each Entity ID, initialised lazily */
   khash_t(gen) * generations;
+  /* Stores the set of IDs of living Entities */
   khash_t(live) * live;
+  /* Maps symbols to Entities. */
   khash_t(entity_name) * entity_names;
+  /* The next ID to try to use when creating an Entity */
   u32 next_entity;
+  /* The next ID to use for an Archetype */
   u32 next_archetype;
 
+  /* Refer to project.pdf for an explanation of these. */
   khash_t(entity_data) * entity_index;
   khash_t(component_metadata) * component_index;
   kvec_t(Archetype) archetypes;
   kvec_t(CachedQuery) cached_queries;
+  /* The empty Archetype, for Entities with no Components */
   ArchetypeID empty_archetype;
+  /* The World Components of this World */
   WorldComponents comp;
 } World;
 
+/* Look up an Archetype by its ID */
 static inline Archetype *get_archetype(World *world, ArchetypeID archetype) {
   assert(archetype.val < kv_size(world->archetypes));
   return &kv_A(world->archetypes, archetype.val);

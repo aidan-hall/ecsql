@@ -1,9 +1,11 @@
+/* These functions are defined in the Lisp directory mainly because they use the LispEnv. */
 #include "ecs/ecs.h"
 #include "ecs/query.h"
 #include "lisp/lisp.h"
 #include "lisp/memory.h"
 #include "lisp/object.h"
 #include <lisp/systems.h>
+
 
 void lisp_run_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
   Object storage = ecs_world_components(lisp->world)->storage;
@@ -62,6 +64,7 @@ void lisp_run_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
         }
       }
     } else {
+      /* A NIL value in components[i] indicates that no value is bound for this Archetype. */
       components[i] = NIL;
     }
   }

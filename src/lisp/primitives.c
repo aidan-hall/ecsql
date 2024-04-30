@@ -837,6 +837,8 @@ static Object prim_ecs_destroy(LispEnv *lisp, Object args) {
   return NIL;
 }
 
+/* Convert raw Component data obj into a usable Lisp Object, based on the
+ * LispComponentStorage. */
 static Object get_ecs_data(LispEnv *lisp, struct LispComponentStorage *storage,
                            void *obj) {
   switch (storage->type) {
@@ -1100,11 +1102,14 @@ Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
   u8 next = fgetc(stream);
   switch (next) {
   case '\\':
+    /* Literal character */
     return OBJ_BOX(fgetc(stream), CHAR);
   case '\'':
+    /* Function quote */
     return lisp_cons(lisp, lisp->keysyms.function,
                      lisp_cons(lisp, lisp_read(lisp, stream), NIL));
   case 's': {
+    /* Stream ID */
     Object stream_id = lisp_read(lisp, stream);
     LISP_ASSERT_TYPE(stream_id, INT);
     size stream_index = OBJ_UNBOX(stream_id);
@@ -1118,9 +1123,11 @@ Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
     }
   }
   case '/':
+    /* Macro quote */
     return lisp_cons(lisp, lisp->keysyms.macro,
                      lisp_cons(lisp, lisp_read(lisp, stream), NIL));
   case '*': {
+    /* make- */
     Object type = lisp_read(lisp, stream);
     LISP_ASSERT_TYPE(type, SYMBOL);
     return lisp_cons(
@@ -1135,9 +1142,11 @@ Object lisp_reader_hash(LispEnv *lisp, FILE *stream) {
         lisp_read(lisp, stream));
   }
   case '!':
+    /* Deliberately unreadable */
     WRONG("Attempt to read an unreadable expression", lisp_read(lisp, stream));
     return UNDEFINED;
   case 'g':
+    /* Gensym */
     WRONG("Attempt to re-read gensym numbered", lisp_read(lisp, stream));
     return UNDEFINED;
   default:

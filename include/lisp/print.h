@@ -4,6 +4,7 @@
 #include "types.h"
 #include <stdio.h>
 
+/* Print object to stream. */
 void lisp_print(struct LispEnv *lisp, Object object, FILE *stream);
 
 #endif

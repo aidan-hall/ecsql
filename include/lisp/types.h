@@ -24,9 +24,16 @@ KHASH_MAP_INIT_STR(sym_name, Object);
 KHASH_MAP_INIT_INT(struct_ids, Object);
 KHASH_MAP_INIT_INT(vtables, khash_t(sym_name));
 
+/* Get a Lisp symbol representing the name of ObjectTag tag. */
 Object lisp_tag_name(struct LispEnv *lisp, enum ObjectTag tag);
+/* Get a Lisp symbol representing the Lisp type of Object obj. */
 Object lisp_type_of(struct LispEnv *lisp, Object obj);
+/* Get the type tag of Object obj.
+ * This isn't necessarily equivalent to its actual type,
+ * since it could be a struct type.
+ */
 enum ObjectTag lisp_type_tag(struct LispEnv *lisp, Object obj);
+/* Determine whether value satisfies parameter type specification 'spec'. */
 bool lisp_type_spec_matches(struct LispEnv *lisp, Object value, Object spec);
 
 #endif

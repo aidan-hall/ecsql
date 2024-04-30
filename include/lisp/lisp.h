@@ -54,6 +54,7 @@
   F(left)                                                                      \
   F(right)
 
+/* The Lisp Environment */
 typedef struct LispEnv {
   Memory memory;
   /* char* → Object of strings stored in 'memory'. */
@@ -61,6 +62,8 @@ typedef struct LispEnv {
   khash_t(primitives) * primitive_functions;
   /* id → name symbol */
   khash_t(struct_ids) * struct_ids;
+
+  /* Namespaces */
   /* name symbol → metadata */
   khash_t(var_syms) * structs;
   khash_t(var_syms) * globals;
@@ -72,6 +75,7 @@ typedef struct LispEnv {
   /* This is indexed with the ASCII values of reader macro characters. */
   ReaderMacro reader_macros[128];
   struct {
+    /* Generate declarations for all the LISP_KEYSYMS. */
 #define DECL_KEYSYM(K) Object K;
     LISP_KEYSYMS(DECL_KEYSYM)
 #undef DECL_KEYSYM
@@ -98,6 +102,7 @@ typedef struct LispEnv {
 
 LispEnv new_lisp_environment();
 
+/* Metadata required for a Component's data to be accessible from Lisp. */
 enum LispComponentStorageType { STORE_OBJECT, STORE_STRUCT, STORE_UNBOXED };
 
 struct LispComponentStorage {
@@ -109,10 +114,13 @@ struct LispComponentStorage {
   enum ObjectTag object_type;
 };
 
-/* Return the canonical symbol whose name is string 'name'. */
+/* Returns the canonical symbol whose name is string 'name'. */
 Object lisp_intern(LispEnv *lisp, s8 name);
+/* Short-hand for lisp_intern. */
 #define SYM(LISP, NAME) (lisp_intern(LISP, s8(NAME)))
 
+/* Print message and arg, then unwind the stack back up to the top level of the
+ * REPL. */
 void wrong(struct LispEnv *lisp, const char *message, Object arg);
 #define WRONG2(MESSAGE, ARG)                                                   \
   do {                                                                         \
@@ -120,6 +128,8 @@ void wrong(struct LispEnv *lisp, const char *message, Object arg);
   } while (0)
 #define WRONG1(MESSAGE) WRONG2(MESSAGE, NIL)
 #define WRONGX(a, b, c, ...) c
+
+/* Like wrong, but arg is optional, and defaults to NIL. */
 #define WRONG(...) WRONGX(__VA_ARGS__, WRONG2, WRONG1)(__VA_ARGS__)
 #define LISP_ASSERT_RAW_TYPE(OBJ, TYPE)                                        \
   do {                                                                         \
@@ -142,11 +152,13 @@ static_assert(sizeof(Object) == sizeof(Object *),
  */
 static inline Object *lisp_cell_at(struct LispEnv *lisp, size index) {
   if (index >= 0) {
-    return &((Object *)lisp->memory.space.begin)[index];
+    return &((Object *)lisp->memory.base)[index];
   } else {
-    return ((Object **)lisp->memory.space.begin)[-index];
+    return ((Object **)lisp->memory.base)[-index];
   }
 }
+
+/* Lisp's "truthy" Boolean logic. */
 
 static inline bool lisp_true(Object value) { return value.bits != NIL.bits; }
 
@@ -156,14 +168,18 @@ static inline Object lisp_bool(LispEnv *lisp, bool value) {
   return value ? lisp->keysyms.t : NIL;
 }
 
-/* Cons up a Lisp list. The last argument *must* have a NIL type tag. */
+/* Cons up a Lisp list from the arguments. The last argument *must* have a NIL
+ * type tag. */
 Object lisp_list(LispEnv *lisp, ...);
 
+/* Lisp strings */
+
+/* Store 'string' as a Lisp Object. */
 Object lisp_store_string(LispEnv *lisp, s8 string);
+/* Concatenate a list of strings to produce a new one */
 Object lisp_concat(LispEnv *lisp, Object strings);
 
 static inline size lisp_string_length(Object string) {
-  /* LISP_ASSERT_TYPE(string, STRING); */
   return OBJ_UNBOX_METADATA(string);
 }
 
@@ -186,6 +202,8 @@ static inline i32 lisp_length(LispEnv *lisp, Object list) {
   return length;
 }
 
+/* Lisp vectors */
+
 static inline Object *lisp_get_vector_item(LispEnv *lisp, Object vector,
                                            i32 index) {
   if (index < 0 || index >= (i16)OBJ_UNBOX_METADATA(vector)) {
@@ -203,11 +221,20 @@ static inline Object lisp_vector_from_kvec(LispEnv *lisp,
   return vector;
 }
 
-Object lisp_assoc(LispEnv *lisp, Object key, Object value);
+/* Get the value associated with key in alist. */
+Object lisp_assoc(LispEnv *lisp, Object key, Object alist);
+/* Store stream as a Lisp object. */
 Object lisp_store_stream_handle(LispEnv *lisp, FILE *stream);
 
+/* Create a context (alist) on top of 'context' with 'parameters' bound to
+ * 'arguments'.
+ * Display the name of 'function' in an error message if binding fails,
+ * most likely due to too few or too many arguments. */
 Object lisp_bind(struct LispEnv *lisp, Object parameters, Object arguments,
                  Object function, Object context);
+
+/* Lisp run-time core functions
+ */
 Object lisp_evaluate(struct LispEnv *lisp, Object expression, Object context);
 Object lisp_eval(struct LispEnv *lisp, Object expression);
 Object lisp_apply(struct LispEnv *lisp, Object function, Object arguments);
@@ -219,20 +246,28 @@ Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context);
 Object lisp_lookup_function(LispEnv *lisp, Object symbol);
 Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value);
 
+/* Macro expansion */
+
 Object lisp_macroexpand_top(LispEnv *lisp, Object expression);
 Object lisp_macroexpand_list(LispEnv *lisp, Object list);
 Object lisp_macroexpand(LispEnv *lisp, Object expression);
 
+/* Create a new Component Entity that stores data with the type named by symbol 'type'.
+ * 'type' can be the name of a struct or Lisp primitive type. */
 Object lisp_new_ecs_component(LispEnv *lisp, Object type);
 
+/* Obtain a Lisp address to use as an alias for ptr within Lisp. */
 static inline size lisp_store_pointer(struct LispEnv *lisp, void *ptr) {
+  /* Use negative indices to indicate double indirection. */
   size idx = lisp_allocate_cells(lisp, 1);
   *(void **)lisp_cell_at(lisp, idx) = ptr;
   return -idx;
 }
 
+/* Read a Lisp form from STR, then macroexpand and evaluate it. */
 #define LISP_EVAL_STR(LISP, STR)                                               \
   (lisp_eval(LISP, lisp_macroexpand(lisp, OBJS(lisp, STR))))
 
+/* Create a new Lisp System with the given Query and System Function. */
 Object lisp_make_system(LispEnv *lisp, Object query, Object func);
 #endif
