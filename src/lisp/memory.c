@@ -14,7 +14,6 @@ Memory new_lisp_memory(size capacity) {
     exit(EXIT_FAILURE);
   }
   memory.active = (Arena){memory.space.begin, memory.space.begin + capacity};
-  memory.inactive = (Arena){NULL, NULL};
 
   return memory;
 }

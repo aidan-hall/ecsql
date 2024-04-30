@@ -8,7 +8,6 @@
 typedef struct {
   Arena space;
   Arena active;
-  Arena inactive;
 } Memory;
 
 Memory new_lisp_memory(size capacity);
