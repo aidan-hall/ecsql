@@ -107,7 +107,6 @@ Object lisp_defname(LispEnv *lisp, Object ns, Object symbol, Object value) {
 static Object lisp_define_global(LispEnv *lisp, Object symbol, Object value) {
   /* We don't need to do anything with the returned (boxed) key, so the tag is
    * irrelevant. */
-  /* TODO: Do something better here? We've created an over-general API. */
   symbol = lisp_add_to_namespace(lisp, lisp->globals, symbol, value);
   if (EQ(symbol, UNDEFINED)) {
     WRONG("Failed to define global variable");
@@ -309,7 +308,6 @@ Object lisp_assoc(LispEnv *lisp, Object key, Object alist) {
 
 Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
-  /* TODO: Search in the lexical context. */
   while (OBJ_TYPE(context) == OBJ_PAIR_TAG) {
     Object element = lisp_assoc(lisp, symbol, LISP_CAR(lisp, context));
     if (!EQ(element, NIL)) {
@@ -326,7 +324,6 @@ Object *lisp_lookup_variable(LispEnv *lisp, Object symbol, Object context) {
 
 Object lisp_lookup_macro(LispEnv *lisp, Object symbol) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
-  /* TODO: Search in the lexical context. */
   khint_t macro_key = kh_get(var_syms, lisp->macros, symbol.bits);
   if (macro_key == kh_end(lisp->macros)) {
     WRONG("Undefined macro", symbol);
@@ -339,7 +336,6 @@ Object lisp_lookup_macro(LispEnv *lisp, Object symbol) {
  * context argument. */
 Object lisp_lookup_function(LispEnv *lisp, Object symbol) {
   LISP_ASSERT_TYPE(symbol, SYMBOL);
-  /* TODO: Search in the lexical context. */
   khint_t function_key = kh_get(var_syms, lisp->functions, symbol.bits);
   if (function_key == kh_end(lisp->functions)) {
     WRONG("Undefined function", symbol);
@@ -736,7 +732,6 @@ Object lisp_new_ecs_component(LispEnv *lisp, Object type) {
         .size = lisp_storage.size =
             OBJ_UNBOX(*lisp_get_vector_item(lisp, metadata, 0))};
 
-    /* TODO: Calculate Lisp struct alignment and include it here */
     storage = (struct Storage){
         .size = lisp_storage.size,
         .alignment =

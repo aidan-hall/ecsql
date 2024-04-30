@@ -60,7 +60,6 @@ static bool ecs_query_matches(LispEnv *lisp, ArchetypeID archetype,
 void ecs_do_pairwise_query(LispEnv *lisp, Object query0, Object query1,
                            NWiseSystem system, void *data) {
   struct World *world = lisp->world;
-  /* TODO: Calculate how many Components the Query contains */
   Object components0 = LISP_CAR(lisp, query0);
   Object predicate0 = LISP_CDR(lisp, query0);
   EcsIter *foo[2] = {malloc(sizeof(EcsIter)), malloc(sizeof(EcsIter))};
@@ -90,10 +89,10 @@ void ecs_do_pairwise_query(LispEnv *lisp, Object query0, Object query1,
       }
 
       /* Repeat for the partner archetype->
-       * TODO: What should the initial value of j be? This is a huge deciding
-       * factor in the behaviour-> 0: ordered pairs of *archetypes*, i:
-       * "unordered" pairs: never do (a, b) and (b, a) for distinct a & b. i +
-       * 1: unordered pairs, also excluding (a, a) for any archetype a.
+       * The initial value of j depends on the intended behaviour.
+       *  0: ordered pairs of *archetypes*,
+       *  i: "unordered" pairs: never do (a, b) and (b, a) for distinct a & b.
+       *  i + 1: unordered pairs, also excluding (a, a) for any archetype a.
        *
        * Ultimately, the N-Wise Queries functionality isn't very important, so it doesn't matter.
        */

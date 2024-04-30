@@ -53,10 +53,6 @@ static inline u64 ENT_SIG(Object ent) { return ent.bits; }
  * Ranges of allowed IDs for Entities and Components.
  * For now, don't allow Entity IDs to exceed 2^23 - 1,
  * so the 23 bits of the relation type in pairs is enough for any Entity.
- *
- * TODO: Implement a partitioning scheme to allow optimisations for small IDs,
- * and to support bigger ones.  Probably unnecessary for this project though!
- * @see new_entity_partitioned
  */
 #define MIN_ENTITY (0)
 #define MAX_ENTITY ((1 << 23))

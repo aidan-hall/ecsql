@@ -252,8 +252,6 @@ void ecs_destroy(World *world, Object entity) {
   Record *record = entity_record(world, entity.id);
   Archetype *archetype = get_archetype(world, record->archetype);
   archetype_remove_entity(world, archetype, record->row);
-  /* TODO: Do any necessary cleanup of its relations (e.g. cascade delete
-   * children). */
   /* Remove the Entity from the live set */
   kh_del(live, world->live, iter);
   /* Update generation "lazily" when the Entity is destroyed. */

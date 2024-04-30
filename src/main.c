@@ -68,8 +68,7 @@ void mouse_gravity(LispEnv *lisp, struct EcsIter *iter, void *data) {
        * visible effect */
       /* Vector2 dir_to_centre = Vector2Normalize(to_centre); */
       float dist_to_centre2 = Vector2LengthSqr(to_centre);
-      /* Prevent badness at the centre. TODO: Bounce off the mouse or something.
-       */
+      /* Prevent weird behaviour at the centre. */
       if (dist_to_centre2 <= 25.0)
         continue;
       vels[i].x += to_centre.x * GRAVITY / dist_to_centre2;

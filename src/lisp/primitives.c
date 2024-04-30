@@ -371,17 +371,6 @@ static Object prim_add(LispEnv *lisp, Object args) {
   return OBJ_IMM(sum_float);
 }
 
-static Object prim_add2f(LispEnv *lisp, Object args) {
-  Object first = FIRST;
-  LISP_ASSERT_TYPE(first, FLOAT);
-  SHIFT_ARGS(1);
-  LISP_ASSERT_TYPE(args, PAIR);
-  Object second = FIRST;
-  LISP_ASSERT_TYPE(second, FLOAT);
-  float result = lisp_unbox_float(first) + lisp_unbox_float(second);
-  return OBJ_IMM(result);
-}
-
 static Object prim_mod(LispEnv *lisp, Object args) {
   return OBJ_BOX(
       BIT_CAST(i32, OBJ_UNBOX(FIRST)) % BIT_CAST(i32, OBJ_UNBOX(SECOND)), INT);
@@ -783,7 +772,6 @@ static Object prim_mem_set_val(LispEnv *lisp, Object args) {
 /* (struct offset/B struct-type len/B)
  * Produces a copy. */
 static Object prim_mem_get_vec(LispEnv *lisp, Object args) {
-  /* TODO: Handle potentially misaligned pointers here? */
   char *src = &((char *)lisp_cell_at(lisp, FIRST.index))[SECOND.val];
   SHIFT_ARGS(2);
   size len = SECOND.val;
@@ -1216,7 +1204,7 @@ void lisp_install_primitives(LispEnv *lisp) {
 #define DEFPRIMFUN(NAME, SPEC, FUN)                                            \
   lisp_add_primitive(lisp, SYM(lisp, NAME), OBJSX(SPEC), FUN,                  \
                      lisp->primitive_functions)
-  DEFPRIMFUN("+2f", "(f32 f32)", prim_add2f);
+  /* Standard Library Primitives */
   DEFPRIMFUN("*", "(* (or f32 i32))", prim_mul);
   DEFPRIMFUN("%", "(i32 i32)", prim_mod);
   DEFPRIMFUN("/", "(t . t)", prim_div);
@@ -1268,8 +1256,8 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("defname", "(symbol symbol t)", prim_defname);
   DEFPRIMFUN("size-of", "(symbol)", prim_size_of);
   DEFPRIMFUN("type-spec-matches", "(t t)", prim_type_spec_matches);
-  /* TODO: These are private, and only called from generated code, so don't
-   * waste time checking the type. */
+
+  /* Internal Struct Primitives */
   DEFPRIMFUN("--struct-set-vec", "(t i32 t i32)", prim_mem_set_vec);
   DEFPRIMFUN("--struct-set-val", "(t i32 t i32)", prim_mem_set_val);
   DEFPRIMFUN("--struct-get-vec", "(t i32 i32 i32)", prim_mem_get_vec);
@@ -1278,9 +1266,12 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("--struct-set-object", "(t i32 t)", prim_mem_set_object);
   DEFPRIMFUN("--struct-allocate", "(i32 i32)", prim_struct_allocate);
   DEFPRIMFUN("--struct-register", "(symbol)", prim_struct_register);
+  
+  /* Standard Library Struct Primitives */
   DEFPRIMFUN("structp", "(t)", prim_is_struct);
   DEFPRIMFUN("struct-metadata", "(symbol)", prim_struct_metadata);
 
+  /* Standard Library ECS Primitives */
   DEFPRIMFUN("ecs-new", "()", prim_ecs_new);
   DEFPRIMFUN("make-entity", "(i32 i32)", prim_make_entity);
   DEFPRIMFUN("ecs-entity", "(i32)", prim_entity_with_id);
@@ -1306,6 +1297,7 @@ void lisp_install_primitives(LispEnv *lisp) {
   DEFPRIMFUN("ecs-storage-type", "((or entity relation))",
              prim_ecs_storage_type);
 
+  /* Raylib Integration Primitives */
   DEFPRIMFUN("get-mouse-y", "()", prim_get_mouse_y);
   DEFPRIMFUN("get-mouse-x", "()", prim_get_mouse_x);
   DEFPRIMFUN("get-screen-width", "()", prim_get_screen_width);

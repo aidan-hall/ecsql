@@ -91,7 +91,6 @@ void lisp_print(LispEnv *lisp, Object object, FILE *stream) {
   }
     return;
   case OBJ_STRUCT_TAG:
-    /* TODO: Implement a clever way to call struct printer methods. */
     fprintf(stream, "(struct ");
     lisp_print(lisp, lisp_type_of(lisp, object), stream);
     fputs(")", stream);
