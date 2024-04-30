@@ -27,14 +27,6 @@ void lisp_run_system(LispEnv *lisp, struct EcsIter *iter, void *data) {
     return;
   }
 
-  /* The cells allocated for the Component values. */
-  size arg_cells = lisp_allocate_cells(lisp, bindings_length);
-
-  if (arg_cells == -1) {
-    WRONG("Failed to allocate memory for Lisp System Component bindings.");
-    return;
-  }
-
   /* Set up the arguments list, and get each argument type's information. */
   Object *argument_places[bindings_length];
   u8 *columns[bindings_length];
