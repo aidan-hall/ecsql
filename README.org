@@ -154,7 +154,7 @@ Potentially useful for testing and bootstrapping purposes.
 **** LibGCCJIT
 | Advantages                    | Disadvantages         |
 |-------------------------------+-----------------------|
-| Ganoooo!1!                    | Unfamiliar            |
+| GNU                           | Unfamiliar            |
 | Very simple(?)                | No Phi nodes          |
 | Similar to LLVM               | Limited documentation |
 | C is primary API              |                       |
